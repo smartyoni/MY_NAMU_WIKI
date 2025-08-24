@@ -510,7 +510,7 @@ function App() {
 
   return (
     <div className="app">
-      <Header />
+      <Header toggleSidebar={() => setIsSidebarVisible(true)} />
       <div className="app-body">
         <div 
           className={`sidebar ${isSidebarVisible ? 'sidebar-visible' : ''}`}
