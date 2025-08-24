@@ -35,14 +35,28 @@ function AppFirebase() {
 
 Firebase와 연결되었습니다! 🚀`);
 
-  const [currentDoc, setCurrentDoc] = useState<any>(null);
+  const [currentDoc, setCurrentDoc] = useState<any>(() => {
+    // 새로고침 후에도 현재 문서 상태 유지
+    const saved = localStorage.getItem('current-document');
+    return saved ? JSON.parse(saved) : null;
+  });
   const [isCreating, setIsCreating] = useState(false);
   const [newDocTitle, setNewDocTitle] = useState('');
-  const [isEditMode, setIsEditMode] = useState(false);
+  const [isEditMode, setIsEditMode] = useState(() => {
+    // 새로고침 후에도 편집 모드 상태 유지
+    return localStorage.getItem('edit-mode') === 'true';
+  });
 
   // Undo/Redo 상태 관리
   const [history, setHistory] = useState<string[]>([content]);
   const [historyIndex, setHistoryIndex] = useState(0);
+
+  // 새로고침 시 content 복원
+  React.useEffect(() => {
+    if (currentDoc && currentDoc.content !== content) {
+      setContent(currentDoc.content);
+    }
+  }, [currentDoc]);
 
   // 툴바 버튼 스타일
   const toolbarButtonStyle = {
@@ -95,6 +109,10 @@ Firebase와 연결되었습니다! 🚀`);
     setIsEditMode(false);
     selectDocument(doc);
     
+    // localStorage에 현재 상태 저장
+    localStorage.setItem('current-document', JSON.stringify(doc));
+    localStorage.setItem('edit-mode', 'false');
+    
     // 히스토리 초기화
     setHistory([doc.content]);
     setHistoryIndex(0);
@@ -102,13 +120,21 @@ Firebase와 연결되었습니다! 🚀`);
 
   const handleEditDocument = () => {
     setIsEditMode(true);
+    localStorage.setItem('edit-mode', 'true');
   };
 
   const handleSaveAndView = async () => {
     if (currentDoc) {
       try {
         await updateDocument(currentDoc.id, { content });
+        // 로컬 상태도 즉시 업데이트
+        const updatedDoc = { ...currentDoc, content };
+        setCurrentDoc(updatedDoc);
         setIsEditMode(false);
+        
+        // localStorage도 업데이트
+        localStorage.setItem('current-document', JSON.stringify(updatedDoc));
+        localStorage.setItem('edit-mode', 'false');
       } catch (err) {
         console.error('Error saving document:', err);
       }
@@ -122,6 +148,9 @@ Firebase와 연결되었습니다! 🚀`);
         if (currentDoc && currentDoc.id === docId) {
           setCurrentDoc(null);
           setIsEditMode(false);
+          // localStorage 정리
+          localStorage.removeItem('current-document');
+          localStorage.removeItem('edit-mode');
         }
       } catch (err) {
         console.error('Error deleting document:', err);
