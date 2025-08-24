@@ -50,7 +50,7 @@ const Header: React.FC<HeaderProps> = ({ toggleSidebar, onCreateDocument }) => {
           style={{
             marginRight: '15px',
             padding: '8px 16px',
-            background: '#28a745',
+            background: '#6f42c1',
             color: 'white',
             border: 'none',
             borderRadius: '4px',
@@ -61,7 +61,19 @@ const Header: React.FC<HeaderProps> = ({ toggleSidebar, onCreateDocument }) => {
         >
           + 새 문서
         </button>
-        <span className="production-mode">완성 버전</span>
+        <span 
+          className="production-mode"
+          style={{
+            padding: '8px 16px',
+            fontSize: '14px',
+            fontWeight: '500',
+            background: '#f8f9fa',
+            border: '1px solid #dee2e6',
+            borderRadius: '4px'
+          }}
+        >
+          완성 버전
+        </span>
       </div>
     </header>
   );
