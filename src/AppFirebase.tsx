@@ -294,6 +294,35 @@ Firebase와 연결되었습니다! 🚀`);
     });
   };
 
+  // 카테고리 순서 이동
+  const moveCategoryUp = (categoryId: string) => {
+    setCategories(prev => {
+      const currentIndex = prev.findIndex(cat => cat.id === categoryId);
+      if (currentIndex <= 0) return prev; // 이미 맨 위거나 찾을 수 없음
+      
+      const newCategories = [...prev];
+      const temp = newCategories[currentIndex];
+      newCategories[currentIndex] = newCategories[currentIndex - 1];
+      newCategories[currentIndex - 1] = temp;
+      
+      return newCategories;
+    });
+  };
+
+  const moveCategoryDown = (categoryId: string) => {
+    setCategories(prev => {
+      const currentIndex = prev.findIndex(cat => cat.id === categoryId);
+      if (currentIndex >= prev.length - 1 || currentIndex === -1) return prev; // 이미 맨 아래거나 찾을 수 없음
+      
+      const newCategories = [...prev];
+      const temp = newCategories[currentIndex];
+      newCategories[currentIndex] = newCategories[currentIndex + 1];
+      newCategories[currentIndex + 1] = temp;
+      
+      return newCategories;
+    });
+  };
+
 
   const handleSelectDocument = (doc: any) => {
     setCurrentDoc(doc);
@@ -694,6 +723,60 @@ Firebase와 연결되었습니다! 🚀`);
                       </div>
                     )}
                     
+                    {/* 순서 이동 및 삭제 버튼 */}
+                    {!isEditing && (
+                      <div style={{
+                        position: 'absolute',
+                        right: '5px',
+                        top: '50%',
+                        transform: 'translateY(-50%)',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        gap: '1px'
+                      }}>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            moveCategoryUp(category.id);
+                          }}
+                          style={{
+                            background: 'none',
+                            border: 'none',
+                            color: '#6c757d',
+                            cursor: 'pointer',
+                            fontSize: '10px',
+                            opacity: 0.7,
+                            padding: '0',
+                            lineHeight: '1',
+                            height: '12px'
+                          }}
+                          title="위로 이동"
+                        >
+                          ▲
+                        </button>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            moveCategoryDown(category.id);
+                          }}
+                          style={{
+                            background: 'none',
+                            border: 'none',
+                            color: '#6c757d',
+                            cursor: 'pointer',
+                            fontSize: '10px',
+                            opacity: 0.7,
+                            padding: '0',
+                            lineHeight: '1',
+                            height: '12px'
+                          }}
+                          title="아래로 이동"
+                        >
+                          ▼
+                        </button>
+                      </div>
+                    )}
+                    
                     {/* 삭제 버튼 */}
                     {!isEditing && category.id !== 'general' && (
                       <button
@@ -703,7 +786,7 @@ Firebase와 연결되었습니다! 🚀`);
                         }}
                         style={{
                           position: 'absolute',
-                          right: '5px',
+                          right: '30px',
                           top: '50%',
                           transform: 'translateY(-50%)',
                           background: 'none',
