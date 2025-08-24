@@ -512,7 +512,10 @@ function App() {
     <div className="app">
       <Header 
         toggleSidebar={() => setIsSidebarVisible(true)} 
-        onCreateDocument={() => setIsCreating(true)}
+        onCreateDocument={() => {
+          console.log('새 문서 생성 함수 호출됨');
+          setIsCreating(true);
+        }}
       />
       <div className="app-body">
         <div 

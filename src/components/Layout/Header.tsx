@@ -46,7 +46,10 @@ const Header: React.FC<HeaderProps> = ({ toggleSidebar, onCreateDocument }) => {
       </div>
       <div className="header-right">
         <button 
-          onClick={onCreateDocument}
+          onClick={() => {
+            console.log('새 문서 버튼 클릭됨');
+            onCreateDocument();
+          }}
           style={{
             marginRight: '15px',
             padding: '8px 16px',
