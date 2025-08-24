@@ -510,7 +510,10 @@ function App() {
 
   return (
     <div className="app">
-      <Header toggleSidebar={() => setIsSidebarVisible(true)} />
+      <Header 
+        toggleSidebar={() => setIsSidebarVisible(true)} 
+        onCreateDocument={() => setIsCreating(true)}
+      />
       <div className="app-body">
         <div 
           className={`sidebar ${(isMobile && isSidebarVisible) || !isMobile ? 'sidebar-visible' : ''}`}

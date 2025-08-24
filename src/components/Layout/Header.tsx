@@ -3,9 +3,10 @@ import './Header.css';
 
 interface HeaderProps {
   toggleSidebar: () => void;
+  onCreateDocument: () => void;
 }
 
-const Header: React.FC<HeaderProps> = ({ toggleSidebar }) => {
+const Header: React.FC<HeaderProps> = ({ toggleSidebar, onCreateDocument }) => {
   const [currentTime, setCurrentTime] = useState(new Date());
 
   useEffect(() => {
@@ -44,6 +45,22 @@ const Header: React.FC<HeaderProps> = ({ toggleSidebar }) => {
         />
       </div>
       <div className="header-right">
+        <button 
+          onClick={onCreateDocument}
+          style={{
+            marginRight: '15px',
+            padding: '8px 16px',
+            background: '#28a745',
+            color: 'white',
+            border: 'none',
+            borderRadius: '4px',
+            fontSize: '14px',
+            cursor: 'pointer',
+            fontWeight: '500'
+          }}
+        >
+          + 새 문서
+        </button>
         <span className="production-mode">완성 버전</span>
       </div>
     </header>
