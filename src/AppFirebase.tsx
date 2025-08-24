@@ -70,6 +70,7 @@ Firebase와 연결되었습니다! 🚀`);
   const [editingCategoryId, setEditingCategoryId] = useState<string | null>(null);
   const [editingCategoryName, setEditingCategoryName] = useState('');
   const [categoryMenuOpen, setCategoryMenuOpen] = useState<string | null>(null);
+  const [tocOpen, setTocOpen] = useState(false);
 
   const toggleSidebar = () => {
     setIsSidebarVisible(!isSidebarVisible);
@@ -107,13 +108,18 @@ Firebase와 연결되었습니다! 🚀`);
       if (categoryMenuOpen && !target.closest('.category-menu-container')) {
         setCategoryMenuOpen(null);
       }
+      
+      // TOC 외부 클릭 시 닫기
+      if (tocOpen && !target.closest('.toc-container')) {
+        setTocOpen(false);
+      }
     };
 
     document.addEventListener('mousedown', handleClickOutside);
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
     };
-  }, [categoryMenuOpen]);
+  }, [categoryMenuOpen, tocOpen]);
 
   // 카테고리 변경시 localStorage에 저장
   React.useEffect(() => {
@@ -493,13 +499,72 @@ Firebase와 연결되었습니다! 🚀`);
     }, 0);
   };
 
-  // Wiki 텍스트 파싱
+  // 목차 데이터 생성
+  const generateTOC = (text: string) => {
+    const toc: Array<{id: string, title: string, level: number, number: string}> = [];
+    const h1Count = [0]; // H1 카운터
+    const h2Count = [0, 0]; // H1.H2 카운터
+
+    // H1 제목 찾기
+    text.replace(/==\s*(.+?)\s*==/g, (match, title) => {
+      h1Count[0]++;
+      h2Count[1] = 0; // H2 카운터 리셋
+      const id = `heading-h1-${h1Count[0]}`;
+      toc.push({
+        id,
+        title: title.trim(),
+        level: 1,
+        number: `${h1Count[0]}`
+      });
+      return match;
+    });
+
+    // H2 제목 찾기  
+    text.replace(/===\s*(.+?)\s*===/g, (match, title) => {
+      h2Count[1]++;
+      const id = `heading-h2-${h1Count[0]}-${h2Count[1]}`;
+      toc.push({
+        id,
+        title: title.trim(),
+        level: 2,
+        number: `${h1Count[0]}.${h2Count[1]}`
+      });
+      return match;
+    });
+
+    // 등장 순서대로 정렬
+    return toc.sort((a, b) => {
+      const aPos = text.indexOf(a.level === 1 ? `== ${a.title} ==` : `=== ${a.title} ===`);
+      const bPos = text.indexOf(b.level === 1 ? `== ${b.title} ==` : `=== ${b.title} ===`);
+      return aPos - bPos;
+    });
+  };
+
+  // Wiki 텍스트 파싱 (앵커 ID 포함)
   const parseWikiText = (text: string): string => {
     let html = text;
+    let h1Count = 0;
+    let h2Count = 0;
+    let currentH1 = 0;
     
     html = html.replace(/\n/g, '<br>');
-    html = html.replace(/===\s*(.+?)\s*===/g, '<h3>$1</h3>');
-    html = html.replace(/==\s*(.+?)\s*==/g, '<h2>$1</h2>');
+    
+    // H1 제목을 앵커 ID와 함께 변환
+    html = html.replace(/==\s*(.+?)\s*==/g, (_, title) => {
+      h1Count++;
+      currentH1 = h1Count;
+      h2Count = 0; // H2 카운터 리셋
+      const id = `heading-h1-${h1Count}`;
+      return `<h2 id="${id}" style="scroll-margin-top: 80px;">${title.trim()}</h2>`;
+    });
+    
+    // H2 제목을 앵커 ID와 함께 변환
+    html = html.replace(/===\s*(.+?)\s*===/g, (_, title) => {
+      h2Count++;
+      const id = `heading-h2-${currentH1}-${h2Count}`;
+      return `<h3 id="${id}" style="scroll-margin-top: 80px;">${title.trim()}</h3>`;
+    });
+    
     html = html.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
     html = html.replace(/~~(.+?)~~/g, '<del>$1</del>');
     
@@ -524,6 +589,15 @@ Firebase와 연결되었습니다! 🚀`);
     }
     if (previewArea) {
       previewArea.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  };
+
+  // 목차 항목 클릭 시 해당 섹션으로 스크롤
+  const scrollToHeading = (headingId: string) => {
+    const element = document.getElementById(headingId);
+    if (element) {
+      element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      setTocOpen(false);
     }
   };
 
@@ -1473,6 +1547,112 @@ Firebase와 연결되었습니다! 🚀`);
       <button onClick={() => { setIsCreating(true); if (!isSidebarVisible) { toggleSidebar(); } }} className="fab">
         새 문서
       </button>
+      
+      {/* 플로팅 목차 버튼 */}
+      {currentDoc && (
+        <div className="toc-container" style={{ position: 'relative' }}>
+          <button 
+            onClick={() => setTocOpen(!tocOpen)}
+            style={{
+              position: 'fixed',
+              right: '20px',
+              bottom: '80px',
+              width: '50px',
+              height: '50px',
+              borderRadius: '25px',
+              background: '#007bff',
+              color: 'white',
+              border: 'none',
+              fontSize: '20px',
+              cursor: 'pointer',
+              boxShadow: '0 2px 10px rgba(0,0,0,0.2)',
+              zIndex: 999,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center'
+            }}
+            title="목차"
+          >
+            📋
+          </button>
+          
+          {/* 목차 팝업 */}
+          {tocOpen && (
+            <div
+              style={{
+                position: 'fixed',
+                right: '20px',
+                bottom: '140px',
+                background: 'white',
+                border: '1px solid #dee2e6',
+                borderRadius: '8px',
+                boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+                zIndex: 1000,
+                minWidth: '280px',
+                maxWidth: '400px',
+                maxHeight: '400px',
+                overflow: 'auto'
+              }}
+            >
+              <div style={{
+                padding: '12px 16px',
+                borderBottom: '1px solid #dee2e6',
+                background: '#f8f9fa',
+                borderRadius: '8px 8px 0 0',
+                fontWeight: '600',
+                fontSize: '14px',
+                color: '#495057'
+              }}>
+                📋 목차
+              </div>
+              <div style={{ padding: '8px 0' }}>
+                {generateTOC(currentDoc.content).map((item, index) => (
+                  <div
+                    key={index}
+                    onClick={() => scrollToHeading(item.id)}
+                    style={{
+                      padding: '8px 16px',
+                      cursor: 'pointer',
+                      fontSize: '13px',
+                      borderLeft: item.level === 2 ? '3px solid transparent' : 'none',
+                      paddingLeft: item.level === 2 ? '32px' : '16px',
+                      color: item.level === 1 ? '#212529' : '#6c757d',
+                      fontWeight: item.level === 1 ? '500' : '400',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '8px'
+                    }}
+                    onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#f8f9fa'}
+                    onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+                  >
+                    <span style={{ 
+                      minWidth: '24px', 
+                      fontSize: '11px', 
+                      color: '#007bff',
+                      fontWeight: '600'
+                    }}>
+                      {item.number}
+                    </span>
+                    <span style={{ flex: 1 }}>{item.title}</span>
+                  </div>
+                ))}
+                {generateTOC(currentDoc.content).length === 0 && (
+                  <div style={{
+                    padding: '16px',
+                    textAlign: 'center',
+                    color: '#6c757d',
+                    fontSize: '12px',
+                    fontStyle: 'italic'
+                  }}>
+                    제목이 없습니다.<br/>
+                    == 제목 == 또는 === 소제목 ===을 사용해보세요.
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 }
