@@ -392,20 +392,13 @@ Firebase와 연결되었습니다! 🚀`);
           {documents.length > 0 ? (
             <div style={{ marginBottom: '20px' }}>
               {documents.map((doc) => (
-                <div key={doc.id} className="document-item">
-                  <div
-                    className="document-item-title"
-                    onClick={() => handleSelectDocument(doc)}
-                  >
-                    {doc.title}
-                  </div>
-                  <button
-                    onClick={() => handleDeleteDocument(doc.id)}
-                    className="document-item-delete-btn"
-                    title="문서 삭제"
-                  >
-                    삭제
-                  </button>
+                <div 
+                  key={doc.id} 
+                  className="document-item"
+                  onClick={() => handleSelectDocument(doc)}
+                  style={{ cursor: 'pointer' }}
+                >
+                  {doc.title}
                 </div>
               ))}
             </div>
