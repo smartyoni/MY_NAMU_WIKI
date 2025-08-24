@@ -119,13 +119,16 @@ Firebase와 연결되었습니다! 🚀`);
     
     try {
       const newContent = `== ${newDocTitle} ==\n\n새 문서입니다. 내용을 작성해주세요.`;
-      const id = await createDocument(newDocTitle, newContent, { categoryId: newDocCategory });
+      const id = await createDocument(newDocTitle, newContent);
+      
+      // 문서 생성 후 카테고리 정보 업데이트
+      await updateDocument(id, { category: newDocCategory });
       
       const newDoc = {
         id,
         title: newDocTitle,
         content: newContent,
-        categoryId: newDocCategory,
+        category: newDocCategory,
         createdAt: new Date(),
         updatedAt: new Date(),
         userId: 'default-user'
@@ -229,7 +232,7 @@ Firebase와 연결되었습니다! 🚀`);
     if (selectedCategory === 'all') {
       return documents;
     }
-    return documents.filter(doc => doc.categoryId === selectedCategory);
+    return documents.filter(doc => doc.category === selectedCategory);
   };
 
   const handleSelectDocument = (doc: any) => {
@@ -472,7 +475,7 @@ Firebase와 연결되었습니다! 🚀`);
             </div>
             
             {categories.map(category => {
-              const categoryDocs = documents.filter(doc => doc.categoryId === category.id);
+              const categoryDocs = documents.filter(doc => doc.category === category.id);
               return (
                 <div key={category.id} style={{ position: 'relative' }}>
                   <div
