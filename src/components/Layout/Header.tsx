@@ -7,8 +7,10 @@ interface HeaderProps {
 
 // 전역 함수로 새 문서 버튼 이벤트 처리
 const handleGlobalNewDocument = () => {
+  console.log('새 문서 버튼 클릭 - 이벤트 발송');
   const event = new CustomEvent('createNewDocument');
   window.dispatchEvent(event);
+  console.log('이벤트 발송 완료');
 };
 
 const Header: React.FC<HeaderProps> = ({ toggleSidebar }) => {

@@ -70,11 +70,12 @@ function App() {
   // 헤더의 새 문서 버튼 이벤트 처리
   React.useEffect(() => {
     const handleNewDocumentEvent = () => {
+      console.log('새 문서 이벤트 수신됨');
       setIsCreating(true);
     };
     
-    window.addEventListener('createNewDocument', handleNewDocumentEvent);
-    return () => window.removeEventListener('createNewDocument', handleNewDocumentEvent);
+    window.addEventListener('createNewDocument', handleNewDocumentEvent as EventListener);
+    return () => window.removeEventListener('createNewDocument', handleNewDocumentEvent as EventListener);
   }, []);
 
   // Undo/Redo 상태 관리
