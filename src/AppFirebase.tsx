@@ -72,7 +72,6 @@ Firebase와 연결되었습니다! 🚀`);
   const [categoryMenuOpen, setCategoryMenuOpen] = useState<string | null>(null);
   const [tocOpen, setTocOpen] = useState(false);
   const [collapsedSections, setCollapsedSections] = useState<Set<string>>(new Set());
-  const [isOutlineMode, setIsOutlineMode] = useState(false);
 
   const toggleSidebar = () => {
     setIsSidebarVisible(!isSidebarVisible);
@@ -413,33 +412,6 @@ Firebase와 연결되었습니다! 🚀`);
   const handleContentChange = (newContent: string) => {
     setContent(newContent);
     
-    // 아웃라인 모드 자동 감지 (커서 위치 기반)
-    const textarea = document.querySelector('.editor-textarea') as HTMLTextAreaElement;
-    if (textarea) {
-      const cursorPos = textarea.selectionStart;
-      const textBeforeCursor = newContent.substring(0, cursorPos);
-      const textAfterCursor = newContent.substring(cursorPos);
-      
-      // {{{outline과 }}} 사이에 커서가 있는지 확인 (중첩 고려)
-      const outlineMatches = [...textBeforeCursor.matchAll(/\{\{\{outline/g)];
-      const endMatches = [...textBeforeCursor.matchAll(/\}\}\}/g)];
-      
-      // 마지막 {{{outline의 위치
-      const lastOutlineIndex = outlineMatches.length > 0 ? 
-        outlineMatches[outlineMatches.length - 1].index! : -1;
-        
-      // 마지막 }}}의 위치
-      const lastEndIndex = endMatches.length > 0 ? 
-        endMatches[endMatches.length - 1].index! : -1;
-      
-      // 다음 }}}의 위치
-      const nextEndIndex = textAfterCursor.indexOf('}}}');
-      
-      // 아웃라인 영역 안에 있는지 확인
-      const inOutlineRegion = lastOutlineIndex > lastEndIndex && nextEndIndex !== -1;
-      setIsOutlineMode(inOutlineRegion);
-    }
-    
     // Undo 히스토리 추가
     if (newContent !== history[historyIndex]) {
       const newHistory = history.slice(0, historyIndex + 1);
@@ -653,78 +625,6 @@ Firebase와 연결되었습니다! 🚀`);
       return `<details style="border: 1px solid #dee2e6; border-radius: 4px; margin: 10px 0; padding: 0;"><summary style="background: #f8f9fa; padding: 8px 12px; cursor: pointer; font-weight: 500; border-radius: 3px 3px 0 0;">${title.trim()}</summary><div style="padding: 12px;">${content.trim()}</div></details>`;
     });
 
-    // 아웃라이너 영역 처리 (중첩 방지)
-    html = html.replace(/\{\{\{outline\n([\s\S]*?)\n\}\}\}/g, (match, content) => {
-      // 중첩된 {{{outline을 방지
-      if (content.includes('{{{outline')) {
-        return match; // 중첩된 경우 원본 그대로 반환
-      }
-      
-      const lines = content.split('\n');
-      let outlineHtml = '<div style="background: #f8f9fa; border: 2px solid #007bff; border-radius: 8px; margin: 15px 0; padding: 16px; position: relative;">';
-      
-      // 아웃라이너 헤더
-      outlineHtml += '<div style="position: absolute; top: -10px; left: 12px; background: #007bff; color: white; padding: 4px 8px; border-radius: 4px; font-size: 11px; font-weight: 600;">🌳 아웃라인 영역</div>';
-      
-      outlineHtml += '<div style="margin-top: 8px;">';
-      
-      let hasContent = false;
-      lines.forEach((line: string) => {
-        const trimmed = line.trim();
-        
-        // 빈 라인이거나 - 만 있는 라인 무시
-        if (!trimmed || trimmed === '-') {
-          return;
-        }
-        
-        // - 로 시작하는 라인만 처리
-        if (trimmed.startsWith('-')) {
-          hasContent = true;
-          // 들여쓰기 레벨 계산 (- 기호 앞의 공백 개수)
-          const leadingSpaces = line.length - line.trimStart().length;
-          const indent = Math.floor(leadingSpaces / 2); // 공백 2개당 1레벨
-          const cleanLine = trimmed.replace(/^-\s*/, '').trim();
-          
-          if (cleanLine) {
-            outlineHtml += `<div style="
-              margin-left: ${indent * 20}px; 
-              padding: 6px 12px; 
-              margin: 4px 0; 
-              background: white; 
-              border-left: 3px solid ${indent === 0 ? '#007bff' : '#6c757d'};
-              border-radius: 0 4px 4px 0;
-              font-size: ${indent === 0 ? '14px' : '13px'};
-              font-weight: ${indent === 0 ? '500' : '400'};
-              color: ${indent === 0 ? '#212529' : '#495057'};
-              box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-            ">
-              <span style="color: #007bff; margin-right: 8px;">•</span>
-              ${cleanLine}
-            </div>`;
-          }
-        }
-      });
-      
-      // 내용이 없으면 빈 상태 메시지 표시
-      if (!hasContent) {
-        outlineHtml += `<div style="
-          padding: 16px; 
-          text-align: center; 
-          color: #6c757d; 
-          font-size: 12px; 
-          font-style: italic;
-          background: white;
-          border-radius: 4px;
-        ">
-          아웃라인 내용을 입력하세요.<br>
-          - 항목1<br>
-          &nbsp;&nbsp;- 하위항목
-        </div>`;
-      }
-      
-      outlineHtml += '</div></div>';
-      return outlineHtml;
-    });
     
     html = html.replace(/(https?:\/\/[^\s<>"{}|\\^`\[\]]+)/g, '<a href="$1" target="_blank" rel="noopener noreferrer" style="color: #007bff; text-decoration: underline;">$1</a>');
     html = html.replace(/^\*\s(.+)$/gm, '<li>$1</li>');
@@ -768,45 +668,6 @@ Firebase와 연결되었습니다! 🚀`);
     });
   };
 
-  // 아웃라이너 영역 토글
-  const insertOutlineRegion = () => {
-    const textarea = document.querySelector('.editor-textarea') as HTMLTextAreaElement;
-    if (!textarea) return;
-
-    const start = textarea.selectionStart;
-    const end = textarea.selectionEnd;
-    
-    if (!isOutlineMode) {
-      // 아웃라이너 시작 마크 삽입
-      const startMark = '\n{{{outline\n- ';
-      const newContent = content.substring(0, start) + startMark + content.substring(end);
-      const newCursorPos = start + startMark.length;
-      
-      setContent(newContent);
-      handleContentChange(newContent);
-      setIsOutlineMode(true);
-      
-      setTimeout(() => {
-        textarea.focus();
-        textarea.setSelectionRange(newCursorPos, newCursorPos);
-      }, 0);
-      
-    } else {
-      // 아웃라이너 종료 마크 삽입
-      const endMark = '\n}}}\n';
-      const newContent = content.substring(0, start) + endMark + content.substring(end);
-      const newCursorPos = start + endMark.length;
-      
-      setContent(newContent);
-      handleContentChange(newContent);
-      setIsOutlineMode(false);
-      
-      setTimeout(() => {
-        textarea.focus();
-        textarea.setSelectionRange(newCursorPos, newCursorPos);
-      }, 0);
-    }
-  };
 
   if (loading) {
     return (
@@ -1537,20 +1398,6 @@ Firebase와 연결되었습니다! 🚀`);
                       <button onClick={() => insertText('== ', ' ==', '제목')} style={toolbarButtonStyle} title="큰 제목">H1</button>
                       <button onClick={() => insertText('=== ', ' ===', '소제목')} style={toolbarButtonStyle} title="작은 제목">H2</button>
                       <button onClick={() => insertText('{{{fold:', '|}}}', '제목|내용')} style={{...toolbarButtonStyle, fontSize: '10px'}} title="접기/펼치기">접기</button>
-                      <div style={{ width: '1px', height: '20px', background: '#dee2e6', margin: '0 8px' }}></div>
-                      <button 
-                        onClick={insertOutlineRegion}
-                        style={{
-                          ...toolbarButtonStyle, 
-                          fontSize: '10px',
-                          backgroundColor: isOutlineMode ? '#007bff' : '#f8f9fa',
-                          color: isOutlineMode ? 'white' : '#495057',
-                          fontWeight: isOutlineMode ? '600' : '400'
-                        }} 
-                        title={isOutlineMode ? "아웃라인 영역 종료" : "아웃라인 영역 시작"}
-                      >
-                        🌳{isOutlineMode ? '◾' : '▶'}
-                      </button>
                     </div>
                     
                     <textarea
