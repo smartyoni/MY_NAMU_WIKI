@@ -504,7 +504,7 @@ Firebase와 연결되었습니다! 🚀`);
     html = html.replace(/~~(.+?)~~/g, '<del>$1</del>');
     
     // 접기 블록 처리
-    html = html.replace(/\{\{\{fold:([^|]+)\|([^}]+)\}\}\}\}/g, (_, title, content) => {
+    html = html.replace(/\{\{\{fold:([^|]+)\|([^|]+)\|\}\}\}/g, (_, title, content) => {
       return `<details style="border: 1px solid #dee2e6; border-radius: 4px; margin: 10px 0; padding: 0;"><summary style="background: #f8f9fa; padding: 8px 12px; cursor: pointer; font-weight: 500; border-radius: 3px 3px 0 0;">${title.trim()}</summary><div style="padding: 12px;">${content.trim()}</div></details>`;
     });
     
