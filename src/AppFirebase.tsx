@@ -69,14 +69,12 @@ Firebase와 연결되었습니다! 🚀`);
 
   // 헤더의 새 문서 버튼을 위한 전역 함수 등록
   React.useEffect(() => {
-    // @ts-ignore - 전역 함수 등록
     window.setIsCreating = (value: boolean) => {
       console.log('전역 setIsCreating 호출됨 (Firebase):', value);
       setIsCreating(value);
     };
     
     return () => {
-      // @ts-ignore
       delete window.setIsCreating;
     };
   }, []);

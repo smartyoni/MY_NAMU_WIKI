@@ -1,6 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import './Header.css';
 
+// 전역 함수 타입 선언
+declare global {
+  interface Window {
+    setIsCreating?: (value: boolean) => void;
+  }
+}
+
 interface HeaderProps {
   toggleSidebar: () => void;
 }
@@ -8,7 +15,6 @@ interface HeaderProps {
 // 전역 함수로 새 문서 버튼 이벤트 처리
 const handleGlobalNewDocument = () => {
   console.log('새 문서 버튼 클릭 - 직접 처리');
-  // @ts-ignore - 전역 함수 직접 호출
   if (window.setIsCreating) {
     window.setIsCreating(true);
     console.log('전역 함수 호출 완료');
