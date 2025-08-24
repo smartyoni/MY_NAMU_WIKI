@@ -539,6 +539,22 @@ Firebase와 연결되었습니다! 🚀`);
                           </div>
                         )}
                         <button
+                          onClick={() => handleDeleteDocument(currentDoc.id)}
+                          style={{
+                            padding: '6px 12px',
+                            fontSize: '12px',
+                            background: '#dc3545',
+                            color: 'white',
+                            border: 'none',
+                            borderRadius: '3px',
+                            cursor: 'pointer',
+                            fontWeight: '500'
+                          }}
+                          title="문서 삭제"
+                        >
+                          🗑️ 삭제
+                        </button>
+                        <button
                           onClick={handleSaveAndView}
                           className="editor-header-btn"
                         >
