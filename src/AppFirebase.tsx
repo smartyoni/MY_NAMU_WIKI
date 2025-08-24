@@ -98,6 +98,23 @@ Firebase와 연결되었습니다! 🚀`);
     };
   }, []);
 
+  // 모달 외부 클릭 감지
+  React.useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      const target = event.target as Element;
+      
+      // 카테고리 메뉴 외부 클릭 시 닫기
+      if (categoryMenuOpen && !target.closest('.category-menu-container')) {
+        setCategoryMenuOpen(null);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [categoryMenuOpen]);
+
   // 카테고리 변경시 localStorage에 저장
   React.useEffect(() => {
     localStorage.setItem('wiki-categories', JSON.stringify(categories));
@@ -726,7 +743,7 @@ Firebase와 연결되었습니다! 🚀`);
                     
                     {/* 3점 메뉴 버튼 */}
                     {!isEditing && (
-                      <div style={{ position: 'relative' }}>
+                      <div className="category-menu-container" style={{ position: 'relative' }}>
                         <button
                           onClick={(e) => {
                             e.stopPropagation();
@@ -757,6 +774,7 @@ Firebase와 연결되었습니다! 🚀`);
                         {/* 드롭다운 메뉴 */}
                         {categoryMenuOpen === category.id && (
                           <div
+                            className="category-dropdown-menu"
                             style={{
                               position: 'absolute',
                               right: '0',
