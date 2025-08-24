@@ -33,10 +33,39 @@ function App() {
   const [newDocTitle, setNewDocTitle] = useState('');
   const [lastSaved, setLastSaved] = useState<Date | null>(null);
   const [isEditMode, setIsEditMode] = useState(false);
+  const [isSidebarVisible, setIsSidebarVisible] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
+  const [mobileView, setMobileView] = useState<'edit' | 'preview'>('edit');
   const [images, setImages] = useState<{[key: string]: string}>(() => {
     const saved = localStorage.getItem('wiki-images');
     return saved ? JSON.parse(saved) : {};
   }); // 이미지 저장소
+
+  // 모바일 환경 감지
+  React.useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth <= 768);
+    };
+    
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
+
+  // 모바일에서 사이드바 외부 클릭시 닫기
+  React.useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (isMobile && isSidebarVisible) {
+        const sidebar = document.querySelector('.sidebar');
+        if (sidebar && !sidebar.contains(event.target as Node)) {
+          setIsSidebarVisible(false);
+        }
+      }
+    };
+    
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [isMobile, isSidebarVisible]);
 
   // Undo/Redo 상태 관리
   const [history, setHistory] = useState<string[]>([content]);
@@ -483,7 +512,10 @@ function App() {
     <div className="app">
       <Header />
       <div className="app-body">
-        <div style={{ width: '250px', background: '#f8f9fa', padding: '20px' }}>
+        <div 
+          className={`sidebar ${isSidebarVisible ? 'sidebar-visible' : ''}`}
+          style={!isMobile ? { width: '250px', background: '#f8f9fa', padding: '20px' } : {}}
+        >
           <h3>내 문서 ({documents.length})</h3>
           
           {documents.length > 0 ? (
@@ -618,16 +650,107 @@ function App() {
               + 새 문서
             </button>
           )}
+          
+          {/* 모바일에서 사이드바 닫기 버튼 */}
+          {isMobile && (
+            <button
+              onClick={() => setIsSidebarVisible(false)}
+              style={{
+                position: 'absolute',
+                top: '10px',
+                right: '10px',
+                background: 'transparent',
+                border: 'none',
+                fontSize: '20px',
+                cursor: 'pointer',
+                color: '#6c757d'
+              }}
+            >
+              ✕
+            </button>
+          )}
         </div>
+        
+        {/* 모바일 햄버거 메뉴 + FAB */}
+        {isMobile && (
+          <>
+            <button
+              onClick={() => setIsSidebarVisible(true)}
+              style={{
+                position: 'fixed',
+                top: '70px',
+                left: '15px',
+                width: '50px',
+                height: '50px',
+                borderRadius: '25px',
+                background: '#007bff',
+                color: 'white',
+                border: 'none',
+                fontSize: '18px',
+                cursor: 'pointer',
+                zIndex: 999,
+                boxShadow: '0 2px 8px rgba(0,0,0,0.2)'
+              }}
+            >
+              ☰
+            </button>
+            
+            {!currentDoc && (
+              <button
+                onClick={() => setIsCreating(true)}
+                className="fab"
+                style={{
+                  position: 'fixed',
+                  bottom: '20px',
+                  right: '20px',
+                  width: 'auto',
+                  height: 'auto',
+                  padding: '16px 24px',
+                  borderRadius: '30px',
+                  background: '#28a745',
+                  color: 'white',
+                  border: 'none',
+                  fontSize: '16px',
+                  fontWeight: 'bold',
+                  cursor: 'pointer',
+                  zIndex: 999,
+                  boxShadow: '0 4px 12px rgba(0,0,0,0.3)'
+                }}
+              >
+                + 새 문서
+              </button>
+            )}
+          </>
+        )}
         
         {/* 메인 콘텐츠 영역 */}
         <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
           {currentDoc ? (
             isEditMode ? (
-              // 편집 모드: 좌우 분할
-              <div style={{ flex: 1, display: 'flex' }}>
+              // 편집 모드: 좌우 분할 (데스크톱) 또는 탭 (모바일)
+              <div className="editor-preview-container" style={{ flex: 1, display: 'flex', flexDirection: isMobile ? 'column' : 'row' }}>
+                {/* 모바일 뷰 전환 버튼 */}
+                {isMobile && (
+                  <div className="mobile-view-switcher">
+                    <button
+                      className={mobileView === 'edit' ? 'active' : ''}
+                      onClick={() => setMobileView('edit')}
+                    >
+                      ✏️ 편집
+                    </button>
+                    <button
+                      className={mobileView === 'preview' ? 'active' : ''}
+                      onClick={() => setMobileView('preview')}
+                    >
+                      👁️ 미리보기
+                    </button>
+                  </div>
+                )}
                 {/* 편집기 */}
-                <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
+                <div 
+                  className={`editor-pane ${isMobile && mobileView !== 'edit' ? 'hidden-mobile' : ''}`}
+                  style={{ flex: 1, display: 'flex', flexDirection: 'column' }}
+                >
                   {/* 편집 헤더 */}
                   <div style={{ padding: '12px', background: '#f8f9fa', borderBottom: '1px solid #dee2e6', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                     <span style={{ fontSize: '12px', color: '#6c757d' }}>편집 모드</span>
@@ -774,8 +897,16 @@ function App() {
                 </div>
                 
                 {/* 미리보기 */}
-                <div style={{ flex: 1, display: 'flex', flexDirection: 'column', borderLeft: '1px solid #dee2e6' }}>
-                  <div style={{ padding: '12px', background: '#f8f9fa', borderBottom: '1px solid #dee2e6' }}>
+                <div 
+                  className={`preview-pane ${isMobile && mobileView !== 'preview' ? 'hidden-mobile' : ''}`}
+                  style={{ 
+                    flex: 1, 
+                    display: 'flex', 
+                    flexDirection: 'column', 
+                    borderLeft: isMobile ? 'none' : '1px solid #dee2e6'
+                  }}
+                >
+                  <div className="preview-header">
                     <span style={{ fontSize: '12px', color: '#6c757d' }}>미리보기</span>
                   </div>
                   <div 
