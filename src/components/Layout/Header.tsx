@@ -8,6 +8,8 @@ interface HeaderProps {
 
 const Header: React.FC<HeaderProps> = ({ toggleSidebar, onCreateDocument }) => {
   const [currentTime, setCurrentTime] = useState(new Date());
+  
+  console.log('Header props:', { toggleSidebar, onCreateDocument });
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -48,7 +50,12 @@ const Header: React.FC<HeaderProps> = ({ toggleSidebar, onCreateDocument }) => {
         <button 
           onClick={() => {
             console.log('새 문서 버튼 클릭됨');
-            onCreateDocument();
+            console.log('onCreateDocument 타입:', typeof onCreateDocument);
+            if (typeof onCreateDocument === 'function') {
+              onCreateDocument();
+            } else {
+              console.error('onCreateDocument가 함수가 아닙니다:', onCreateDocument);
+            }
           }}
           style={{
             marginRight: '15px',
