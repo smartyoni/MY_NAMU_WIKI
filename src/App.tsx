@@ -508,7 +508,7 @@ function App() {
     return html;
   };
 
-  const handleCreateDocument = () => {
+  const handleNewDocumentClick = () => {
     setIsCreating(true);
   };
 
@@ -518,7 +518,7 @@ function App() {
         <Header toggleSidebar={() => setIsSidebarVisible(true)} />
         {/* 새 문서 버튼을 헤더 위에 오버레이 */}
         <button
-          onClick={handleCreateDocument}
+          onClick={handleNewDocumentClick}
           style={{
             position: 'absolute',
             top: '15px',
