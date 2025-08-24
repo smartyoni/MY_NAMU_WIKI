@@ -420,12 +420,23 @@ Firebase와 연결되었습니다! 🚀`);
       const textBeforeCursor = newContent.substring(0, cursorPos);
       const textAfterCursor = newContent.substring(cursorPos);
       
-      // {{{outline과 }}} 사이에 커서가 있는지 확인
-      const lastOutlineStart = textBeforeCursor.lastIndexOf('{{{outline');
-      const lastOutlineEnd = textBeforeCursor.lastIndexOf('}}}');
-      const nextOutlineEnd = textAfterCursor.indexOf('}}}');
+      // {{{outline과 }}} 사이에 커서가 있는지 확인 (중첩 고려)
+      const outlineMatches = [...textBeforeCursor.matchAll(/\{\{\{outline/g)];
+      const endMatches = [...textBeforeCursor.matchAll(/\}\}\}/g)];
       
-      const inOutlineRegion = lastOutlineStart > lastOutlineEnd && nextOutlineEnd !== -1;
+      // 마지막 {{{outline의 위치
+      const lastOutlineIndex = outlineMatches.length > 0 ? 
+        outlineMatches[outlineMatches.length - 1].index! : -1;
+        
+      // 마지막 }}}의 위치
+      const lastEndIndex = endMatches.length > 0 ? 
+        endMatches[endMatches.length - 1].index! : -1;
+      
+      // 다음 }}}의 위치
+      const nextEndIndex = textAfterCursor.indexOf('}}}');
+      
+      // 아웃라인 영역 안에 있는지 확인
+      const inOutlineRegion = lastOutlineIndex > lastEndIndex && nextEndIndex !== -1;
       setIsOutlineMode(inOutlineRegion);
     }
     
@@ -642,9 +653,14 @@ Firebase와 연결되었습니다! 🚀`);
       return `<details style="border: 1px solid #dee2e6; border-radius: 4px; margin: 10px 0; padding: 0;"><summary style="background: #f8f9fa; padding: 8px 12px; cursor: pointer; font-weight: 500; border-radius: 3px 3px 0 0;">${title.trim()}</summary><div style="padding: 12px;">${content.trim()}</div></details>`;
     });
 
-    // 아웃라이너 영역 처리
-    html = html.replace(/\{\{\{outline\n([\s\S]*?)\n\}\}\}/g, (_, content) => {
-      const lines = content.split('\n').filter((line: string) => line.trim());
+    // 아웃라이너 영역 처리 (중첩 방지)
+    html = html.replace(/\{\{\{outline\n([\s\S]*?)\n\}\}\}/g, (match, content) => {
+      // 중첩된 {{{outline을 방지
+      if (content.includes('{{{outline')) {
+        return match; // 중첩된 경우 원본 그대로 반환
+      }
+      
+      const lines = content.split('\n');
       let outlineHtml = '<div style="background: #f8f9fa; border: 2px solid #007bff; border-radius: 8px; margin: 15px 0; padding: 16px; position: relative;">';
       
       // 아웃라이너 헤더
@@ -652,27 +668,57 @@ Firebase와 연결되었습니다! 🚀`);
       
       outlineHtml += '<div style="margin-top: 8px;">';
       
+      let hasContent = false;
       lines.forEach((line: string) => {
         const trimmed = line.trim();
-        const indent = (line.length - line.trimLeft().length) / 2; // 들여쓰기 레벨
-        const cleanLine = trimmed.replace(/^-\s*/, ''); // - 제거
         
-        outlineHtml += `<div style="
-          margin-left: ${indent * 20}px; 
-          padding: 6px 12px; 
-          margin: 4px 0; 
-          background: white; 
-          border-left: 3px solid ${indent === 0 ? '#007bff' : '#6c757d'};
-          border-radius: 0 4px 4px 0;
-          font-size: ${indent === 0 ? '14px' : '13px'};
-          font-weight: ${indent === 0 ? '500' : '400'};
-          color: ${indent === 0 ? '#212529' : '#495057'};
-          box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-        ">
-          <span style="color: #007bff; margin-right: 8px;">•</span>
-          ${cleanLine}
-        </div>`;
+        // 빈 라인이거나 - 만 있는 라인 무시
+        if (!trimmed || trimmed === '-') {
+          return;
+        }
+        
+        // - 로 시작하는 라인만 처리
+        if (trimmed.startsWith('-')) {
+          hasContent = true;
+          const indent = Math.max(0, (line.length - line.trimLeft().length) / 2);
+          const cleanLine = trimmed.replace(/^-\s*/, '').trim();
+          
+          if (cleanLine) {
+            outlineHtml += `<div style="
+              margin-left: ${indent * 20}px; 
+              padding: 6px 12px; 
+              margin: 4px 0; 
+              background: white; 
+              border-left: 3px solid ${indent === 0 ? '#007bff' : '#6c757d'};
+              border-radius: 0 4px 4px 0;
+              font-size: ${indent === 0 ? '14px' : '13px'};
+              font-weight: ${indent === 0 ? '500' : '400'};
+              color: ${indent === 0 ? '#212529' : '#495057'};
+              box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            ">
+              <span style="color: #007bff; margin-right: 8px;">•</span>
+              ${cleanLine}
+            </div>`;
+          }
+        }
       });
+      
+      // 내용이 없으면 빈 상태 메시지 표시
+      if (!hasContent) {
+        outlineHtml += `<div style="
+          padding: 16px; 
+          text-align: center; 
+          color: #6c757d; 
+          font-size: 12px; 
+          font-style: italic;
+          background: white;
+          border-radius: 4px;
+        ">
+          아웃라인 내용을 입력하세요.<br>
+          - 항목1<br>
+          &nbsp;&nbsp;- 하위항목
+        </div>`;
+      }
       
       outlineHtml += '</div></div>';
       return outlineHtml;
