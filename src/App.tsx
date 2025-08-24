@@ -67,15 +67,18 @@ function App() {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [isMobile, isSidebarVisible]);
 
-  // 헤더의 새 문서 버튼 이벤트 처리
+  // 헤더의 새 문서 버튼을 위한 전역 함수 등록
   React.useEffect(() => {
-    const handleNewDocumentEvent = () => {
-      console.log('새 문서 이벤트 수신됨');
-      setIsCreating(true);
+    // @ts-ignore - 전역 함수 등록
+    window.setIsCreating = (value: boolean) => {
+      console.log('전역 setIsCreating 호출됨:', value);
+      setIsCreating(value);
     };
     
-    window.addEventListener('createNewDocument', handleNewDocumentEvent as EventListener);
-    return () => window.removeEventListener('createNewDocument', handleNewDocumentEvent as EventListener);
+    return () => {
+      // @ts-ignore
+      delete window.setIsCreating;
+    };
   }, []);
 
   // Undo/Redo 상태 관리
