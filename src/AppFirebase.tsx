@@ -69,6 +69,7 @@ Firebase와 연결되었습니다! 🚀`);
   const [newCategoryColor, setNewCategoryColor] = useState('#6c757d');
   const [editingCategoryId, setEditingCategoryId] = useState<string | null>(null);
   const [editingCategoryName, setEditingCategoryName] = useState('');
+  const [categoryMenuOpen, setCategoryMenuOpen] = useState<string | null>(null);
 
   const toggleSidebar = () => {
     setIsSidebarVisible(!isSidebarVisible);
@@ -222,6 +223,7 @@ Firebase와 연결되었습니다! 🚀`);
   const handleStartEditCategory = (categoryId: string, currentName: string) => {
     setEditingCategoryId(categoryId);
     setEditingCategoryName(currentName);
+    setCategoryMenuOpen(null);
   };
 
   // 카테고리 이름 수정 취소
@@ -706,7 +708,6 @@ Firebase와 연결되었습니다! 🚀`);
                         />
                         <span
                           onClick={() => setSelectedCategory(category.id)}
-                          onDoubleClick={() => handleStartEditCategory(category.id, category.name)}
                           style={{
                             flex: 1,
                             cursor: 'pointer',
@@ -716,90 +717,152 @@ Firebase와 연결되었습니다! 🚀`);
                           }}
                           onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#f8f9fa'}
                           onMouseLeave={(e) => e.currentTarget.style.backgroundColor = selectedCategory === category.id ? '#e3f2fd' : 'transparent'}
-                          title="클릭하여 선택, 더블클릭하여 이름 수정"
+                          title="클릭하여 선택"
                         >
                           {category.name} ({categoryDocs.length})
                         </span>
                       </div>
                     )}
                     
-                    {/* 순서 이동 및 삭제 버튼 */}
+                    {/* 3점 메뉴 버튼 */}
                     {!isEditing && (
-                      <div style={{
-                        position: 'absolute',
-                        right: '5px',
-                        top: '50%',
-                        transform: 'translateY(-50%)',
-                        display: 'flex',
-                        flexDirection: 'column',
-                        gap: '1px'
-                      }}>
+                      <div style={{ position: 'relative' }}>
                         <button
                           onClick={(e) => {
                             e.stopPropagation();
-                            moveCategoryUp(category.id);
+                            setCategoryMenuOpen(categoryMenuOpen === category.id ? null : category.id);
                           }}
                           style={{
+                            position: 'absolute',
+                            right: '5px',
+                            top: '50%',
+                            transform: 'translateY(-50%)',
                             background: 'none',
                             border: 'none',
                             color: '#6c757d',
                             cursor: 'pointer',
-                            fontSize: '10px',
+                            fontSize: '14px',
                             opacity: 0.7,
-                            padding: '0',
-                            lineHeight: '1',
-                            height: '12px'
+                            padding: '4px',
+                            borderRadius: '3px',
+                            lineHeight: '1'
                           }}
-                          title="위로 이동"
+                          title="카테고리 메뉴"
+                          onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#f8f9fa'}
+                          onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
                         >
-                          ▲
+                          ⋮
                         </button>
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            moveCategoryDown(category.id);
-                          }}
-                          style={{
-                            background: 'none',
-                            border: 'none',
-                            color: '#6c757d',
-                            cursor: 'pointer',
-                            fontSize: '10px',
-                            opacity: 0.7,
-                            padding: '0',
-                            lineHeight: '1',
-                            height: '12px'
-                          }}
-                          title="아래로 이동"
-                        >
-                          ▼
-                        </button>
+                        
+                        {/* 드롭다운 메뉴 */}
+                        {categoryMenuOpen === category.id && (
+                          <div
+                            style={{
+                              position: 'absolute',
+                              right: '0',
+                              top: '100%',
+                              background: 'white',
+                              border: '1px solid #dee2e6',
+                              borderRadius: '4px',
+                              boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+                              zIndex: 1000,
+                              minWidth: '120px',
+                              padding: '4px 0'
+                            }}
+                          >
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleStartEditCategory(category.id, category.name);
+                                setCategoryMenuOpen(null);
+                              }}
+                              style={{
+                                width: '100%',
+                                padding: '6px 12px',
+                                background: 'none',
+                                border: 'none',
+                                textAlign: 'left',
+                                cursor: 'pointer',
+                                fontSize: '12px',
+                                color: '#495057'
+                              }}
+                              onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#f8f9fa'}
+                              onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+                            >
+                              ✏️ 이름 수정
+                            </button>
+                            <hr style={{ margin: '4px 0', border: 'none', borderTop: '1px solid #dee2e6' }} />
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                moveCategoryUp(category.id);
+                                setCategoryMenuOpen(null);
+                              }}
+                              style={{
+                                width: '100%',
+                                padding: '6px 12px',
+                                background: 'none',
+                                border: 'none',
+                                textAlign: 'left',
+                                cursor: 'pointer',
+                                fontSize: '12px',
+                                color: '#495057'
+                              }}
+                              onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#f8f9fa'}
+                              onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+                            >
+                              ▲ 위로 이동
+                            </button>
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                moveCategoryDown(category.id);
+                                setCategoryMenuOpen(null);
+                              }}
+                              style={{
+                                width: '100%',
+                                padding: '6px 12px',
+                                background: 'none',
+                                border: 'none',
+                                textAlign: 'left',
+                                cursor: 'pointer',
+                                fontSize: '12px',
+                                color: '#495057'
+                              }}
+                              onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#f8f9fa'}
+                              onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+                            >
+                              ▼ 아래로 이동
+                            </button>
+                            {category.id !== 'general' && (
+                              <>
+                                <hr style={{ margin: '4px 0', border: 'none', borderTop: '1px solid #dee2e6' }} />
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleDeleteCategory(category.id);
+                                    setCategoryMenuOpen(null);
+                                  }}
+                                  style={{
+                                    width: '100%',
+                                    padding: '6px 12px',
+                                    background: 'none',
+                                    border: 'none',
+                                    textAlign: 'left',
+                                    cursor: 'pointer',
+                                    fontSize: '12px',
+                                    color: '#dc3545'
+                                  }}
+                                  onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#f8f9fa'}
+                                  onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+                                >
+                                  🗑️ 삭제
+                                </button>
+                              </>
+                            )}
+                          </div>
+                        )}
                       </div>
-                    )}
-                    
-                    {/* 삭제 버튼 */}
-                    {!isEditing && category.id !== 'general' && (
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleDeleteCategory(category.id);
-                        }}
-                        style={{
-                          position: 'absolute',
-                          right: '30px',
-                          top: '50%',
-                          transform: 'translateY(-50%)',
-                          background: 'none',
-                          border: 'none',
-                          color: '#dc3545',
-                          cursor: 'pointer',
-                          fontSize: '12px',
-                          opacity: 0.7
-                        }}
-                        title="카테고리 삭제"
-                      >
-                        🗑️
-                      </button>
                     )}
                   </div>
 
