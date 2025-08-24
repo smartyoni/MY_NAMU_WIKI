@@ -124,14 +124,15 @@ Firebase와 연결되었습니다! 🚀`);
       const newContent = `== ${newDocTitle} ==\n\n새 문서입니다. 내용을 작성해주세요.`;
       const id = await createDocument(newDocTitle, newContent);
       
-      // 문서 생성 후 카테고리 정보 업데이트
-      await updateDocument(id, { category: newDocCategory });
+      // 선택된 카테고리 또는 newDocCategory로 문서 생성
+      const targetCategory = selectedCategory && selectedCategory !== 'all' ? selectedCategory : newDocCategory;
+      await updateDocument(id, { category: targetCategory });
       
       const newDoc = {
         id,
         title: newDocTitle,
         content: newContent,
-        category: newDocCategory,
+        category: targetCategory,
         createdAt: new Date(),
         updatedAt: new Date(),
         userId: 'default-user'
@@ -143,6 +144,11 @@ Firebase와 연결되었습니다! 🚀`);
       setNewDocCategory('general');
       setIsCreating(false);
       setIsEditMode(true);
+      
+      // 생성된 문서의 카테고리를 자동으로 펼치기
+      if (targetCategory !== 'all') {
+        setExpandedCategories(prev => new Set([...prev, targetCategory]));
+      }
       
       // 히스토리 초기화
       setHistory([newContent]);
@@ -642,21 +648,23 @@ Firebase와 연결되었습니다! 🚀`);
                     ) : (
                       // 카테고리 일반 표시 모드
                       <div
-                        onClick={() => toggleCategoryExpansion(category.id)}
                         style={{
                           padding: '6px 10px',
                           margin: '2px 0',
                           borderRadius: '4px',
                           cursor: 'pointer',
                           fontSize: '13px',
-                          backgroundColor: 'transparent',
-                          border: '1px solid transparent',
+                          backgroundColor: selectedCategory === category.id ? '#e3f2fd' : 'transparent',
+                          border: selectedCategory === category.id ? '2px solid #2196f3' : '1px solid transparent',
                           display: 'flex',
                           alignItems: 'center',
                           gap: '8px'
                         }}
                       >
-                        <span style={{ fontSize: '12px', width: '12px' }}>
+                        <span 
+                          onClick={() => toggleCategoryExpansion(category.id)}
+                          style={{ fontSize: '12px', width: '12px', cursor: 'pointer' }}
+                        >
                           {isExpanded ? '▼' : '▶'}
                         </span>
                         <div 
@@ -668,10 +676,8 @@ Firebase와 연결되었습니다! 🚀`);
                           }}
                         />
                         <span
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleStartEditCategory(category.id, category.name);
-                          }}
+                          onClick={() => setSelectedCategory(category.id)}
+                          onDoubleClick={() => handleStartEditCategory(category.id, category.name)}
                           style={{
                             flex: 1,
                             cursor: 'pointer',
@@ -680,8 +686,8 @@ Firebase와 연결되었습니다! 🚀`);
                             transition: 'background-color 0.2s'
                           }}
                           onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#f8f9fa'}
-                          onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
-                          title="이름을 클릭하여 수정"
+                          onMouseLeave={(e) => e.currentTarget.style.backgroundColor = selectedCategory === category.id ? '#e3f2fd' : 'transparent'}
+                          title="클릭하여 선택, 더블클릭하여 이름 수정"
                         >
                           {category.name} ({categoryDocs.length})
                         </span>
@@ -751,6 +757,30 @@ Firebase와 연결되었습니다! 🚀`);
 
           {isCreating ? (
             <div>
+              {/* 선택된 카테고리 표시 */}
+              {selectedCategory && selectedCategory !== 'all' && (
+                <div style={{ 
+                  marginBottom: '8px', 
+                  padding: '6px 10px', 
+                  background: '#e3f2fd', 
+                  borderRadius: '4px',
+                  border: '1px solid #2196f3',
+                  fontSize: '12px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px'
+                }}>
+                  <div 
+                    style={{ 
+                      width: '10px', 
+                      height: '10px', 
+                      borderRadius: '50%', 
+                      backgroundColor: categories.find(cat => cat.id === selectedCategory)?.color || '#6c757d'
+                    }}
+                  />
+                  선택된 카테고리: {categories.find(cat => cat.id === selectedCategory)?.name || '일반'}
+                </div>
+              )}
               <input
                 type="text"
                 value={newDocTitle}
@@ -767,24 +797,27 @@ Firebase와 연결되었습니다! 🚀`);
                 className="new-doc-input"
                 autoFocus
               />
-              <select
-                value={newDocCategory}
-                onChange={(e) => setNewDocCategory(e.target.value)}
-                style={{
-                  width: '100%',
-                  padding: '8px 12px',
-                  border: '1px solid #dee2e6',
-                  borderRadius: '4px',
-                  fontSize: '14px',
-                  marginBottom: '8px'
-                }}
-              >
-                {categories.map(category => (
-                  <option key={category.id} value={category.id}>
-                    {category.name}
-                  </option>
-                ))}
-              </select>
+              {/* 카테고리를 수동으로 변경하고 싶을 때만 선택 */}
+              {(!selectedCategory || selectedCategory === 'all') && (
+                <select
+                  value={newDocCategory}
+                  onChange={(e) => setNewDocCategory(e.target.value)}
+                  style={{
+                    width: '100%',
+                    padding: '8px 12px',
+                    border: '1px solid #dee2e6',
+                    borderRadius: '4px',
+                    fontSize: '14px',
+                    marginBottom: '8px'
+                  }}
+                >
+                  {categories.map(category => (
+                    <option key={category.id} value={category.id}>
+                      {category.name}
+                    </option>
+                  ))}
+                </select>
+              )}
               <div style={{ display: 'flex', gap: '8px' }}>
                 <button
                   onClick={handleCreateDocument}
@@ -905,7 +938,40 @@ Firebase와 연결되었습니다! 🚀`);
                   {/* 편집기 */}
                   <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }} className={`editor-pane ${mobileView !== 'editor' ? 'hidden-mobile' : ''}`}>
                     <div className="editor-header">
-                      <span style={{ fontSize: '12px', color: '#6c757d' }}>편집 모드</span>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                        <span style={{ fontSize: '12px', color: '#6c757d' }}>편집 모드</span>
+                        {/* 카테고리 선택 드롭다운 */}
+                        {currentDoc && (
+                          <select
+                            value={currentDoc.category || 'general'}
+                            onChange={async (e) => {
+                              const newCategory = e.target.value;
+                              try {
+                                await updateDocument(currentDoc.id, { category: newCategory });
+                                const updatedDoc = { ...currentDoc, category: newCategory };
+                                setCurrentDoc(updatedDoc);
+                                localStorage.setItem('current-document', JSON.stringify(updatedDoc));
+                              } catch (error) {
+                                console.error('Error updating document category:', error);
+                              }
+                            }}
+                            style={{
+                              padding: '4px 8px',
+                              fontSize: '11px',
+                              border: '1px solid #dee2e6',
+                              borderRadius: '3px',
+                              background: 'white'
+                            }}
+                            title="문서 카테고리 변경"
+                          >
+                            {categories.map(category => (
+                              <option key={category.id} value={category.id}>
+                                {category.name}
+                              </option>
+                            ))}
+                          </select>
+                        )}
+                      </div>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                         {isEditingTitle ? (
                           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
@@ -1080,7 +1146,40 @@ Firebase와 연결되었습니다! 🚀`);
               // 읽기 모드
               <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
                 <div className="editor-header">
-                  <span style={{ fontSize: '12px', color: '#6c757d' }}>읽기 모드</span>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                    <span style={{ fontSize: '12px', color: '#6c757d' }}>읽기 모드</span>
+                    {/* 카테고리 선택 드롭다운 */}
+                    {currentDoc && (
+                      <select
+                        value={currentDoc.category || 'general'}
+                        onChange={async (e) => {
+                          const newCategory = e.target.value;
+                          try {
+                            await updateDocument(currentDoc.id, { category: newCategory });
+                            const updatedDoc = { ...currentDoc, category: newCategory };
+                            setCurrentDoc(updatedDoc);
+                            localStorage.setItem('current-document', JSON.stringify(updatedDoc));
+                          } catch (error) {
+                            console.error('Error updating document category:', error);
+                          }
+                        }}
+                        style={{
+                          padding: '4px 8px',
+                          fontSize: '11px',
+                          border: '1px solid #dee2e6',
+                          borderRadius: '3px',
+                          background: 'white'
+                        }}
+                        title="문서 카테고리 변경"
+                      >
+                        {categories.map(category => (
+                          <option key={category.id} value={category.id}>
+                            {category.name}
+                          </option>
+                        ))}
+                      </select>
+                    )}
+                  </div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                     {isEditingTitle ? (
                       <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
