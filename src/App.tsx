@@ -521,17 +521,18 @@ function App() {
           onClick={handleCreateDocument}
           style={{
             position: 'absolute',
-            top: '10px',
-            right: '160px',
-            padding: '8px 16px',
+            top: '15px',
+            right: '140px',
+            padding: '10px 20px',
             background: '#6f42c1',
             color: 'white',
             border: 'none',
-            borderRadius: '4px',
-            fontSize: '14px',
+            borderRadius: '6px',
+            fontSize: '16px',
             cursor: 'pointer',
-            fontWeight: '500',
-            zIndex: 1000
+            fontWeight: '600',
+            zIndex: 9999,
+            boxShadow: '0 2px 8px rgba(111, 66, 193, 0.3)'
           }}
         >
           + 새 문서
