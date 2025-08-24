@@ -508,14 +508,18 @@ function App() {
     return html;
   };
 
+  const handleCreateDocument = () => {
+    console.log('새 문서 생성 함수 호출됨');
+    setIsCreating(true);
+  };
+
+  console.log('App 렌더링 - handleCreateDocument:', typeof handleCreateDocument);
+
   return (
     <div className="app">
       <Header 
         toggleSidebar={() => setIsSidebarVisible(true)} 
-        onCreateDocument={() => {
-          console.log('새 문서 생성 함수 호출됨');
-          setIsCreating(true);
-        }}
+        onCreateDocument={handleCreateDocument}
       />
       <div className="app-body">
         <div 
