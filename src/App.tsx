@@ -513,7 +513,7 @@ function App() {
       <Header toggleSidebar={() => setIsSidebarVisible(true)} />
       <div className="app-body">
         <div 
-          className={`sidebar ${isSidebarVisible ? 'sidebar-visible' : ''}`}
+          className={`sidebar ${(isMobile && isSidebarVisible) || !isMobile ? 'sidebar-visible' : ''}`}
           style={!isMobile ? { width: '250px', background: '#f8f9fa', padding: '20px' } : {}}
         >
           <h3>내 문서 ({documents.length})</h3>
