@@ -288,18 +288,6 @@ Firebase와 연결되었습니다! 🚀`);
     });
   };
 
-  // 선택된 카테고리에 따라 문서 필터링
-  const getFilteredDocuments = () => {
-    if (selectedCategory === 'all') {
-      return documents;
-    }
-    return documents.filter(doc => doc.category === selectedCategory);
-  };
-
-  // 특정 카테고리의 문서들 가져오기
-  const getDocumentsByCategory = (categoryId: string) => {
-    return documents.filter(doc => doc.category === categoryId);
-  };
 
   const handleSelectDocument = (doc: any) => {
     setCurrentDoc(doc);
