@@ -3,7 +3,7 @@ import './Header.css';
 
 interface HeaderProps {
   toggleSidebar: () => void;
-  onCreateDocument: () => void;
+  onCreateDocument?: () => void;
 }
 
 const Header: React.FC<HeaderProps> = ({ toggleSidebar, onCreateDocument }) => {
@@ -47,30 +47,32 @@ const Header: React.FC<HeaderProps> = ({ toggleSidebar, onCreateDocument }) => {
         />
       </div>
       <div className="header-right">
-        <button 
-          onClick={() => {
-            console.log('새 문서 버튼 클릭됨');
-            console.log('onCreateDocument 타입:', typeof onCreateDocument);
-            if (typeof onCreateDocument === 'function') {
-              onCreateDocument();
-            } else {
-              console.error('onCreateDocument가 함수가 아닙니다:', onCreateDocument);
-            }
-          }}
-          style={{
-            marginRight: '15px',
-            padding: '8px 16px',
-            background: '#6f42c1',
-            color: 'white',
-            border: 'none',
-            borderRadius: '4px',
-            fontSize: '14px',
-            cursor: 'pointer',
-            fontWeight: '500'
-          }}
-        >
-          + 새 문서
-        </button>
+        {onCreateDocument && (
+          <button 
+            onClick={() => {
+              console.log('새 문서 버튼 클릭됨');
+              console.log('onCreateDocument 타입:', typeof onCreateDocument);
+              if (typeof onCreateDocument === 'function') {
+                onCreateDocument();
+              } else {
+                console.error('onCreateDocument가 함수가 아닙니다:', onCreateDocument);
+              }
+            }}
+            style={{
+              marginRight: '15px',
+              padding: '8px 16px',
+              background: '#6f42c1',
+              color: 'white',
+              border: 'none',
+              borderRadius: '4px',
+              fontSize: '14px',
+              cursor: 'pointer',
+              fontWeight: '500'
+            }}
+          >
+            + 새 문서
+          </button>
+        )}
         <span 
           className="production-mode"
           style={{

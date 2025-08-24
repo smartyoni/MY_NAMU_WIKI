@@ -515,12 +515,16 @@ function App() {
 
   console.log('App 렌더링 - handleCreateDocument:', typeof handleCreateDocument);
 
+  const headerProps = {
+    toggleSidebar: () => setIsSidebarVisible(true),
+    onCreateDocument: handleCreateDocument
+  };
+  
+  console.log('전달할 headerProps:', headerProps);
+
   return (
     <div className="app">
-      <Header 
-        toggleSidebar={() => setIsSidebarVisible(true)} 
-        onCreateDocument={handleCreateDocument}
-      />
+      <Header {...headerProps} />
       <div className="app-body">
         <div 
           className={`sidebar ${(isMobile && isSidebarVisible) || !isMobile ? 'sidebar-visible' : ''}`}
