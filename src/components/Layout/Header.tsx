@@ -1,7 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import './Header.css';
 
-const Header: React.FC = () => {
+interface HeaderProps {
+  toggleSidebar: () => void;
+}
+
+const Header: React.FC<HeaderProps> = ({ toggleSidebar }) => {
   const [currentTime, setCurrentTime] = useState(new Date());
 
   useEffect(() => {
@@ -28,6 +32,7 @@ const Header: React.FC = () => {
   return (
     <header className="header">
       <div className="header-left">
+        <button onClick={toggleSidebar} className="sidebar-toggle-btn">목록</button>
         <h1 className="logo">Personal Wiki</h1>
         <span className="datetime">{formatDateTime(currentTime)}</span>
       </div>

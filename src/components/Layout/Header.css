@@ -85,3 +85,32 @@
   font-weight: 500;
   box-shadow: 0 2px 4px rgba(39, 174, 96, 0.2);
 }
+
+.sidebar-toggle-btn {
+  display: none; /* Hidden on desktop */
+  padding: 8px 12px;
+  background-color: #34495e;
+  color: white;
+  border: 1px solid #4e6a85;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+}
+
+@media (max-width: 768px) {
+  .sidebar-toggle-btn {
+    display: block; /* Visible on mobile */
+  }
+
+  .header-left .logo {
+    display: none; 
+  }
+
+  .header-left .datetime {
+    display: none;
+  }
+
+  .header {
+    padding: 12px;
+  }
+}

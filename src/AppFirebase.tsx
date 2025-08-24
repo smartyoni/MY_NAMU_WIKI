@@ -47,6 +47,13 @@ Firebase와 연결되었습니다! 🚀`);
     return localStorage.getItem('edit-mode') === 'true';
   });
 
+  const [mobileView, setMobileView] = useState<'editor' | 'preview'>('editor');
+  const [isSidebarVisible, setIsSidebarVisible] = useState(false);
+
+  const toggleSidebar = () => {
+    setIsSidebarVisible(!isSidebarVisible);
+  };
+
   // Undo/Redo 상태 관리
   const [history, setHistory] = useState<string[]>([content]);
   const [historyIndex, setHistoryIndex] = useState(0);
@@ -116,6 +123,10 @@ Firebase와 연결되었습니다! 🚀`);
     // 히스토리 초기화
     setHistory([doc.content]);
     setHistoryIndex(0);
+
+    if (isSidebarVisible) {
+      toggleSidebar();
+    }
   };
 
   const handleEditDocument = () => {
@@ -260,11 +271,8 @@ Firebase와 연결되었습니다! 🚀`);
     html = html.replace(/~~(.+?)~~/g, '<del>$1</del>');
     
     // 접기 블록 처리
-    html = html.replace(/\{\{\{fold:([^|]+)\|([^}]+)\}\}\}/g, (_, title, content) => {
-      return `<details style="border: 1px solid #dee2e6; border-radius: 4px; margin: 10px 0; padding: 0;">
-        <summary style="background: #f8f9fa; padding: 8px 12px; cursor: pointer; font-weight: 500; border-radius: 3px 3px 0 0;">${title.trim()}</summary>
-        <div style="padding: 12px;">${content.trim()}</div>
-      </details>`;
+    html = html.replace(/\{\{\{fold:([^|]+)\|([^}]+)\}\}\}\}/g, (_, title, content) => {
+      return `<details style="border: 1px solid #dee2e6; border-radius: 4px; margin: 10px 0; padding: 0;"><summary style="background: #f8f9fa; padding: 8px 12px; cursor: pointer; font-weight: 500; border-radius: 3px 3px 0 0;">${title.trim()}</summary><div style="padding: 12px;">${content.trim()}</div></details>`;
     });
     
     html = html.replace(/(https?:\/\/[^\s<>"{}|\\^`\[\]]+)/g, '<a href="$1" target="_blank" rel="noopener noreferrer" style="color: #007bff; text-decoration: underline;">$1</a>');
@@ -289,7 +297,7 @@ Firebase와 연결되었습니다! 🚀`);
   if (loading) {
     return (
       <div className="app">
-        <Header />
+        <Header toggleSidebar={toggleSidebar} />
         <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '50vh' }}>
           <div style={{ textAlign: 'center' }}>
             <div>🔥 Firebase 연결 중...</div>
@@ -303,7 +311,7 @@ Firebase와 연결되었습니다! 🚀`);
   if (error) {
     return (
       <div className="app">
-        <Header />
+        <Header toggleSidebar={toggleSidebar} />
         <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '50vh' }}>
           <div style={{ textAlign: 'center', color: '#dc3545' }}>
             <div>❌ 오류 발생</div>
@@ -316,49 +324,27 @@ Firebase와 연결되었습니다! 🚀`);
 
   return (
     <div className="app">
-      <Header />
+      <Header toggleSidebar={toggleSidebar} />
       <div className="app-body">
-        <div style={{ width: '250px', background: '#f8f9fa', padding: '20px' }}>
+        <div className={`sidebar ${isSidebarVisible ? 'sidebar-visible' : ''}`}>
           <h3>내 문서 ({documents.length})</h3>
           
           {documents.length > 0 ? (
             <div style={{ marginBottom: '20px' }}>
               {documents.map((doc) => (
-                <div key={doc.id} style={{ 
-                  marginBottom: '8px', 
-                  display: 'flex', 
-                  alignItems: 'center',
-                  background: currentDoc?.id === doc.id ? '#e3f2fd' : 'transparent',
-                  padding: '8px',
-                  borderRadius: '4px',
-                  border: currentDoc?.id === doc.id ? '1px solid #2196f3' : '1px solid transparent'
-                }}>
+                <div key={doc.id} className="document-item">
                   <div
-                    style={{ 
-                      flex: 1, 
-                      cursor: 'pointer',
-                      fontSize: '14px',
-                      fontWeight: currentDoc?.id === doc.id ? '600' : '400'
-                    }}
+                    className="document-item-title"
                     onClick={() => handleSelectDocument(doc)}
                   >
                     {doc.title}
                   </div>
                   <button
                     onClick={() => handleDeleteDocument(doc.id)}
-                    style={{
-                      marginLeft: '8px',
-                      padding: '2px 6px',
-                      fontSize: '12px',
-                      background: 'none',
-                      border: 'none',
-                      cursor: 'pointer',
-                      borderRadius: '2px',
-                      color: '#dc3545'
-                    }}
+                    className="document-item-delete-btn"
                     title="문서 삭제"
                   >
-                    🗑️
+                    삭제
                   </button>
                 </div>
               ))}
@@ -384,29 +370,13 @@ Firebase와 연결되었습니다! 🚀`);
                   }
                 }}
                 placeholder="문서 제목"
-                style={{
-                  width: '100%',
-                  padding: '8px 12px',
-                  border: '1px solid #dee2e6',
-                  borderRadius: '4px',
-                  fontSize: '14px',
-                  marginBottom: '8px'
-                }}
+                className="new-doc-input"
                 autoFocus
               />
               <div style={{ display: 'flex', gap: '8px' }}>
                 <button
                   onClick={handleCreateDocument}
-                  style={{
-                    flex: 1,
-                    padding: '8px',
-                    background: '#28a745',
-                    color: 'white',
-                    border: 'none',
-                    borderRadius: '4px',
-                    fontSize: '12px',
-                    cursor: 'pointer'
-                  }}
+                  className="new-doc-btn confirm"
                 >
                   생성
                 </button>
@@ -415,38 +385,13 @@ Firebase와 연결되었습니다! 🚀`);
                     setIsCreating(false);
                     setNewDocTitle('');
                   }}
-                  style={{
-                    flex: 1,
-                    padding: '8px',
-                    background: '#6c757d',
-                    color: 'white',
-                    border: 'none',
-                    borderRadius: '4px',
-                    fontSize: '12px',
-                    cursor: 'pointer'
-                  }}
+                  className="new-doc-btn cancel"
                 >
                   취소
                 </button>
               </div>
             </div>
-          ) : (
-            <button
-              onClick={() => setIsCreating(true)}
-              style={{ 
-                width: '100%',
-                padding: '12px', 
-                background: '#28a745', 
-                color: 'white', 
-                border: 'none', 
-                borderRadius: '4px',
-                fontSize: '14px',
-                cursor: 'pointer'
-              }}
-            >
-              + 새 문서
-            </button>
-          )}
+          ) : null}
         </div>
         
         {/* 메인 콘텐츠 영역 */}
@@ -454,159 +399,100 @@ Firebase와 연결되었습니다! 🚀`);
           {currentDoc ? (
             isEditMode ? (
               // 편집 모드
-              <div style={{ flex: 1, display: 'flex' }}>
-                {/* 편집기 */}
-                <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
-                  <div style={{ padding: '12px', background: '#f8f9fa', borderBottom: '1px solid #dee2e6', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <span style={{ fontSize: '12px', color: '#6c757d' }}>편집 모드</span>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                      <div style={{ fontSize: '12px', color: '#28a745' }}>
-                        📄 {currentDoc.title} ☁️ Firebase 연결됨
-                      </div>
-                      <button
-                        onClick={handleSaveAndView}
-                        style={{
-                          padding: '6px 12px',
-                          fontSize: '12px',
-                          background: '#007bff',
-                          color: 'white',
-                          border: 'none',
-                          borderRadius: '3px',
-                          cursor: 'pointer'
-                        }}
-                      >
-                        저장하고 보기
-                      </button>
-                    </div>
-                  </div>
-                  
-                  {/* 위키 문법 버튼 툴바 */}
-                  <div style={{ 
-                    padding: '8px 12px', 
-                    background: '#fff', 
-                    borderBottom: '1px solid #dee2e6', 
-                    display: 'flex', 
-                    gap: '6px', 
-                    flexWrap: 'wrap',
-                    alignItems: 'center'
-                  }}>
-                    <span style={{ fontSize: '11px', color: '#6c757d', marginRight: '8px' }}>실행취소:</span>
-                    <button
-                      onClick={handleUndo}
-                      disabled={historyIndex <= 0}
-                      style={{
-                        ...toolbarButtonStyle,
-                        opacity: historyIndex <= 0 ? 0.5 : 1,
-                        cursor: historyIndex <= 0 ? 'not-allowed' : 'pointer'
-                      }}
-                      title="실행취소 (Ctrl+Z)"
-                    >
-                      ↶
-                    </button>
-                    <button
-                      onClick={handleRedo}
-                      disabled={historyIndex >= history.length - 1}
-                      style={{
-                        ...toolbarButtonStyle,
-                        opacity: historyIndex >= history.length - 1 ? 0.5 : 1,
-                        cursor: historyIndex >= history.length - 1 ? 'not-allowed' : 'pointer'
-                      }}
-                      title="다시실행 (Ctrl+Y)"
-                    >
-                      ↷
-                    </button>
-                    <div style={{ width: '1px', height: '20px', background: '#dee2e6', margin: '0 8px' }}></div>
-                    <span style={{ fontSize: '11px', color: '#6c757d', marginRight: '8px' }}>문법:</span>
-                    <button
-                      onClick={() => insertText('**', '**', '굵은 텍스트')}
-                      style={toolbarButtonStyle}
-                      title="굵게"
-                    >
-                      <b>B</b>
-                    </button>
-                    <button
-                      onClick={() => insertText('*', '*', '기울인 텍스트')}
-                      style={toolbarButtonStyle}
-                      title="기울임"
-                    >
-                      <i>I</i>
-                    </button>
-                    <button
-                      onClick={() => insertText('~~', '~~', '취소선 텍스트')}
-                      style={toolbarButtonStyle}
-                      title="취소선"
-                    >
-                      <s>S</s>
-                    </button>
-                    <button
-                      onClick={() => insertText('== ', ' ==', '제목')}
-                      style={toolbarButtonStyle}
-                      title="제목"
-                    >
-                      H
-                    </button>
-                  </div>
-                  
-                  <textarea
-                    className="editor-textarea"
-                    value={content}
-                    onChange={(e) => handleContentChange(e.target.value)}
-                    onKeyDown={handleKeyDown}
-                    style={{
-                      flex: 1,
-                      padding: '20px',
-                      border: 'none',
-                      outline: 'none',
-                      fontFamily: 'Courier New, monospace',
-                      fontSize: '14px',
-                      lineHeight: '1.6',
-                      resize: 'none'
-                    }}
-                    placeholder="위키 문서를 작성하세요... (텍스트 전용)"
-                  />
+              <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
+                <div className="mobile-view-switcher">
+                  <button onClick={() => setMobileView('editor')} className={mobileView === 'editor' ? 'active' : ''}>편집</button>
+                  <button onClick={() => setMobileView('preview')} className={mobileView === 'preview' ? 'active' : ''}>미리보기</button>
                 </div>
-                
-                {/* 미리보기 */}
-                <div style={{ flex: 1, display: 'flex', flexDirection: 'column', borderLeft: '1px solid #dee2e6' }}>
-                  <div style={{ padding: '12px', background: '#f8f9fa', borderBottom: '1px solid #dee2e6' }}>
-                    <span style={{ fontSize: '12px', color: '#6c757d' }}>미리보기</span>
-                  </div>
-                  <div 
-                    className="preview-content"
-                    style={{
-                      flex: 1,
-                      overflow: 'auto',
-                      overflowY: 'scroll',
-                      lineHeight: '1.6',
-                      fontSize: '14px',
-                      maxHeight: 'calc(100vh - 140px)',
-                      position: 'relative'
-                    }}
-                  >
-                    <div style={{ padding: '20px', paddingBottom: '60px' }}>
-                      <div dangerouslySetInnerHTML={{ __html: parseWikiText(content) }} />
-                      
-                      <div style={{ 
-                        textAlign: 'center', 
-                        marginTop: '30px',
-                        paddingTop: '15px',
-                        borderTop: '1px solid #dee2e6'
-                      }}>
+                <div style={{ flex: 1, display: 'flex' }} className="editor-preview-container">
+                  {/* 편집기 */}
+                  <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }} className={`editor-pane ${mobileView !== 'editor' ? 'hidden-mobile' : ''}`}>
+                    <div className="editor-header">
+                      <span style={{ fontSize: '12px', color: '#6c757d' }}>편집 모드</span>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                        <div className="editor-header-title">
+                          {currentDoc.title}
+                        </div>
                         <button
-                          onClick={scrollToTop}
-                          style={{
-                            padding: '8px 16px',
-                            fontSize: '12px',
-                            background: '#6c757d',
-                            color: 'white',
-                            border: 'none',
-                            borderRadius: '15px',
-                            cursor: 'pointer',
-                            fontWeight: '500'
-                          }}
+                          onClick={handleSaveAndView}
+                          className="editor-header-btn"
                         >
-                          ⬆️ 위로
+                          저장하고 보기
                         </button>
+                      </div>
+                    </div>
+                    
+                    {/* 위키 문법 버튼 툴바 */}
+                    <div className="editor-toolbar">
+                      <span style={{ fontSize: '11px', color: '#6c757d', marginRight: '8px' }}>실행취소:</span>
+                      <button
+                        onClick={handleUndo}
+                        disabled={historyIndex <= 0}
+                        style={{...toolbarButtonStyle, opacity: historyIndex <= 0 ? 0.5 : 1, cursor: historyIndex <= 0 ? 'not-allowed' : 'pointer'}}
+                        title="실행취소 (Ctrl+Z)"
+                      >
+                        ↶
+                      </button>
+                      <button
+                        onClick={handleRedo}
+                        disabled={historyIndex >= history.length - 1}
+                        style={{...toolbarButtonStyle, opacity: historyIndex >= history.length - 1 ? 0.5 : 1, cursor: historyIndex >= history.length - 1 ? 'not-allowed' : 'pointer'}}
+                        title="다시실행 (Ctrl+Y)"
+                      >
+                        ↷
+                      </button>
+                      <div style={{ width: '1px', height: '20px', background: '#dee2e6', margin: '0 8px' }}></div>
+                      <span style={{ fontSize: '11px', color: '#6c757d', marginRight: '8px' }}>문법:</span>
+                      <button onClick={() => insertText('**', '**', '굵은 텍스트')} style={toolbarButtonStyle} title="굵게"><b>B</b></button>
+                      <button onClick={() => insertText('*', '*', '기울인 텍스트')} style={toolbarButtonStyle} title="기울임"><i>I</i></button>
+                      <button onClick={() => insertText('~~', '~~', '취소선 텍스트')} style={toolbarButtonStyle} title="취소선"><s>S</s></button>
+                      <button onClick={() => insertText('== ', ' ==', '제목')} style={toolbarButtonStyle} title="제목">H</button>
+                    </div>
+                    
+                    <textarea
+                      className="editor-textarea"
+                      value={content}
+                      onChange={(e) => handleContentChange(e.target.value)}
+                      onKeyDown={handleKeyDown}
+                      style={{
+                        flex: 1,
+                        padding: '20px',
+                        border: 'none',
+                        outline: 'none',
+                        fontFamily: 'Courier New, monospace',
+                        fontSize: '14px',
+                        lineHeight: '1.6',
+                        resize: 'none'
+                      }}
+                      placeholder="위키 문서를 작성하세요... (텍스트 전용)"
+                    />
+                  </div>
+                  
+                  {/* 미리보기 */}
+                  <div style={{ flex: 1, display: 'flex', flexDirection: 'column', borderLeft: '1px solid #dee2e6' }} className={`preview-pane ${mobileView !== 'preview' ? 'hidden-mobile' : ''}`}>
+                    <div className="preview-header">
+                      <span style={{ fontSize: '12px', color: '#6c757d' }}>미리보기</span>
+                    </div>
+                    <div 
+                      className="preview-content"
+                      style={{
+                        flex: 1,
+                        overflow: 'auto',
+                        overflowY: 'scroll',
+                        lineHeight: '1.6',
+                        fontSize: '14px',
+                        maxHeight: 'calc(100vh - 140px)',
+                        position: 'relative'
+                      }}
+                    >
+                      <div style={{ padding: '20px', paddingBottom: '60px' }}>
+                        <div dangerouslySetInnerHTML={{ __html: parseWikiText(content) }} />
+                        
+                        <div style={{ textAlign: 'center', marginTop: '30px', paddingTop: '15px', borderTop: '1px solid #dee2e6'}}>
+                          <button onClick={scrollToTop} className="scroll-top-btn">
+                            ⬆️ 위로
+                          </button>
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -615,23 +501,15 @@ Firebase와 연결되었습니다! 🚀`);
             ) : (
               // 읽기 모드
               <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
-                <div style={{ padding: '12px', background: '#f8f9fa', borderBottom: '1px solid #dee2e6', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <div className="editor-header">
                   <span style={{ fontSize: '12px', color: '#6c757d' }}>읽기 모드</span>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                    <div style={{ fontSize: '12px', color: '#28a745' }}>
-                      📄 {currentDoc.title} ☁️ Firebase 연결됨
+                    <div className="editor-header-title">
+                      {currentDoc.title}
                     </div>
                     <button
                       onClick={handleEditDocument}
-                      style={{
-                        padding: '6px 12px',
-                        fontSize: '12px',
-                        background: '#ffc107',
-                        color: 'black',
-                        border: 'none',
-                        borderRadius: '3px',
-                        cursor: 'pointer'
-                      }}
+                      className="editor-header-btn edit"
                     >
                       편집
                     </button>
@@ -652,25 +530,8 @@ Firebase와 연결되었습니다! 🚀`);
                   <div style={{ padding: '20px', paddingBottom: '60px' }}>
                     <div dangerouslySetInnerHTML={{ __html: parseWikiText(currentDoc.content) }} />
                     
-                    <div style={{ 
-                      textAlign: 'center', 
-                      marginTop: '30px',
-                      paddingTop: '15px',
-                      borderTop: '1px solid #dee2e6'
-                    }}>
-                      <button
-                        onClick={scrollToTop}
-                        style={{
-                          padding: '8px 16px',
-                          fontSize: '12px',
-                          background: '#6c757d',
-                          color: 'white',
-                          border: 'none',
-                          borderRadius: '15px',
-                          cursor: 'pointer',
-                          fontWeight: '500'
-                        }}
-                      >
+                    <div style={{ textAlign: 'center', marginTop: '30px', paddingTop: '15px', borderTop: '1px solid #dee2e6'}}>
+                      <button onClick={scrollToTop} className="scroll-top-btn">
                         ⬆️ 위로
                       </button>
                     </div>
@@ -702,6 +563,9 @@ Firebase와 연결되었습니다! 🚀`);
           )}
         </div>
       </div>
+      <button onClick={() => { setIsCreating(true); if (!isSidebarVisible) { toggleSidebar(); } }} className="fab">
+        새 문서
+      </button>
     </div>
   );
 }
