@@ -1,7 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, type ReactNode } from 'react';
 import { collection, doc, setDoc, deleteDoc, onSnapshot, query, orderBy } from 'firebase/firestore';
-import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
-import { db, storage } from '../firebase';
+import { db } from '../firebase';
 
 interface WikiDocument {
   id: string;
@@ -27,8 +26,6 @@ interface DocumentContextType {
   selectDocument: (document: WikiDocument | null) => void;
   searchDocuments: (searchTerm: string) => Promise<WikiDocument[]>;
   
-  // 이미지 관리
-  uploadImage: (file: File) => Promise<string>;
   
   // 유틸리티
   getDocumentByTitle: (title: string) => WikiDocument | null;
@@ -172,19 +169,6 @@ export const DocumentProvider: React.FC<DocumentProviderProps> = ({
     );
   };
 
-  const uploadImage = async (file: File): Promise<string> => {
-    try {
-      const timestamp = Date.now();
-      const imageRef = ref(storage, `images/${userId}/${timestamp}_${file.name}`);
-      const snapshot = await uploadBytes(imageRef, file);
-      const downloadURL = await getDownloadURL(snapshot.ref);
-      return downloadURL;
-    } catch (err) {
-      console.error('Error uploading image:', err);
-      setError('이미지 업로드 중 오류가 발생했습니다.');
-      throw err;
-    }
-  };
 
   const getDocumentByTitle = (title: string): WikiDocument | null => {
     return documents.find(doc => doc.title === title) || null;
@@ -200,7 +184,6 @@ export const DocumentProvider: React.FC<DocumentProviderProps> = ({
     deleteDocument,
     selectDocument,
     searchDocuments,
-    uploadImage,
     getDocumentByTitle
   };
 
