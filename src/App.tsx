@@ -67,6 +67,16 @@ function App() {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [isMobile, isSidebarVisible]);
 
+  // 헤더의 새 문서 버튼 이벤트 처리
+  React.useEffect(() => {
+    const handleNewDocumentEvent = () => {
+      setIsCreating(true);
+    };
+    
+    window.addEventListener('createNewDocument', handleNewDocumentEvent);
+    return () => window.removeEventListener('createNewDocument', handleNewDocumentEvent);
+  }, []);
+
   // Undo/Redo 상태 관리
   const [history, setHistory] = useState<string[]>([content]);
   const [historyIndex, setHistoryIndex] = useState(0);
@@ -508,36 +518,9 @@ function App() {
     return html;
   };
 
-  const handleNewDocumentClick = () => {
-    setIsCreating(true);
-  };
-
   return (
     <div className="app">
-      <div style={{ position: 'relative' }}>
-        <Header toggleSidebar={() => setIsSidebarVisible(true)} />
-        {/* 새 문서 버튼을 헤더 위에 오버레이 */}
-        <button
-          onClick={handleNewDocumentClick}
-          style={{
-            position: 'absolute',
-            top: '15px',
-            right: '140px',
-            padding: '10px 20px',
-            background: '#6f42c1',
-            color: 'white',
-            border: 'none',
-            borderRadius: '6px',
-            fontSize: '16px',
-            cursor: 'pointer',
-            fontWeight: '600',
-            zIndex: 9999,
-            boxShadow: '0 2px 8px rgba(111, 66, 193, 0.3)'
-          }}
-        >
-          + 새 문서
-        </button>
-      </div>
+      <Header toggleSidebar={() => setIsSidebarVisible(true)} />
       <div className="app-body">
         <div 
           className={`sidebar ${(isMobile && isSidebarVisible) || !isMobile ? 'sidebar-visible' : ''}`}

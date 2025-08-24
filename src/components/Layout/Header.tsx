@@ -5,6 +5,12 @@ interface HeaderProps {
   toggleSidebar: () => void;
 }
 
+// 전역 함수로 새 문서 버튼 이벤트 처리
+const handleGlobalNewDocument = () => {
+  const event = new CustomEvent('createNewDocument');
+  window.dispatchEvent(event);
+};
+
 const Header: React.FC<HeaderProps> = ({ toggleSidebar }) => {
   const [currentTime, setCurrentTime] = useState(new Date());
 
@@ -44,6 +50,22 @@ const Header: React.FC<HeaderProps> = ({ toggleSidebar }) => {
         />
       </div>
       <div className="header-right">
+        <button
+          onClick={handleGlobalNewDocument}
+          style={{
+            marginRight: '15px',
+            padding: '8px 16px',
+            background: '#6f42c1',
+            color: 'white',
+            border: 'none',
+            borderRadius: '4px',
+            fontSize: '14px',
+            cursor: 'pointer',
+            fontWeight: '500'
+          }}
+        >
+          + 새 문서
+        </button>
         <span className="production-mode">완성 버전</span>
       </div>
     </header>
