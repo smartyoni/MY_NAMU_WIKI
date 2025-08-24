@@ -42,6 +42,7 @@ Firebase와 연결되었습니다! 🚀`);
   });
   const [isCreating, setIsCreating] = useState(false);
   const [newDocTitle, setNewDocTitle] = useState('');
+  const [newDocCategory, setNewDocCategory] = useState('general');
   const [isEditMode, setIsEditMode] = useState(() => {
     // 새로고침 후에도 편집 모드 상태 유지
     return localStorage.getItem('edit-mode') === 'true';
@@ -51,6 +52,20 @@ Firebase와 연결되었습니다! 🚀`);
   const [isSidebarVisible, setIsSidebarVisible] = useState(false);
   const [isEditingTitle, setIsEditingTitle] = useState(false);
   const [editingTitle, setEditingTitle] = useState('');
+  
+  // 카테고리/폴더 관리 상태
+  const [categories, setCategories] = useState<Array<{id: string, name: string, color: string}>>(() => {
+    const saved = localStorage.getItem('wiki-categories');
+    return saved ? JSON.parse(saved) : [
+      { id: 'general', name: '일반', color: '#6c757d' },
+      { id: 'personal', name: '개인', color: '#28a745' },
+      { id: 'work', name: '업무', color: '#007bff' }
+    ];
+  });
+  const [selectedCategory, setSelectedCategory] = useState<string>('all'); // 'all' 또는 카테고리 ID
+  const [isCreatingCategory, setIsCreatingCategory] = useState(false);
+  const [newCategoryName, setNewCategoryName] = useState('');
+  const [newCategoryColor, setNewCategoryColor] = useState('#6c757d');
 
   const toggleSidebar = () => {
     setIsSidebarVisible(!isSidebarVisible);
@@ -79,6 +94,11 @@ Firebase와 연결되었습니다! 🚀`);
     };
   }, []);
 
+  // 카테고리 변경시 localStorage에 저장
+  React.useEffect(() => {
+    localStorage.setItem('wiki-categories', JSON.stringify(categories));
+  }, [categories]);
+
   // 툴바 버튼 스타일
   const toolbarButtonStyle = {
     padding: '4px 8px',
@@ -99,12 +119,13 @@ Firebase와 연결되었습니다! 🚀`);
     
     try {
       const newContent = `== ${newDocTitle} ==\n\n새 문서입니다. 내용을 작성해주세요.`;
-      const id = await createDocument(newDocTitle, newContent);
+      const id = await createDocument(newDocTitle, newContent, { categoryId: newDocCategory });
       
       const newDoc = {
         id,
         title: newDocTitle,
         content: newContent,
+        categoryId: newDocCategory,
         createdAt: new Date(),
         updatedAt: new Date(),
         userId: 'default-user'
@@ -113,6 +134,7 @@ Firebase와 연결되었습니다! 🚀`);
       setCurrentDoc(newDoc);
       setContent(newContent);
       setNewDocTitle('');
+      setNewDocCategory('general');
       setIsCreating(false);
       setIsEditMode(true);
       
@@ -166,6 +188,48 @@ Firebase와 연결되었습니다! 🚀`);
     } else if (e.key === 'Escape') {
       handleCancelEditTitle();
     }
+  };
+
+  // 카테고리/폴더 관리 함수들
+  const handleCreateCategory = () => {
+    if (!newCategoryName.trim()) return;
+    
+    const newCategory = {
+      id: `category-${Date.now()}`,
+      name: newCategoryName.trim(),
+      color: newCategoryColor
+    };
+    
+    setCategories(prev => [...prev, newCategory]);
+    setNewCategoryName('');
+    setNewCategoryColor('#6c757d');
+    setIsCreatingCategory(false);
+  };
+
+  const handleDeleteCategory = (categoryId: string) => {
+    if (categoryId === 'general') {
+      alert('기본 카테고리는 삭제할 수 없습니다.');
+      return;
+    }
+    
+    if (window.confirm('이 카테고리를 삭제하시겠습니까? 카테고리 내 모든 문서는 "일반" 카테고리로 이동됩니다.')) {
+      setCategories(prev => prev.filter(cat => cat.id !== categoryId));
+      
+      // 해당 카테고리의 문서들을 "일반" 카테고리로 이동
+      // Firebase에서 문서 업데이트 필요 (나중에 구현)
+      
+      if (selectedCategory === categoryId) {
+        setSelectedCategory('all');
+      }
+    }
+  };
+
+  // 선택된 카테고리에 따라 문서 필터링
+  const getFilteredDocuments = () => {
+    if (selectedCategory === 'all') {
+      return documents;
+    }
+    return documents.filter(doc => doc.categoryId === selectedCategory);
   };
 
   const handleSelectDocument = (doc: any) => {
@@ -385,11 +449,99 @@ Firebase와 연결되었습니다! 🚀`);
       <Header toggleSidebar={toggleSidebar} />
       <div className="app-body">
         <div className={`sidebar ${isSidebarVisible ? 'sidebar-visible' : ''}`}>
-          <h3>내 문서 ({documents.length})</h3>
+          <h3>📁 문서 폴더</h3>
           
-          {documents.length > 0 ? (
-            <div style={{ marginBottom: '20px' }}>
-              {documents.map((doc) => (
+          {/* 카테고리 필터 */}
+          <div style={{ marginBottom: '15px' }}>
+            <div
+              onClick={() => setSelectedCategory('all')}
+              style={{
+                padding: '6px 10px',
+                margin: '2px 0',
+                borderRadius: '4px',
+                cursor: 'pointer',
+                fontSize: '13px',
+                backgroundColor: selectedCategory === 'all' ? '#e3f2fd' : 'transparent',
+                border: selectedCategory === 'all' ? '1px solid #2196f3' : '1px solid transparent',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px'
+              }}
+            >
+              📂 모든 문서 ({documents.length})
+            </div>
+            
+            {categories.map(category => {
+              const categoryDocs = documents.filter(doc => doc.categoryId === category.id);
+              return (
+                <div key={category.id} style={{ position: 'relative' }}>
+                  <div
+                    onClick={() => setSelectedCategory(category.id)}
+                    style={{
+                      padding: '6px 10px',
+                      margin: '2px 0',
+                      borderRadius: '4px',
+                      cursor: 'pointer',
+                      fontSize: '13px',
+                      backgroundColor: selectedCategory === category.id ? '#e3f2fd' : 'transparent',
+                      border: selectedCategory === category.id ? '1px solid #2196f3' : '1px solid transparent',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '8px'
+                    }}
+                  >
+                    <div 
+                      style={{ 
+                        width: '12px', 
+                        height: '12px', 
+                        borderRadius: '50%', 
+                        backgroundColor: category.color 
+                      }}
+                    />
+                    {category.name} ({categoryDocs.length})
+                  </div>
+                  {category.id !== 'general' && (
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleDeleteCategory(category.id);
+                      }}
+                      style={{
+                        position: 'absolute',
+                        right: '5px',
+                        top: '50%',
+                        transform: 'translateY(-50%)',
+                        background: 'none',
+                        border: 'none',
+                        color: '#dc3545',
+                        cursor: 'pointer',
+                        fontSize: '12px',
+                        opacity: 0.7
+                      }}
+                      title="카테고리 삭제"
+                    >
+                      ×
+                    </button>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+
+          {/* 선택된 카테고리의 문서들 */}
+          {getFilteredDocuments().length > 0 ? (
+            <div style={{ marginBottom: '15px' }}>
+              <h4 style={{ 
+                fontSize: '12px', 
+                color: '#6c757d', 
+                margin: '0 0 8px 0',
+                textTransform: 'uppercase' 
+              }}>
+                {selectedCategory === 'all' 
+                  ? '모든 문서' 
+                  : categories.find(c => c.id === selectedCategory)?.name || '문서'}
+              </h4>
+              {getFilteredDocuments().map((doc) => (
                 <div 
                   key={doc.id} 
                   className="document-item"
@@ -401,9 +553,10 @@ Firebase와 연결되었습니다! 🚀`);
               ))}
             </div>
           ) : (
-            <p style={{ color: '#6c757d', fontSize: '14px', fontStyle: 'italic', marginBottom: '20px' }}>
-              아직 문서가 없습니다.<br />
-              첫 문서를 만들어보세요!
+            <p style={{ color: '#6c757d', fontSize: '12px', fontStyle: 'italic', margin: '10px 0' }}>
+              {selectedCategory === 'all' 
+                ? '아직 문서가 없습니다.' 
+                : '이 카테고리에 문서가 없습니다.'}
             </p>
           )}
 
@@ -418,12 +571,31 @@ Firebase와 연결되었습니다! 🚀`);
                   if (e.key === 'Escape') {
                     setIsCreating(false);
                     setNewDocTitle('');
+                    setNewDocCategory('general');
                   }
                 }}
                 placeholder="문서 제목"
                 className="new-doc-input"
                 autoFocus
               />
+              <select
+                value={newDocCategory}
+                onChange={(e) => setNewDocCategory(e.target.value)}
+                style={{
+                  width: '100%',
+                  padding: '8px 12px',
+                  border: '1px solid #dee2e6',
+                  borderRadius: '4px',
+                  fontSize: '14px',
+                  marginBottom: '8px'
+                }}
+              >
+                {categories.map(category => (
+                  <option key={category.id} value={category.id}>
+                    {category.name}
+                  </option>
+                ))}
+              </select>
               <div style={{ display: 'flex', gap: '8px' }}>
                 <button
                   onClick={handleCreateDocument}
@@ -435,6 +607,7 @@ Firebase와 연결되었습니다! 🚀`);
                   onClick={() => {
                     setIsCreating(false);
                     setNewDocTitle('');
+                    setNewDocCategory('general');
                   }}
                   className="new-doc-btn cancel"
                 >
@@ -443,6 +616,90 @@ Firebase와 연결되었습니다! 🚀`);
               </div>
             </div>
           ) : null}
+          
+          {/* 새 카테고리 생성 */}
+          {isCreatingCategory ? (
+            <div style={{ marginTop: '10px', padding: '10px', background: '#f8f9fa', borderRadius: '4px' }}>
+              <h4 style={{ margin: '0 0 8px 0', fontSize: '14px' }}>새 카테고리</h4>
+              <input
+                type="text"
+                value={newCategoryName}
+                onChange={(e) => setNewCategoryName(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') handleCreateCategory();
+                  if (e.key === 'Escape') setIsCreatingCategory(false);
+                }}
+                placeholder="카테고리 이름"
+                style={{
+                  width: '100%',
+                  padding: '6px 8px',
+                  border: '1px solid #dee2e6',
+                  borderRadius: '3px',
+                  fontSize: '13px',
+                  marginBottom: '8px'
+                }}
+                autoFocus
+              />
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
+                <label style={{ fontSize: '12px', color: '#6c757d' }}>색상:</label>
+                <input
+                  type="color"
+                  value={newCategoryColor}
+                  onChange={(e) => setNewCategoryColor(e.target.value)}
+                  style={{ width: '30px', height: '20px', border: 'none', borderRadius: '3px' }}
+                />
+              </div>
+              <div style={{ display: 'flex', gap: '4px' }}>
+                <button
+                  onClick={handleCreateCategory}
+                  style={{
+                    flex: 1,
+                    padding: '6px',
+                    background: '#28a745',
+                    color: 'white',
+                    border: 'none',
+                    borderRadius: '3px',
+                    fontSize: '12px',
+                    cursor: 'pointer'
+                  }}
+                >
+                  생성
+                </button>
+                <button
+                  onClick={() => setIsCreatingCategory(false)}
+                  style={{
+                    flex: 1,
+                    padding: '6px',
+                    background: '#6c757d',
+                    color: 'white',
+                    border: 'none',
+                    borderRadius: '3px',
+                    fontSize: '12px',
+                    cursor: 'pointer'
+                  }}
+                >
+                  취소
+                </button>
+              </div>
+            </div>
+          ) : (
+            <button
+              onClick={() => setIsCreatingCategory(true)}
+              style={{
+                width: '100%',
+                padding: '8px',
+                background: '#6f42c1',
+                color: 'white',
+                border: 'none',
+                borderRadius: '4px',
+                fontSize: '12px',
+                cursor: 'pointer',
+                marginTop: '10px'
+              }}
+            >
+              + 새 카테고리
+            </button>
+          )}
         </div>
         
         {/* 메인 콘텐츠 영역 */}
