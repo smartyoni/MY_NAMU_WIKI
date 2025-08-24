@@ -71,6 +71,7 @@ Firebase와 연결되었습니다! 🚀`);
   const [editingCategoryName, setEditingCategoryName] = useState('');
   const [categoryMenuOpen, setCategoryMenuOpen] = useState<string | null>(null);
   const [tocOpen, setTocOpen] = useState(false);
+  const [collapsedSections, setCollapsedSections] = useState<Set<string>>(new Set());
 
   const toggleSidebar = () => {
     setIsSidebarVisible(!isSidebarVisible);
@@ -499,45 +500,96 @@ Firebase와 연결되었습니다! 🚀`);
     }, 0);
   };
 
-  // 목차 데이터 생성
+  // 아웃라인 구조 생성 (확장된 버전)
+  const generateOutlineStructure = (text: string) => {
+    interface OutlineItem {
+      id: string;
+      title: string;
+      level: number;
+      number: string;
+      content?: string;
+      children: OutlineItem[];
+      startPos: number;
+    }
+
+    const outline: OutlineItem[] = [];
+    const lines = text.split('\n');
+    let h1Count = 0;
+    let h2CountPerH1: {[key: number]: number} = {};
+    let currentH1: OutlineItem | null = null;
+
+    lines.forEach((line, index) => {
+      const h1Match = line.match(/^==\s*(.+?)\s*==$/);
+      const h2Match = line.match(/^===\s*(.+?)\s*===$/);
+
+      if (h1Match) {
+        h1Count++;
+        h2CountPerH1[h1Count] = 0;
+        const id = `heading-h1-${h1Count}`;
+        
+        currentH1 = {
+          id,
+          title: h1Match[1].trim(),
+          level: 1,
+          number: `${h1Count}`,
+          content: '',
+          children: [],
+          startPos: index
+        };
+        outline.push(currentH1);
+        
+      } else if (h2Match && currentH1) {
+        h2CountPerH1[h1Count]++;
+        const id = `heading-h2-${h1Count}-${h2CountPerH1[h1Count]}`;
+        
+        const h2Item: OutlineItem = {
+          id,
+          title: h2Match[1].trim(),
+          level: 2,
+          number: `${h1Count}.${h2CountPerH1[h1Count]}`,
+          content: '',
+          children: [],
+          startPos: index
+        };
+        currentH1.children.push(h2Item);
+        
+      } else if (line.trim() && currentH1) {
+        // 일반 내용 라인
+        if (currentH1.children.length > 0) {
+          // 마지막 H2에 내용 추가
+          const lastH2 = currentH1.children[currentH1.children.length - 1];
+          lastH2.content = (lastH2.content || '') + line + '\n';
+        } else {
+          // H1에 직접 내용 추가
+          currentH1.content = (currentH1.content || '') + line + '\n';
+        }
+      }
+    });
+
+    return outline;
+  };
+
+  // 기존 목차 (호환성 유지)
   const generateTOC = (text: string) => {
+    const outline = generateOutlineStructure(text);
     const toc: Array<{id: string, title: string, level: number, number: string}> = [];
-    const h1Count = [0]; // H1 카운터
-    const h2Count = [0, 0]; // H1.H2 카운터
 
-    // H1 제목 찾기
-    text.replace(/==\s*(.+?)\s*==/g, (match, title) => {
-      h1Count[0]++;
-      h2Count[1] = 0; // H2 카운터 리셋
-      const id = `heading-h1-${h1Count[0]}`;
-      toc.push({
-        id,
-        title: title.trim(),
-        level: 1,
-        number: `${h1Count[0]}`
+    const flattenOutline = (items: any[]) => {
+      items.forEach(item => {
+        toc.push({
+          id: item.id,
+          title: item.title,
+          level: item.level,
+          number: item.number
+        });
+        if (item.children) {
+          flattenOutline(item.children);
+        }
       });
-      return match;
-    });
+    };
 
-    // H2 제목 찾기  
-    text.replace(/===\s*(.+?)\s*===/g, (match, title) => {
-      h2Count[1]++;
-      const id = `heading-h2-${h1Count[0]}-${h2Count[1]}`;
-      toc.push({
-        id,
-        title: title.trim(),
-        level: 2,
-        number: `${h1Count[0]}.${h2Count[1]}`
-      });
-      return match;
-    });
-
-    // 등장 순서대로 정렬
-    return toc.sort((a, b) => {
-      const aPos = text.indexOf(a.level === 1 ? `== ${a.title} ==` : `=== ${a.title} ===`);
-      const bPos = text.indexOf(b.level === 1 ? `== ${b.title} ==` : `=== ${b.title} ===`);
-      return aPos - bPos;
-    });
+    flattenOutline(outline);
+    return toc;
   };
 
   // Wiki 텍스트 파싱 (앵커 ID 포함)
@@ -599,6 +651,20 @@ Firebase와 연결되었습니다! 🚀`);
       element.scrollIntoView({ behavior: 'smooth', block: 'start' });
       setTocOpen(false);
     }
+  };
+
+  // 아웃라인 섹션 접기/펼치기
+  const toggleSection = (sectionId: string, event: React.MouseEvent) => {
+    event.stopPropagation(); // 스크롤 이동 방지
+    setCollapsedSections(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(sectionId)) {
+        newSet.delete(sectionId);
+      } else {
+        newSet.add(sectionId);
+      }
+      return newSet;
+    });
   };
 
   if (loading) {
@@ -1571,9 +1637,9 @@ Firebase와 연결되었습니다! 🚀`);
               alignItems: 'center',
               justifyContent: 'center'
             }}
-            title="목차"
+            title="아웃라인"
           >
-            📋
+            🌳
           </button>
           
           {/* 목차 팝업 */}
@@ -1603,37 +1669,132 @@ Firebase와 연결되었습니다! 🚀`);
                 fontSize: '14px',
                 color: '#495057'
               }}>
-                📋 목차
+                🌳 아웃라인
               </div>
-              <div style={{ padding: '8px 0' }}>
-                {generateTOC(currentDoc.content).map((item, index) => (
-                  <div
-                    key={index}
-                    onClick={() => scrollToHeading(item.id)}
-                    style={{
-                      padding: '8px 16px',
-                      cursor: 'pointer',
-                      fontSize: '13px',
-                      borderLeft: item.level === 2 ? '3px solid transparent' : 'none',
-                      paddingLeft: item.level === 2 ? '32px' : '16px',
-                      color: item.level === 1 ? '#212529' : '#6c757d',
-                      fontWeight: item.level === 1 ? '500' : '400',
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '8px'
-                    }}
-                    onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#f8f9fa'}
-                    onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
-                  >
-                    <span style={{ 
-                      minWidth: '24px', 
-                      fontSize: '11px', 
-                      color: '#007bff',
-                      fontWeight: '600'
-                    }}>
-                      {item.number}
-                    </span>
-                    <span style={{ flex: 1 }}>{item.title}</span>
+              <div style={{ padding: '4px 0' }}>
+                {generateOutlineStructure(currentDoc.content).map((item) => (
+                  <div key={item.id}>
+                    {/* H1 제목 */}
+                    <div
+                      onClick={() => scrollToHeading(item.id)}
+                      style={{
+                        padding: '8px 12px',
+                        cursor: 'pointer',
+                        fontSize: '14px',
+                        color: '#212529',
+                        fontWeight: '600',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '8px',
+                        borderRadius: '4px',
+                        margin: '2px 0'
+                      }}
+                      onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#f8f9fa'}
+                      onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+                    >
+                      {/* 접기/펼치기 버튼 */}
+                      {item.children.length > 0 && (
+                        <button
+                          onClick={(e) => toggleSection(item.id, e)}
+                          style={{
+                            background: 'none',
+                            border: 'none',
+                            cursor: 'pointer',
+                            fontSize: '12px',
+                            color: '#6c757d',
+                            padding: '2px',
+                            display: 'flex',
+                            alignItems: 'center',
+                            borderRadius: '2px'
+                          }}
+                          onMouseEnter={(e) => {
+                            e.stopPropagation();
+                            e.currentTarget.style.backgroundColor = '#e9ecef';
+                          }}
+                          onMouseLeave={(e) => {
+                            e.stopPropagation();
+                            e.currentTarget.style.backgroundColor = 'transparent';
+                          }}
+                        >
+                          {collapsedSections.has(item.id) ? '▶' : '▼'}
+                        </button>
+                      )}
+                      {item.children.length === 0 && (
+                        <div style={{ width: '18px' }}></div>
+                      )}
+                      
+                      <span style={{ 
+                        minWidth: '20px', 
+                        fontSize: '11px', 
+                        color: '#007bff',
+                        fontWeight: '600'
+                      }}>
+                        {item.number}
+                      </span>
+                      <span style={{ flex: 1 }}>{item.title}</span>
+                      
+                      {/* 내용 미리보기 */}
+                      {item.content && (
+                        <span style={{
+                          fontSize: '10px',
+                          color: '#6c757d',
+                          maxWidth: '100px',
+                          overflow: 'hidden',
+                          textOverflow: 'ellipsis',
+                          whiteSpace: 'nowrap'
+                        }}>
+                          {item.content.replace(/\n/g, ' ').substring(0, 30)}...
+                        </span>
+                      )}
+                    </div>
+
+                    {/* H2 자식 항목들 */}
+                    {!collapsedSections.has(item.id) && item.children.map((child) => (
+                      <div
+                        key={child.id}
+                        onClick={() => scrollToHeading(child.id)}
+                        style={{
+                          padding: '6px 12px',
+                          paddingLeft: '44px',
+                          cursor: 'pointer',
+                          fontSize: '12px',
+                          color: '#6c757d',
+                          fontWeight: '400',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '8px',
+                          borderLeft: '2px solid #e9ecef',
+                          marginLeft: '16px',
+                          borderRadius: '0 4px 4px 0'
+                        }}
+                        onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#f8f9fa'}
+                        onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+                      >
+                        <span style={{ 
+                          minWidth: '24px', 
+                          fontSize: '10px', 
+                          color: '#007bff',
+                          fontWeight: '500'
+                        }}>
+                          {child.number}
+                        </span>
+                        <span style={{ flex: 1 }}>{child.title}</span>
+                        
+                        {/* 내용 미리보기 */}
+                        {child.content && (
+                          <span style={{
+                            fontSize: '9px',
+                            color: '#adb5bd',
+                            maxWidth: '80px',
+                            overflow: 'hidden',
+                            textOverflow: 'ellipsis',
+                            whiteSpace: 'nowrap'
+                          }}>
+                            {child.content.replace(/\n/g, ' ').substring(0, 25)}...
+                          </span>
+                        )}
+                      </div>
+                    ))}
                   </div>
                 ))}
                 {generateTOC(currentDoc.content).length === 0 && (
