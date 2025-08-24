@@ -67,7 +67,8 @@ const Header: React.FC<HeaderProps> = ({ toggleSidebar, onCreateDocument }) => {
             padding: '8px 16px',
             fontSize: '14px',
             fontWeight: '500',
-            background: '#f8f9fa',
+            background: '#000000',
+            color: '#ffffff',
             border: '1px solid #dee2e6',
             borderRadius: '4px'
           }}
