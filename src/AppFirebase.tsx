@@ -6,12 +6,16 @@ import './App.css';
 function AppFirebase() {
   const {
     documents,
+    categories,
     loading,
     error,
     createDocument,
     updateDocument,
     deleteDocument,
-    selectDocument
+    selectDocument,
+    createCategory,
+    updateCategory,
+    deleteCategory
   } = useDocuments();
 
   const [content, setContent] = useState(`== Personal Wiki에 오신 것을 환영합니다! ==
@@ -53,15 +57,7 @@ Firebase와 연결되었습니다! 🚀`);
   const [isEditingTitle, setIsEditingTitle] = useState(false);
   const [editingTitle, setEditingTitle] = useState('');
   
-  // 카테고리/폴더 관리 상태
-  const [categories, setCategories] = useState<Array<{id: string, name: string, color: string}>>(() => {
-    const saved = localStorage.getItem('wiki-categories');
-    return saved ? JSON.parse(saved) : [
-      { id: 'general', name: '일반', color: '#6c757d' },
-      { id: 'personal', name: '개인', color: '#28a745' },
-      { id: 'work', name: '업무', color: '#007bff' }
-    ];
-  });
+  // UI 상태 관리
   const [selectedCategory, setSelectedCategory] = useState<string>('all'); // 'all' 또는 카테고리 ID
   const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set(['all'])); // 펼쳐진 카테고리들
   const [isCreatingCategory, setIsCreatingCategory] = useState(false);
@@ -122,10 +118,6 @@ Firebase와 연결되었습니다! 🚀`);
     };
   }, [categoryMenuOpen, tocOpen]);
 
-  // 카테고리 변경시 localStorage에 저장
-  React.useEffect(() => {
-    localStorage.setItem('wiki-categories', JSON.stringify(categories));
-  }, [categories]);
 
   // 툴바 버튼 스타일
   const toolbarButtonStyle = {
@@ -228,19 +220,17 @@ Firebase와 연결되었습니다! 🚀`);
   };
 
   // 카테고리/폴더 관리 함수들
-  const handleCreateCategory = () => {
+  const handleCreateCategory = async () => {
     if (!newCategoryName.trim()) return;
     
-    const newCategory = {
-      id: `category-${Date.now()}`,
-      name: newCategoryName.trim(),
-      color: newCategoryColor
-    };
-    
-    setCategories(prev => [...prev, newCategory]);
-    setNewCategoryName('');
-    setNewCategoryColor('#6c757d');
-    setIsCreatingCategory(false);
+    try {
+      await createCategory(newCategoryName.trim(), newCategoryColor);
+      setNewCategoryName('');
+      setNewCategoryColor('#6c757d');
+      setIsCreatingCategory(false);
+    } catch (err) {
+      console.error('Error creating category:', err);
+    }
   };
 
   // 카테고리 이름 수정 시작
@@ -257,19 +247,16 @@ Firebase와 연결되었습니다! 🚀`);
   };
 
   // 카테고리 이름 수정 저장
-  const handleSaveCategory = (categoryId: string) => {
+  const handleSaveCategory = async (categoryId: string) => {
     if (!editingCategoryName.trim()) return;
 
-    setCategories(prev => 
-      prev.map(cat => 
-        cat.id === categoryId 
-          ? { ...cat, name: editingCategoryName.trim() }
-          : cat
-      )
-    );
-    
-    setEditingCategoryId(null);
-    setEditingCategoryName('');
+    try {
+      await updateCategory(categoryId, { name: editingCategoryName.trim() });
+      setEditingCategoryId(null);
+      setEditingCategoryName('');
+    } catch (err) {
+      console.error('Error updating category:', err);
+    }
   };
 
   // 카테고리 이름 수정 키 이벤트
@@ -289,19 +276,13 @@ Firebase와 연결되었습니다! 🚀`);
     
     if (window.confirm('이 카테고리를 삭제하시겠습니까? 카테고리 내 모든 문서는 "일반" 카테고리로 이동됩니다.')) {
       try {
-        // 해당 카테고리의 문서들을 "일반" 카테고리로 이동
-        const categoryDocs = documents.filter(doc => doc.category === categoryId);
-        for (const doc of categoryDocs) {
-          await updateDocument(doc.id, { category: 'general' });
-        }
-        
-        setCategories(prev => prev.filter(cat => cat.id !== categoryId));
+        await deleteCategory(categoryId);
         
         if (selectedCategory === categoryId) {
           setSelectedCategory('all');
         }
       } catch (error) {
-        console.error('Error updating documents during category deletion:', error);
+        console.error('Error deleting category:', error);
         alert('카테고리 삭제 중 오류가 발생했습니다.');
       }
     }
@@ -321,32 +302,36 @@ Firebase와 연결되었습니다! 🚀`);
   };
 
   // 카테고리 순서 이동
-  const moveCategoryUp = (categoryId: string) => {
-    setCategories(prev => {
-      const currentIndex = prev.findIndex(cat => cat.id === categoryId);
-      if (currentIndex <= 0) return prev; // 이미 맨 위거나 찾을 수 없음
+  const moveCategoryUp = async (categoryId: string) => {
+    const currentIndex = categories.findIndex(cat => cat.id === categoryId);
+    if (currentIndex <= 0) return; // 이미 맨 위거나 찾을 수 없음
+    
+    try {
+      const currentCategory = categories[currentIndex];
+      const previousCategory = categories[currentIndex - 1];
       
-      const newCategories = [...prev];
-      const temp = newCategories[currentIndex];
-      newCategories[currentIndex] = newCategories[currentIndex - 1];
-      newCategories[currentIndex - 1] = temp;
-      
-      return newCategories;
-    });
+      // 순서 교체
+      await updateCategory(currentCategory.id, { order: previousCategory.order });
+      await updateCategory(previousCategory.id, { order: currentCategory.order });
+    } catch (error) {
+      console.error('Error moving category up:', error);
+    }
   };
 
-  const moveCategoryDown = (categoryId: string) => {
-    setCategories(prev => {
-      const currentIndex = prev.findIndex(cat => cat.id === categoryId);
-      if (currentIndex >= prev.length - 1 || currentIndex === -1) return prev; // 이미 맨 아래거나 찾을 수 없음
+  const moveCategoryDown = async (categoryId: string) => {
+    const currentIndex = categories.findIndex(cat => cat.id === categoryId);
+    if (currentIndex >= categories.length - 1 || currentIndex === -1) return; // 이미 맨 아래거나 찾을 수 없음
+    
+    try {
+      const currentCategory = categories[currentIndex];
+      const nextCategory = categories[currentIndex + 1];
       
-      const newCategories = [...prev];
-      const temp = newCategories[currentIndex];
-      newCategories[currentIndex] = newCategories[currentIndex + 1];
-      newCategories[currentIndex + 1] = temp;
-      
-      return newCategories;
-    });
+      // 순서 교체
+      await updateCategory(currentCategory.id, { order: nextCategory.order });
+      await updateCategory(nextCategory.id, { order: currentCategory.order });
+    } catch (error) {
+      console.error('Error moving category down:', error);
+    }
   };
 
 

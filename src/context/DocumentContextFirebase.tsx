@@ -13,9 +13,17 @@ interface WikiDocument {
   category?: string;
 }
 
+interface WikiCategory {
+  id: string;
+  name: string;
+  color: string;
+  order: number;
+}
+
 interface DocumentContextType {
   documents: WikiDocument[];
   currentDocument: WikiDocument | null;
+  categories: WikiCategory[];
   loading: boolean;
   error: string | null;
   
@@ -26,6 +34,11 @@ interface DocumentContextType {
   selectDocument: (document: WikiDocument | null) => void;
   searchDocuments: (searchTerm: string) => Promise<WikiDocument[]>;
   
+  // 카테고리 관리
+  createCategory: (name: string, color: string) => Promise<string>;
+  updateCategory: (id: string, updates: Partial<WikiCategory>) => Promise<void>;
+  deleteCategory: (id: string) => Promise<void>;
+  reorderCategory: (categoryId: string, newOrder: number) => Promise<void>;
   
   // 유틸리티
   getDocumentByTitle: (title: string) => WikiDocument | null;
@@ -51,6 +64,7 @@ export const DocumentProvider: React.FC<DocumentProviderProps> = ({
   userId = 'default-user'
 }) => {
   const [documents, setDocuments] = useState<WikiDocument[]>([]);
+  const [categories, setCategories] = useState<WikiCategory[]>([]);
   const [currentDocument, setCurrentDocument] = useState<WikiDocument | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -81,6 +95,53 @@ export const DocumentProvider: React.FC<DocumentProviderProps> = ({
       console.error('Error fetching documents:', err);
       setError('문서를 불러오는 중 오류가 발생했습니다.');
       setLoading(false);
+    });
+
+    return () => unsubscribe();
+  }, [userId]);
+
+  // Firebase에서 카테고리 목록 실시간 구독
+  useEffect(() => {
+    const categoriesRef = collection(db, 'users', userId, 'categories');
+    const q = query(categoriesRef, orderBy('order', 'asc'));
+    
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const cats: WikiCategory[] = [];
+      snapshot.forEach((doc) => {
+        const data = doc.data();
+        cats.push({
+          id: doc.id,
+          name: data.name,
+          color: data.color,
+          order: data.order || 0
+        });
+      });
+      
+      // 기본 카테고리가 없으면 추가
+      if (cats.length === 0) {
+        const defaultCategories: WikiCategory[] = [
+          { id: 'general', name: '일반', color: '#6c757d', order: 0 },
+          { id: 'personal', name: '개인', color: '#28a745', order: 1 },
+          { id: 'work', name: '업무', color: '#007bff', order: 2 }
+        ];
+        
+        // 기본 카테고리들을 Firebase에 저장
+        defaultCategories.forEach(async (category) => {
+          const categoryRef = doc(db, 'users', userId, 'categories', category.id);
+          await setDoc(categoryRef, {
+            name: category.name,
+            color: category.color,
+            order: category.order
+          });
+        });
+        
+        setCategories(defaultCategories);
+      } else {
+        setCategories(cats);
+      }
+    }, (err) => {
+      console.error('Error fetching categories:', err);
+      setError('카테고리를 불러오는 중 오류가 발생했습니다.');
     });
 
     return () => unsubscribe();
@@ -169,6 +230,69 @@ export const DocumentProvider: React.FC<DocumentProviderProps> = ({
     );
   };
 
+  // 카테고리 관리 함수들
+  const createCategory = async (name: string, color: string): Promise<string> => {
+    try {
+      const id = `category-${Date.now()}`;
+      const order = categories.length;
+      
+      const categoryRef = doc(db, 'users', userId, 'categories', id);
+      await setDoc(categoryRef, {
+        name: name.trim(),
+        color,
+        order
+      });
+      
+      return id;
+    } catch (err) {
+      console.error('Error creating category:', err);
+      setError('카테고리 생성 중 오류가 발생했습니다.');
+      throw err;
+    }
+  };
+
+  const updateCategory = async (id: string, updates: Partial<WikiCategory>): Promise<void> => {
+    try {
+      const categoryRef = doc(db, 'users', userId, 'categories', id);
+      await setDoc(categoryRef, updates, { merge: true });
+    } catch (err) {
+      console.error('Error updating category:', err);
+      setError('카테고리 업데이트 중 오류가 발생했습니다.');
+      throw err;
+    }
+  };
+
+  const deleteCategory = async (id: string): Promise<void> => {
+    if (id === 'general') {
+      throw new Error('기본 카테고리는 삭제할 수 없습니다.');
+    }
+    
+    try {
+      // 해당 카테고리의 문서들을 "일반" 카테고리로 이동
+      const categoryDocs = documents.filter(doc => doc.category === id);
+      for (const doc of categoryDocs) {
+        await updateDocument(doc.id, { category: 'general' });
+      }
+      
+      // 카테고리 삭제
+      const categoryRef = doc(db, 'users', userId, 'categories', id);
+      await deleteDoc(categoryRef);
+      
+    } catch (err) {
+      console.error('Error deleting category:', err);
+      setError('카테고리 삭제 중 오류가 발생했습니다.');
+      throw err;
+    }
+  };
+
+  const reorderCategory = async (categoryId: string, newOrder: number): Promise<void> => {
+    try {
+      await updateCategory(categoryId, { order: newOrder });
+    } catch (err) {
+      console.error('Error reordering category:', err);
+      throw err;
+    }
+  };
 
   const getDocumentByTitle = (title: string): WikiDocument | null => {
     return documents.find(doc => doc.title === title) || null;
@@ -177,6 +301,7 @@ export const DocumentProvider: React.FC<DocumentProviderProps> = ({
   const value: DocumentContextType = {
     documents,
     currentDocument,
+    categories,
     loading,
     error,
     createDocument,
@@ -184,6 +309,10 @@ export const DocumentProvider: React.FC<DocumentProviderProps> = ({
     deleteDocument,
     selectDocument,
     searchDocuments,
+    createCategory,
+    updateCategory,
+    deleteCategory,
+    reorderCategory,
     getDocumentByTitle
   };
 
@@ -193,3 +322,5 @@ export const DocumentProvider: React.FC<DocumentProviderProps> = ({
     </DocumentContext.Provider>
   );
 };
+
+export type { WikiCategory };
