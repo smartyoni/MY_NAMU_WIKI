@@ -49,6 +49,8 @@ Firebase와 연결되었습니다! 🚀`);
 
   const [mobileView, setMobileView] = useState<'editor' | 'preview'>('editor');
   const [isSidebarVisible, setIsSidebarVisible] = useState(false);
+  const [isEditingTitle, setIsEditingTitle] = useState(false);
+  const [editingTitle, setEditingTitle] = useState('');
 
   const toggleSidebar = () => {
     setIsSidebarVisible(!isSidebarVisible);
@@ -121,6 +123,50 @@ Firebase와 연결되었습니다! 🚀`);
       setHistoryIndex(0);
     } catch (err) {
       console.error('Error creating document:', err);
+    }
+  };
+
+  // 제목 수정 시작
+  const handleStartEditTitle = () => {
+    if (currentDoc) {
+      setEditingTitle(currentDoc.title);
+      setIsEditingTitle(true);
+    }
+  };
+
+  // 제목 수정 취소
+  const handleCancelEditTitle = () => {
+    setIsEditingTitle(false);
+    setEditingTitle('');
+  };
+
+  // 제목 수정 저장
+  const handleSaveTitle = async () => {
+    if (!currentDoc || !editingTitle.trim()) return;
+    
+    try {
+      await updateDocument(currentDoc.id, { title: editingTitle.trim() });
+      
+      const updatedDoc = {
+        ...currentDoc,
+        title: editingTitle.trim(),
+        updatedAt: new Date()
+      };
+      
+      setCurrentDoc(updatedDoc);
+      setIsEditingTitle(false);
+      setEditingTitle('');
+    } catch (err) {
+      console.error('Error updating document title:', err);
+    }
+  };
+
+  // Enter 키로 제목 저장, Escape로 취소
+  const handleTitleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') {
+      handleSaveTitle();
+    } else if (e.key === 'Escape') {
+      handleCancelEditTitle();
     }
   };
 
@@ -424,9 +470,74 @@ Firebase와 연결되었습니다! 🚀`);
                     <div className="editor-header">
                       <span style={{ fontSize: '12px', color: '#6c757d' }}>편집 모드</span>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                        <div className="editor-header-title">
-                          {currentDoc.title}
-                        </div>
+                        {isEditingTitle ? (
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                            <input
+                              type="text"
+                              value={editingTitle}
+                              onChange={(e) => setEditingTitle(e.target.value)}
+                              onKeyDown={handleTitleKeyDown}
+                              style={{
+                                padding: '6px 10px',
+                                fontSize: '14px',
+                                border: '2px solid #007bff',
+                                borderRadius: '4px',
+                                outline: 'none',
+                                minWidth: '200px'
+                              }}
+                              autoFocus
+                              placeholder="문서 제목을 입력하세요"
+                            />
+                            <button
+                              onClick={handleSaveTitle}
+                              style={{
+                                padding: '6px 10px',
+                                fontSize: '12px',
+                                background: '#28a745',
+                                color: 'white',
+                                border: 'none',
+                                borderRadius: '3px',
+                                cursor: 'pointer'
+                              }}
+                            >
+                              저장
+                            </button>
+                            <button
+                              onClick={handleCancelEditTitle}
+                              style={{
+                                padding: '6px 10px',
+                                fontSize: '12px',
+                                background: '#6c757d',
+                                color: 'white',
+                                border: 'none',
+                                borderRadius: '3px',
+                                cursor: 'pointer'
+                              }}
+                            >
+                              취소
+                            </button>
+                          </div>
+                        ) : (
+                          <div 
+                            className="editor-header-title"
+                            onClick={handleStartEditTitle}
+                            style={{
+                              cursor: 'pointer',
+                              padding: '6px 10px',
+                              borderRadius: '4px',
+                              transition: 'background-color 0.2s',
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: '8px'
+                            }}
+                            onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#f8f9fa'}
+                            onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+                            title="제목을 클릭하여 수정"
+                          >
+                            📄 {currentDoc.title}
+                            <span style={{ fontSize: '11px', color: '#6c757d' }}>✏️</span>
+                          </div>
+                        )}
                         <button
                           onClick={handleSaveAndView}
                           className="editor-header-btn"
@@ -518,9 +629,74 @@ Firebase와 연결되었습니다! 🚀`);
                 <div className="editor-header">
                   <span style={{ fontSize: '12px', color: '#6c757d' }}>읽기 모드</span>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                    <div className="editor-header-title">
-                      {currentDoc.title}
-                    </div>
+                    {isEditingTitle ? (
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <input
+                          type="text"
+                          value={editingTitle}
+                          onChange={(e) => setEditingTitle(e.target.value)}
+                          onKeyDown={handleTitleKeyDown}
+                          style={{
+                            padding: '6px 10px',
+                            fontSize: '14px',
+                            border: '2px solid #007bff',
+                            borderRadius: '4px',
+                            outline: 'none',
+                            minWidth: '200px'
+                          }}
+                          autoFocus
+                          placeholder="문서 제목을 입력하세요"
+                        />
+                        <button
+                          onClick={handleSaveTitle}
+                          style={{
+                            padding: '6px 10px',
+                            fontSize: '12px',
+                            background: '#28a745',
+                            color: 'white',
+                            border: 'none',
+                            borderRadius: '3px',
+                            cursor: 'pointer'
+                          }}
+                        >
+                          저장
+                        </button>
+                        <button
+                          onClick={handleCancelEditTitle}
+                          style={{
+                            padding: '6px 10px',
+                            fontSize: '12px',
+                            background: '#6c757d',
+                            color: 'white',
+                            border: 'none',
+                            borderRadius: '3px',
+                            cursor: 'pointer'
+                          }}
+                        >
+                          취소
+                        </button>
+                      </div>
+                    ) : (
+                      <div 
+                        className="editor-header-title"
+                        onClick={handleStartEditTitle}
+                        style={{
+                          cursor: 'pointer',
+                          padding: '6px 10px',
+                          borderRadius: '4px',
+                          transition: 'background-color 0.2s',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '8px'
+                        }}
+                        onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#f8f9fa'}
+                        onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+                        title="제목을 클릭하여 수정"
+                      >
+                        📄 {currentDoc.title}
+                        <span style={{ fontSize: '11px', color: '#6c757d' }}>✏️</span>
+                      </div>
+                    )}
                     <button
                       onClick={handleEditDocument}
                       className="editor-header-btn edit"
