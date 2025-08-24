@@ -680,7 +680,9 @@ Firebase와 연결되었습니다! 🚀`);
         // - 로 시작하는 라인만 처리
         if (trimmed.startsWith('-')) {
           hasContent = true;
-          const indent = Math.max(0, (line.length - line.trimLeft().length) / 2);
+          // 들여쓰기 레벨 계산 (- 기호 앞의 공백 개수)
+          const leadingSpaces = line.length - line.trimStart().length;
+          const indent = Math.floor(leadingSpaces / 2); // 공백 2개당 1레벨
           const cleanLine = trimmed.replace(/^-\s*/, '').trim();
           
           if (cleanLine) {
