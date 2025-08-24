@@ -1,0 +1,37 @@
+.app {
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+  padding: 0;
+}
+
+.app-body {
+  flex: 1;
+  display: flex;
+  overflow: hidden;
+  min-height: 0; /* flexbox에서 스크롤 작동을 위해 필요 */
+}
+
+.wiki-editor {
+  flex: 1;
+  border-left: 1px solid #dee2e6;
+}
+
+/* 스크롤바 스타일링 */
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #f1f1f1;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #c1c1c1;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #a8a8a8;
+}
