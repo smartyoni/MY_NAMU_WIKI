@@ -498,9 +498,9 @@ Firebase와 연결되었습니다! 🚀`);
     let html = text;
     
     html = html.replace(/\n/g, '<br>');
+    html = html.replace(/===\s*(.+?)\s*===/g, '<h3>$1</h3>');
     html = html.replace(/==\s*(.+?)\s*==/g, '<h2>$1</h2>');
     html = html.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
-    html = html.replace(/''(.+?)''/g, '<em>$1</em>');
     html = html.replace(/~~(.+?)~~/g, '<del>$1</del>');
     
     // 접기 블록 처리
@@ -1252,9 +1252,10 @@ Firebase와 연결되었습니다! 🚀`);
                       <div style={{ width: '1px', height: '20px', background: '#dee2e6', margin: '0 8px' }}></div>
                       <span style={{ fontSize: '11px', color: '#6c757d', marginRight: '8px' }}>문법:</span>
                       <button onClick={() => insertText('**', '**', '굵은 텍스트')} style={toolbarButtonStyle} title="굵게"><b>B</b></button>
-                      <button onClick={() => insertText('*', '*', '기울인 텍스트')} style={toolbarButtonStyle} title="기울임"><i>I</i></button>
                       <button onClick={() => insertText('~~', '~~', '취소선 텍스트')} style={toolbarButtonStyle} title="취소선"><s>S</s></button>
-                      <button onClick={() => insertText('== ', ' ==', '제목')} style={toolbarButtonStyle} title="제목">H</button>
+                      <button onClick={() => insertText('== ', ' ==', '제목')} style={toolbarButtonStyle} title="큰 제목">H1</button>
+                      <button onClick={() => insertText('=== ', ' ===', '소제목')} style={toolbarButtonStyle} title="작은 제목">H2</button>
+                      <button onClick={() => insertText('{{{fold:', '|}}}', '제목|내용')} style={{...toolbarButtonStyle, fontSize: '10px'}} title="접기/펼치기">접기</button>
                     </div>
                     
                     <textarea
