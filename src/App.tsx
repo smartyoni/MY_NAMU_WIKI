@@ -509,22 +509,34 @@ function App() {
   };
 
   const handleCreateDocument = () => {
-    console.log('새 문서 생성 함수 호출됨');
     setIsCreating(true);
   };
 
-  console.log('App 렌더링 - handleCreateDocument:', typeof handleCreateDocument);
-
-  const headerProps = {
-    toggleSidebar: () => setIsSidebarVisible(true),
-    onCreateDocument: handleCreateDocument
-  };
-  
-  console.log('전달할 headerProps:', headerProps);
-
   return (
     <div className="app">
-      <Header {...headerProps} />
+      <div style={{ position: 'relative' }}>
+        <Header toggleSidebar={() => setIsSidebarVisible(true)} />
+        {/* 새 문서 버튼을 헤더 위에 오버레이 */}
+        <button
+          onClick={handleCreateDocument}
+          style={{
+            position: 'absolute',
+            top: '10px',
+            right: '160px',
+            padding: '8px 16px',
+            background: '#6f42c1',
+            color: 'white',
+            border: 'none',
+            borderRadius: '4px',
+            fontSize: '14px',
+            cursor: 'pointer',
+            fontWeight: '500',
+            zIndex: 1000
+          }}
+        >
+          + 새 문서
+        </button>
+      </div>
       <div className="app-body">
         <div 
           className={`sidebar ${(isMobile && isSidebarVisible) || !isMobile ? 'sidebar-visible' : ''}`}

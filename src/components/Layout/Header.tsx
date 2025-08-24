@@ -3,13 +3,10 @@ import './Header.css';
 
 interface HeaderProps {
   toggleSidebar: () => void;
-  onCreateDocument?: () => void;
 }
 
-const Header: React.FC<HeaderProps> = ({ toggleSidebar, onCreateDocument }) => {
+const Header: React.FC<HeaderProps> = ({ toggleSidebar }) => {
   const [currentTime, setCurrentTime] = useState(new Date());
-  
-  console.log('Header props:', { toggleSidebar, onCreateDocument });
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -47,46 +44,7 @@ const Header: React.FC<HeaderProps> = ({ toggleSidebar, onCreateDocument }) => {
         />
       </div>
       <div className="header-right">
-        {onCreateDocument && (
-          <button 
-            onClick={() => {
-              console.log('새 문서 버튼 클릭됨');
-              console.log('onCreateDocument 타입:', typeof onCreateDocument);
-              if (typeof onCreateDocument === 'function') {
-                onCreateDocument();
-              } else {
-                console.error('onCreateDocument가 함수가 아닙니다:', onCreateDocument);
-              }
-            }}
-            style={{
-              marginRight: '15px',
-              padding: '8px 16px',
-              background: '#6f42c1',
-              color: 'white',
-              border: 'none',
-              borderRadius: '4px',
-              fontSize: '14px',
-              cursor: 'pointer',
-              fontWeight: '500'
-            }}
-          >
-            + 새 문서
-          </button>
-        )}
-        <span 
-          className="production-mode"
-          style={{
-            padding: '8px 16px',
-            fontSize: '14px',
-            fontWeight: '500',
-            background: '#000000',
-            color: '#ffffff',
-            border: '1px solid #dee2e6',
-            borderRadius: '4px'
-          }}
-        >
-          완성 버전
-        </span>
+        <span className="production-mode">완성 버전</span>
       </div>
     </header>
   );
