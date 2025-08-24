@@ -63,9 +63,12 @@ Firebase와 연결되었습니다! 🚀`);
     ];
   });
   const [selectedCategory, setSelectedCategory] = useState<string>('all'); // 'all' 또는 카테고리 ID
+  const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set(['all'])); // 펼쳐진 카테고리들
   const [isCreatingCategory, setIsCreatingCategory] = useState(false);
   const [newCategoryName, setNewCategoryName] = useState('');
   const [newCategoryColor, setNewCategoryColor] = useState('#6c757d');
+  const [editingCategoryId, setEditingCategoryId] = useState<string | null>(null);
+  const [editingCategoryName, setEditingCategoryName] = useState('');
 
   const toggleSidebar = () => {
     setIsSidebarVisible(!isSidebarVisible);
@@ -209,22 +212,80 @@ Firebase와 연결되었습니다! 🚀`);
     setIsCreatingCategory(false);
   };
 
-  const handleDeleteCategory = (categoryId: string) => {
+  // 카테고리 이름 수정 시작
+  const handleStartEditCategory = (categoryId: string, currentName: string) => {
+    setEditingCategoryId(categoryId);
+    setEditingCategoryName(currentName);
+  };
+
+  // 카테고리 이름 수정 취소
+  const handleCancelEditCategory = () => {
+    setEditingCategoryId(null);
+    setEditingCategoryName('');
+  };
+
+  // 카테고리 이름 수정 저장
+  const handleSaveCategory = (categoryId: string) => {
+    if (!editingCategoryName.trim()) return;
+
+    setCategories(prev => 
+      prev.map(cat => 
+        cat.id === categoryId 
+          ? { ...cat, name: editingCategoryName.trim() }
+          : cat
+      )
+    );
+    
+    setEditingCategoryId(null);
+    setEditingCategoryName('');
+  };
+
+  // 카테고리 이름 수정 키 이벤트
+  const handleCategoryKeyDown = (e: React.KeyboardEvent, categoryId: string) => {
+    if (e.key === 'Enter') {
+      handleSaveCategory(categoryId);
+    } else if (e.key === 'Escape') {
+      handleCancelEditCategory();
+    }
+  };
+
+  const handleDeleteCategory = async (categoryId: string) => {
     if (categoryId === 'general') {
       alert('기본 카테고리는 삭제할 수 없습니다.');
       return;
     }
     
     if (window.confirm('이 카테고리를 삭제하시겠습니까? 카테고리 내 모든 문서는 "일반" 카테고리로 이동됩니다.')) {
-      setCategories(prev => prev.filter(cat => cat.id !== categoryId));
-      
-      // 해당 카테고리의 문서들을 "일반" 카테고리로 이동
-      // Firebase에서 문서 업데이트 필요 (나중에 구현)
-      
-      if (selectedCategory === categoryId) {
-        setSelectedCategory('all');
+      try {
+        // 해당 카테고리의 문서들을 "일반" 카테고리로 이동
+        const categoryDocs = documents.filter(doc => doc.category === categoryId);
+        for (const doc of categoryDocs) {
+          await updateDocument(doc.id, { category: 'general' });
+        }
+        
+        setCategories(prev => prev.filter(cat => cat.id !== categoryId));
+        
+        if (selectedCategory === categoryId) {
+          setSelectedCategory('all');
+        }
+      } catch (error) {
+        console.error('Error updating documents during category deletion:', error);
+        alert('카테고리 삭제 중 오류가 발생했습니다.');
       }
     }
+  };
+
+  // 카테고리 펼침/접기 토글
+  const toggleCategoryExpansion = (categoryId: string) => {
+    setExpandedCategories(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(categoryId)) {
+        newSet.delete(categoryId);
+      } else {
+        newSet.add(categoryId);
+      }
+      return newSet;
+    });
   };
 
   // 선택된 카테고리에 따라 문서 필터링
@@ -233,6 +294,11 @@ Firebase와 연결되었습니다! 🚀`);
       return documents;
     }
     return documents.filter(doc => doc.category === selectedCategory);
+  };
+
+  // 특정 카테고리의 문서들 가져오기
+  const getDocumentsByCategory = (categoryId: string) => {
+    return documents.filter(doc => doc.category === categoryId);
   };
 
   const handleSelectDocument = (doc: any) => {
@@ -454,114 +520,246 @@ Firebase와 연결되었습니다! 🚀`);
         <div className={`sidebar ${isSidebarVisible ? 'sidebar-visible' : ''}`}>
           <h3>📁 문서 폴더</h3>
           
-          {/* 카테고리 필터 */}
+          {/* 트리 구조 카테고리 뷰 */}
           <div style={{ marginBottom: '15px' }}>
-            <div
-              onClick={() => setSelectedCategory('all')}
-              style={{
-                padding: '6px 10px',
-                margin: '2px 0',
-                borderRadius: '4px',
-                cursor: 'pointer',
-                fontSize: '13px',
-                backgroundColor: selectedCategory === 'all' ? '#e3f2fd' : 'transparent',
-                border: selectedCategory === 'all' ? '1px solid #2196f3' : '1px solid transparent',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '8px'
-              }}
-            >
-              📂 모든 문서 ({documents.length})
-            </div>
-            
-            {categories.map(category => {
-              const categoryDocs = documents.filter(doc => doc.category === category.id);
-              return (
-                <div key={category.id} style={{ position: 'relative' }}>
-                  <div
-                    onClick={() => setSelectedCategory(category.id)}
-                    style={{
-                      padding: '6px 10px',
-                      margin: '2px 0',
-                      borderRadius: '4px',
-                      cursor: 'pointer',
-                      fontSize: '13px',
-                      backgroundColor: selectedCategory === category.id ? '#e3f2fd' : 'transparent',
-                      border: selectedCategory === category.id ? '1px solid #2196f3' : '1px solid transparent',
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '8px'
-                    }}
-                  >
-                    <div 
-                      style={{ 
-                        width: '12px', 
-                        height: '12px', 
-                        borderRadius: '50%', 
-                        backgroundColor: category.color 
-                      }}
-                    />
-                    {category.name} ({categoryDocs.length})
-                  </div>
-                  {category.id !== 'general' && (
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleDeleteCategory(category.id);
-                      }}
-                      style={{
-                        position: 'absolute',
-                        right: '5px',
-                        top: '50%',
-                        transform: 'translateY(-50%)',
-                        background: 'none',
-                        border: 'none',
-                        color: '#dc3545',
-                        cursor: 'pointer',
-                        fontSize: '12px',
-                        opacity: 0.7
-                      }}
-                      title="카테고리 삭제"
-                    >
-                      ×
-                    </button>
-                  )}
-                </div>
-              );
-            })}
-          </div>
-
-          {/* 선택된 카테고리의 문서들 */}
-          {getFilteredDocuments().length > 0 ? (
-            <div style={{ marginBottom: '15px' }}>
-              <h4 style={{ 
-                fontSize: '12px', 
-                color: '#6c757d', 
-                margin: '0 0 8px 0',
-                textTransform: 'uppercase' 
-              }}>
-                {selectedCategory === 'all' 
-                  ? '모든 문서' 
-                  : categories.find(c => c.id === selectedCategory)?.name || '문서'}
-              </h4>
-              {getFilteredDocuments().map((doc) => (
-                <div 
-                  key={doc.id} 
-                  className="document-item"
+            {/* 전체 문서 카테고리 */}
+            <div style={{ marginBottom: '8px' }}>
+              <div
+                onClick={() => toggleCategoryExpansion('all')}
+                style={{
+                  padding: '6px 10px',
+                  margin: '2px 0',
+                  borderRadius: '4px',
+                  cursor: 'pointer',
+                  fontSize: '13px',
+                  backgroundColor: 'transparent',
+                  border: '1px solid transparent',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px'
+                }}
+              >
+                <span style={{ fontSize: '12px', width: '12px' }}>
+                  {expandedCategories.has('all') ? '▼' : '▶'}
+                </span>
+                📂 모든 문서 ({documents.length})
+              </div>
+              
+              {/* 모든 문서 하위 리스트 */}
+              {expandedCategories.has('all') && documents.map((doc) => (
+                <div
+                  key={doc.id}
+                  className={`document-item ${currentDoc?.id === doc.id ? 'active' : ''}`}
                   onClick={() => handleSelectDocument(doc)}
-                  style={{ cursor: 'pointer' }}
+                  style={{ 
+                    cursor: 'pointer',
+                    marginLeft: '20px',
+                    marginBottom: '4px'
+                  }}
                 >
                   {doc.title}
                 </div>
               ))}
             </div>
-          ) : (
-            <p style={{ color: '#6c757d', fontSize: '12px', fontStyle: 'italic', margin: '10px 0' }}>
-              {selectedCategory === 'all' 
-                ? '아직 문서가 없습니다.' 
-                : '이 카테고리에 문서가 없습니다.'}
-            </p>
-          )}
+
+            {/* 카테고리별 트리 구조 */}
+            {categories.map(category => {
+              const categoryDocs = documents.filter(doc => doc.category === category.id);
+              const isExpanded = expandedCategories.has(category.id);
+              const isEditing = editingCategoryId === category.id;
+              
+              return (
+                <div key={category.id} style={{ marginBottom: '8px' }}>
+                  <div style={{ position: 'relative' }}>
+                    {isEditing ? (
+                      // 카테고리 이름 수정 모드
+                      <div
+                        style={{
+                          padding: '6px 10px',
+                          margin: '2px 0',
+                          borderRadius: '4px',
+                          fontSize: '13px',
+                          backgroundColor: '#f8f9fa',
+                          border: '2px solid #007bff',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '8px'
+                        }}
+                      >
+                        <span style={{ fontSize: '12px', width: '12px' }}>
+                          {isExpanded ? '▼' : '▶'}
+                        </span>
+                        <div 
+                          style={{ 
+                            width: '12px', 
+                            height: '12px', 
+                            borderRadius: '50%', 
+                            backgroundColor: category.color,
+                            flexShrink: 0
+                          }}
+                        />
+                        <input
+                          type="text"
+                          value={editingCategoryName}
+                          onChange={(e) => setEditingCategoryName(e.target.value)}
+                          onKeyDown={(e) => handleCategoryKeyDown(e, category.id)}
+                          style={{
+                            flex: 1,
+                            padding: '2px 6px',
+                            fontSize: '13px',
+                            border: 'none',
+                            outline: 'none',
+                            background: 'transparent',
+                            minWidth: '60px'
+                          }}
+                          autoFocus
+                          placeholder="카테고리 이름"
+                        />
+                        <span style={{ fontSize: '11px', color: '#6c757d', flexShrink: 0 }}>
+                          ({categoryDocs.length})
+                        </span>
+                        <div style={{ display: 'flex', gap: '4px', marginLeft: 'auto' }}>
+                          <button
+                            onClick={() => handleSaveCategory(category.id)}
+                            style={{
+                              padding: '2px 6px',
+                              fontSize: '10px',
+                              background: '#28a745',
+                              color: 'white',
+                              border: 'none',
+                              borderRadius: '2px',
+                              cursor: 'pointer'
+                            }}
+                            title="저장"
+                          >
+                            ✓
+                          </button>
+                          <button
+                            onClick={handleCancelEditCategory}
+                            style={{
+                              padding: '2px 6px',
+                              fontSize: '10px',
+                              background: '#6c757d',
+                              color: 'white',
+                              border: 'none',
+                              borderRadius: '2px',
+                              cursor: 'pointer'
+                            }}
+                            title="취소"
+                          >
+                            ×
+                          </button>
+                        </div>
+                      </div>
+                    ) : (
+                      // 카테고리 일반 표시 모드
+                      <div
+                        onClick={() => toggleCategoryExpansion(category.id)}
+                        style={{
+                          padding: '6px 10px',
+                          margin: '2px 0',
+                          borderRadius: '4px',
+                          cursor: 'pointer',
+                          fontSize: '13px',
+                          backgroundColor: 'transparent',
+                          border: '1px solid transparent',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '8px'
+                        }}
+                      >
+                        <span style={{ fontSize: '12px', width: '12px' }}>
+                          {isExpanded ? '▼' : '▶'}
+                        </span>
+                        <div 
+                          style={{ 
+                            width: '12px', 
+                            height: '12px', 
+                            borderRadius: '50%', 
+                            backgroundColor: category.color 
+                          }}
+                        />
+                        <span
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleStartEditCategory(category.id, category.name);
+                          }}
+                          style={{
+                            flex: 1,
+                            cursor: 'pointer',
+                            padding: '2px 4px',
+                            borderRadius: '3px',
+                            transition: 'background-color 0.2s'
+                          }}
+                          onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#f8f9fa'}
+                          onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+                          title="이름을 클릭하여 수정"
+                        >
+                          {category.name} ({categoryDocs.length})
+                        </span>
+                      </div>
+                    )}
+                    
+                    {/* 삭제 버튼 */}
+                    {!isEditing && category.id !== 'general' && (
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleDeleteCategory(category.id);
+                        }}
+                        style={{
+                          position: 'absolute',
+                          right: '5px',
+                          top: '50%',
+                          transform: 'translateY(-50%)',
+                          background: 'none',
+                          border: 'none',
+                          color: '#dc3545',
+                          cursor: 'pointer',
+                          fontSize: '12px',
+                          opacity: 0.7
+                        }}
+                        title="카테고리 삭제"
+                      >
+                        🗑️
+                      </button>
+                    )}
+                  </div>
+
+                  {/* 카테고리 하위 문서 리스트 */}
+                  {isExpanded && (
+                    <div style={{ marginLeft: '20px' }}>
+                      {categoryDocs.length > 0 ? (
+                        categoryDocs.map((doc) => (
+                          <div
+                            key={doc.id}
+                            className={`document-item ${currentDoc?.id === doc.id ? 'active' : ''}`}
+                            onClick={() => handleSelectDocument(doc)}
+                            style={{ 
+                              cursor: 'pointer',
+                              marginBottom: '4px'
+                            }}
+                          >
+                            {doc.title}
+                          </div>
+                        ))
+                      ) : (
+                        <p style={{ 
+                          color: '#6c757d', 
+                          fontSize: '11px', 
+                          fontStyle: 'italic', 
+                          margin: '4px 0', 
+                          padding: '4px 8px' 
+                        }}>
+                          이 카테고리에 문서가 없습니다.
+                        </p>
+                      )}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
 
           {isCreating ? (
             <div>
