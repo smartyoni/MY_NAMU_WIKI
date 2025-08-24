@@ -4,12 +4,12 @@ import { getAuth } from 'firebase/auth';
 import { getStorage } from 'firebase/storage';
 
 const firebaseConfig = {
-  apiKey: "AIzaSyB8XHkT_DedTncHBUSu8d5AwjJLXqDFP2g",
-  authDomain: "smartrealapp.firebaseapp.com",
-  projectId: "smartrealapp",
-  storageBucket: "smartrealapp.firebasestorage.app",
-  messagingSenderId: "651193312612",
-  appId: "1:651193312612:web:cfa6bea236c71c14a94671"
+  apiKey: import.meta.env.VITE_FIREBASE_API_KEY || "AIzaSyB8XHkT_DedTncHBUSu8d5AwjJLXqDFP2g",
+  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN || "smartrealapp.firebaseapp.com",
+  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID || "smartrealapp",
+  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET || "smartrealapp.firebasestorage.app",
+  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID || "651193312612",
+  appId: import.meta.env.VITE_FIREBASE_APP_ID || "1:651193312612:web:cfa6bea236c71c14a94671"
 };
 
 const app = initializeApp(firebaseConfig);
