@@ -738,9 +738,10 @@ Firebase와 연결되었습니다! 🚀`);
               const isEditing = editingCategoryId === category.id;
               
               return (
-                <div key={category.id} style={{ marginBottom: '8px' }}>
-                  <div style={{ position: 'relative' }}>
-                    {isEditing ? (
+                <React.Fragment key={category.id}>
+                  <div style={{ marginBottom: '8px' }}>
+                    <div style={{ position: 'relative' }}>
+                      {isEditing ? (
                       // 카테고리 이름 수정 모드
                       <div
                         style={{
@@ -895,6 +896,7 @@ Firebase와 연결되었습니다! 🚀`);
                     
                   </div>
                   
+                  
                   {/* 드롭다운 메뉴를 카테고리 박스 밖으로 이동 */}
                   {!isEditing && categoryMenuOpen === category.id && (
                     <div
@@ -1004,39 +1006,39 @@ Firebase와 연결되었습니다! 🚀`);
                             )}
                     </div>
                   )}
+                  
+                    {/* 카테고리 하위 문서 리스트 */}
+                    {isExpanded && (
+                      <div style={{ marginLeft: '20px' }}>
+                        {categoryDocs.length > 0 ? (
+                          categoryDocs.map((doc) => (
+                            <div
+                              key={doc.id}
+                              className={`document-item ${currentDoc?.id === doc.id ? 'active' : ''}`}
+                              onClick={() => handleSelectDocument(doc)}
+                              style={{ 
+                                cursor: 'pointer',
+                                marginBottom: '4px'
+                              }}
+                            >
+                              {doc.title}
+                            </div>
+                          ))
+                        ) : (
+                          <p style={{ 
+                            color: '#6c757d', 
+                            fontSize: '11px', 
+                            fontStyle: 'italic', 
+                            margin: '4px 0', 
+                            padding: '4px 8px' 
+                          }}>
+                            이 카테고리에 문서가 없습니다.
+                          </p>
+                        )}
+                      </div>
+                    )}
                   </div>
-
-                  {/* 카테고리 하위 문서 리스트 */}
-                  {isExpanded && (
-                    <div style={{ marginLeft: '20px' }}>
-                      {categoryDocs.length > 0 ? (
-                        categoryDocs.map((doc) => (
-                          <div
-                            key={doc.id}
-                            className={`document-item ${currentDoc?.id === doc.id ? 'active' : ''}`}
-                            onClick={() => handleSelectDocument(doc)}
-                            style={{ 
-                              cursor: 'pointer',
-                              marginBottom: '4px'
-                            }}
-                          >
-                            {doc.title}
-                          </div>
-                        ))
-                      ) : (
-                        <p style={{ 
-                          color: '#6c757d', 
-                          fontSize: '11px', 
-                          fontStyle: 'italic', 
-                          margin: '4px 0', 
-                          padding: '4px 8px' 
-                        }}>
-                          이 카테고리에 문서가 없습니다.
-                        </p>
-                      )}
-                    </div>
-                  )}
-                </div>
+                </React.Fragment>
               );
             })}
           </div>
