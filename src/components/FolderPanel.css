@@ -1,0 +1,280 @@
+.folder-panel {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  background: #ffffff;
+  padding: 16px;
+}
+
+.panel-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid #dee2e6;
+}
+
+.panel-header h3 {
+  margin: 0;
+  font-size: 18px;
+  color: #495057;
+  font-weight: 600;
+}
+
+.folder-list {
+  flex: 1;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 200px;
+  color: #6c757d;
+  text-align: center;
+}
+
+.empty-state p {
+  margin: 0 0 8px 0;
+  font-size: 16px;
+}
+
+.empty-state small {
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+.folder-item {
+  background: #f8f9fa;
+  border: 1px solid #dee2e6;
+  border-radius: 8px;
+  overflow: hidden;
+  transition: all 0.2s ease;
+}
+
+.folder-item:hover {
+  border-color: #007bff;
+}
+
+.folder-item.selected {
+  border-color: #007bff;
+  box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.1);
+}
+
+.folder-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+  position: relative;
+}
+
+.folder-header:hover {
+  background-color: #e9ecef;
+}
+
+.folder-content {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+}
+
+.folder-icon {
+  font-size: 16px;
+  transition: transform 0.2s ease;
+}
+
+.folder-icon.expanded {
+  transform: rotate(0deg);
+}
+
+.folder-name {
+  font-size: 14px;
+  font-weight: 500;
+  color: #495057;
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.document-count {
+  font-size: 12px;
+  color: #6c757d;
+  background: #e9ecef;
+  padding: 2px 6px;
+  border-radius: 10px;
+  min-width: 20px;
+  text-align: center;
+}
+
+.folder-menu {
+  opacity: 0;
+  transition: opacity 0.2s ease;
+  position: relative;
+  z-index: 1001;
+}
+
+.folder-header:hover .folder-menu,
+.folder-menu:focus-within {
+  opacity: 1;
+}
+
+.edit-form {
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.edit-input {
+  width: 100%;
+  padding: 6px 8px;
+  border: 1px solid #dee2e6;
+  border-radius: 4px;
+  font-size: 14px;
+}
+
+.edit-buttons {
+  display: flex;
+  gap: 4px;
+  justify-content: flex-end;
+}
+
+.save-btn, .cancel-btn {
+  padding: 4px 8px;
+  border: none;
+  border-radius: 4px;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.save-btn {
+  background: #28a745;
+  color: white;
+}
+
+.cancel-btn {
+  background: #6c757d;
+  color: white;
+}
+
+.document-list {
+  background: white;
+  border-top: 1px solid #dee2e6;
+  padding: 8px 0;
+  animation: slideDown 0.2s ease-out;
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    max-height: 0;
+  }
+  to {
+    opacity: 1;
+    max-height: 300px;
+  }
+}
+
+.empty-documents {
+  padding: 16px 12px;
+  text-align: center;
+  color: #6c757d;
+}
+
+.document-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  margin: 0 8px;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.document-item:hover {
+  background-color: #f8f9fa;
+}
+
+.document-item.selected {
+  background-color: #007bff;
+  color: white;
+}
+
+.document-icon {
+  font-size: 14px;
+  flex-shrink: 0;
+}
+
+.document-title {
+  font-size: 13px;
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* 스크롤바 스타일 */
+.folder-list::-webkit-scrollbar {
+  width: 6px;
+}
+
+.folder-list::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.folder-list::-webkit-scrollbar-thumb {
+  background: #c1c1c1;
+  border-radius: 3px;
+}
+
+.folder-list::-webkit-scrollbar-thumb:hover {
+  background: #a8a8a8;
+}
+
+/* 모바일 대응 */
+@media (max-width: 768px) {
+  .folder-panel {
+    padding: 12px;
+  }
+  
+  .panel-header h3 {
+    font-size: 16px;
+  }
+  
+  .folder-header {
+    padding: 10px;
+  }
+  
+  .folder-name {
+    font-size: 13px;
+  }
+  
+  .document-count {
+    font-size: 11px;
+    padding: 1px 4px;
+  }
+  
+  .document-item {
+    padding: 10px 12px;
+  }
+  
+  .document-title {
+    font-size: 12px;
+  }
+  
+  .folder-menu {
+    opacity: 1 !important;
+  }
+}

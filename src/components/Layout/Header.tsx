@@ -1,29 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import './Header.css';
 
-// 전역 함수 타입 선언
-declare global {
-  interface Window {
-    setIsCreating?: (value: boolean) => void;
-  }
-}
+interface HeaderProps {}
 
-interface HeaderProps {
-  toggleSidebar: () => void;
-}
-
-// 전역 함수로 새 문서 버튼 이벤트 처리
-const handleGlobalNewDocument = () => {
-  console.log('새 문서 버튼 클릭 - 직접 처리');
-  if (window.setIsCreating) {
-    window.setIsCreating(true);
-    console.log('전역 함수 호출 완료');
-  } else {
-    console.error('전역 setIsCreating 함수를 찾을 수 없습니다');
-  }
-};
-
-const Header: React.FC<HeaderProps> = ({ toggleSidebar }) => {
+const Header: React.FC<HeaderProps> = () => {
   const [currentTime, setCurrentTime] = useState(new Date());
 
   useEffect(() => {
@@ -50,8 +30,7 @@ const Header: React.FC<HeaderProps> = ({ toggleSidebar }) => {
   return (
     <header className="header">
       <div className="header-left">
-        <button onClick={toggleSidebar} className="sidebar-toggle-btn">목록</button>
-        <h1 className="logo">Personal Wiki</h1>
+        <h1 className="logo">📚 Personal Wiki</h1>
         <span className="datetime">{formatDateTime(currentTime)}</span>
       </div>
       <div className="header-center">
@@ -62,23 +41,7 @@ const Header: React.FC<HeaderProps> = ({ toggleSidebar }) => {
         />
       </div>
       <div className="header-right">
-        <button
-          onClick={handleGlobalNewDocument}
-          style={{
-            marginRight: '15px',
-            padding: '8px 16px',
-            background: '#6f42c1',
-            color: 'white',
-            border: 'none',
-            borderRadius: '4px',
-            fontSize: '14px',
-            cursor: 'pointer',
-            fontWeight: '500'
-          }}
-        >
-          + 새 문서
-        </button>
-        <span className="production-mode">완성 버전</span>
+        <span className="production-mode">3단 계층 구조</span>
       </div>
     </header>
   );

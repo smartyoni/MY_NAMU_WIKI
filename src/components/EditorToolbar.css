@@ -1,0 +1,180 @@
+.editor-toolbar {
+  background: #f8f9fa;
+  border-bottom: none;
+  padding: 8px 16px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: center;
+  min-height: 48px;
+}
+
+.toolbar-section {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.toolbar-label {
+  font-size: 12px;
+  color: #6c757d;
+  font-weight: 500;
+  margin-right: 4px;
+}
+
+.toolbar-button {
+  background: white;
+  border: 1px solid #dee2e6;
+  border-radius: 4px;
+  padding: 6px 8px;
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  min-width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+}
+
+.toolbar-button:hover {
+  background: #e9ecef;
+  border-color: #adb5bd;
+  transform: translateY(-1px);
+}
+
+.toolbar-button:active {
+  background: #dee2e6;
+  transform: translateY(0);
+}
+
+/* 특별한 버튼 스타일 */
+.toolbar-button:nth-child(2) { /* 볼드 */
+  font-weight: bold;
+  color: #495057;
+}
+
+.toolbar-button:nth-child(3) { /* 이탤릭 */
+  font-style: italic;
+  color: #495057;
+}
+
+.toolbar-button:nth-child(4) { /* 취소선 */
+  color: #dc3545;
+}
+
+/* 체크박스 버튼들 */
+.toolbar-section:nth-child(2) .toolbar-button:first-of-type {
+  color: #6c757d;
+}
+
+.toolbar-section:nth-child(2) .toolbar-button:last-of-type {
+  color: #28a745;
+}
+
+/* 헤더 버튼들 */
+.toolbar-section:nth-child(3) .toolbar-button {
+  font-weight: bold;
+  color: #007bff;
+}
+
+.toolbar-section:nth-child(3) .toolbar-button:first-of-type {
+  font-size: 16px;
+}
+
+.toolbar-section:nth-child(3) .toolbar-button:nth-child(2) {
+  font-size: 14px;
+}
+
+.toolbar-section:nth-child(3) .toolbar-button:nth-child(3) {
+  font-size: 12px;
+}
+
+/* 기타 버튼들 */
+.toolbar-section:nth-child(4) .toolbar-button {
+  color: #6c757d;
+}
+
+/* 링크 버튼 */
+.toolbar-section:nth-child(4) .toolbar-button:nth-child(5) {
+  color: #17a2b8;
+}
+
+/* 구분선 버튼 */
+.toolbar-section:nth-child(4) .toolbar-button:nth-child(6) {
+  color: #495057;
+}
+
+/* 목록 버튼들 */
+.toolbar-section:nth-child(4) .toolbar-button:nth-child(7),
+.toolbar-section:nth-child(4) .toolbar-button:nth-child(8) {
+  color: #6f42c1;
+}
+
+/* 반응형 디자인 */
+@media (max-width: 768px) {
+  .editor-toolbar {
+    padding: 6px 12px;
+    gap: 8px;
+  }
+  
+  .toolbar-button {
+    min-width: 28px;
+    height: 28px;
+    padding: 4px 6px;
+    font-size: 12px;
+  }
+  
+  .toolbar-label {
+    font-size: 11px;
+    margin-right: 2px;
+  }
+  
+  .toolbar-section {
+    gap: 2px;
+  }
+}
+
+/* 도구바 스크롤 */
+@media (max-width: 480px) {
+  .editor-toolbar {
+    overflow-x: auto;
+    flex-wrap: nowrap;
+    padding-bottom: 12px;
+  }
+  
+  .toolbar-section {
+    flex-shrink: 0;
+  }
+}
+
+/* 툴팁 스타일 개선 */
+.toolbar-button[title]:hover::after {
+  content: attr(title);
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  background: #333;
+  color: white;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 12px;
+  white-space: nowrap;
+  z-index: 1000;
+  margin-bottom: 4px;
+  opacity: 0.9;
+  pointer-events: none;
+}
+
+.toolbar-button[title]:hover::before {
+  content: '';
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  border: 4px solid transparent;
+  border-top-color: #333;
+  z-index: 1000;
+}

@@ -1,0 +1,98 @@
+.three-column-layout {
+  display: flex;
+  height: 100vh;
+  overflow: hidden;
+}
+
+.three-column-layout.desktop {
+  flex-direction: row;
+}
+
+.three-column-layout.desktop .category-panel {
+  flex: 1;
+  min-width: 200px;
+  max-width: 300px;
+  background: #f8f9fa;
+  border-right: 1px solid #dee2e6;
+  overflow-y: auto;
+}
+
+.three-column-layout.desktop .folder-panel {
+  flex: 1;
+  min-width: 250px;
+  max-width: 350px;
+  background: #ffffff;
+  border-right: 1px solid #dee2e6;
+  overflow-y: auto;
+}
+
+.three-column-layout.desktop .document-panel {
+  flex: 4;
+  background: #ffffff;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.three-column-layout.mobile {
+  flex-direction: column;
+  height: 100vh;
+}
+
+.three-column-layout.mobile .mobile-panels {
+  height: 50vh;
+  display: flex;
+  flex-direction: row;
+}
+
+.three-column-layout.mobile .mobile-panels > div {
+  flex: 1;
+  overflow-y: auto;
+  border-bottom: 1px solid #dee2e6;
+}
+
+.three-column-layout.mobile .mobile-panels > div:first-child {
+  border-right: 1px solid #dee2e6;
+}
+
+.three-column-layout.mobile .document-panel-mobile {
+  flex: 1;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+/* 스크롤바 스타일 */
+.category-panel::-webkit-scrollbar,
+.folder-panel::-webkit-scrollbar {
+  width: 6px;
+}
+
+.category-panel::-webkit-scrollbar-track,
+.folder-panel::-webkit-scrollbar-track {
+  background: #f1f1f1;
+}
+
+.category-panel::-webkit-scrollbar-thumb,
+.folder-panel::-webkit-scrollbar-thumb {
+  background: #c1c1c1;
+  border-radius: 3px;
+}
+
+.category-panel::-webkit-scrollbar-thumb:hover,
+.folder-panel::-webkit-scrollbar-thumb:hover {
+  background: #a8a8a8;
+}
+
+/* 반응형 처리 */
+@media (max-width: 768px) {
+  .three-column-layout.desktop {
+    display: none;
+  }
+}
+
+@media (min-width: 769px) {
+  .three-column-layout.mobile {
+    display: none;
+  }
+}
