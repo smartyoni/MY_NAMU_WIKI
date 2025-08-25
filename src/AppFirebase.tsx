@@ -248,14 +248,20 @@ Firebase와 연결되었습니다! 🚀`);
 
   // 카테고리 이름 수정 저장
   const handleSaveCategory = async (categoryId: string) => {
-    if (!editingCategoryName.trim()) return;
+    if (!editingCategoryName.trim()) {
+      console.log('카테고리 이름이 비어있음');
+      return;
+    }
 
     try {
+      console.log('카테고리 이름 수정:', categoryId, '→', editingCategoryName.trim());
       await updateCategory(categoryId, { name: editingCategoryName.trim() });
       setEditingCategoryId(null);
       setEditingCategoryName('');
+      console.log('카테고리 이름 수정 완료');
     } catch (err) {
       console.error('Error updating category:', err);
+      alert('카테고리 이름 변경 중 오류가 발생했습니다.');
     }
   };
 
@@ -274,13 +280,17 @@ Firebase와 연결되었습니다! 🚀`);
       return;
     }
     
-    if (window.confirm('이 카테고리를 삭제하시겠습니까? 카테고리 내 모든 문서는 "일반" 카테고리로 이동됩니다.')) {
+    const categoryName = categories.find(cat => cat.id === categoryId)?.name || '알 수 없음';
+    
+    if (window.confirm(`"${categoryName}" 카테고리를 삭제하시겠습니까? 카테고리 내 모든 문서는 "일반" 카테고리로 이동됩니다.`)) {
       try {
+        console.log('카테고리 삭제 시작:', categoryId, categoryName);
         await deleteCategory(categoryId);
         
         if (selectedCategory === categoryId) {
           setSelectedCategory('all');
         }
+        console.log('카테고리 삭제 완료:', categoryId);
       } catch (error) {
         console.error('Error deleting category:', error);
         alert('카테고리 삭제 중 오류가 발생했습니다.');
@@ -304,33 +314,49 @@ Firebase와 연결되었습니다! 🚀`);
   // 카테고리 순서 이동
   const moveCategoryUp = async (categoryId: string) => {
     const currentIndex = categories.findIndex(cat => cat.id === categoryId);
-    if (currentIndex <= 0) return; // 이미 맨 위거나 찾을 수 없음
+    if (currentIndex <= 0) {
+      console.log('카테고리를 위로 이동할 수 없음:', categoryId, 'currentIndex:', currentIndex);
+      return; // 이미 맨 위거나 찾을 수 없음
+    }
     
     try {
       const currentCategory = categories[currentIndex];
       const previousCategory = categories[currentIndex - 1];
       
+      console.log('카테고리 위로 이동:', currentCategory.name, '↔', previousCategory.name);
+      
       // 순서 교체
       await updateCategory(currentCategory.id, { order: previousCategory.order });
       await updateCategory(previousCategory.id, { order: currentCategory.order });
+      
+      console.log('카테고리 위로 이동 완료');
     } catch (error) {
       console.error('Error moving category up:', error);
+      alert('카테고리 순서 변경 중 오류가 발생했습니다.');
     }
   };
 
   const moveCategoryDown = async (categoryId: string) => {
     const currentIndex = categories.findIndex(cat => cat.id === categoryId);
-    if (currentIndex >= categories.length - 1 || currentIndex === -1) return; // 이미 맨 아래거나 찾을 수 없음
+    if (currentIndex >= categories.length - 1 || currentIndex === -1) {
+      console.log('카테고리를 아래로 이동할 수 없음:', categoryId, 'currentIndex:', currentIndex, 'total:', categories.length);
+      return; // 이미 맨 아래거나 찾을 수 없음
+    }
     
     try {
       const currentCategory = categories[currentIndex];
       const nextCategory = categories[currentIndex + 1];
       
+      console.log('카테고리 아래로 이동:', currentCategory.name, '↔', nextCategory.name);
+      
       // 순서 교체
       await updateCategory(currentCategory.id, { order: nextCategory.order });
       await updateCategory(nextCategory.id, { order: currentCategory.order });
+      
+      console.log('카테고리 아래로 이동 완료');
     } catch (error) {
       console.error('Error moving category down:', error);
+      alert('카테고리 순서 변경 중 오류가 발생했습니다.');
     }
   };
 
@@ -877,7 +903,7 @@ Firebase와 연결되었습니다! 🚀`);
                   {/* 드롭다운 메뉴 */}
                   {!isEditing && categoryMenuOpen === category.id && (
                     <div
-                      className="category-dropdown-menu"
+                      className="category-menu-container category-dropdown-menu"
                       style={{
                         position: 'absolute',
                         right: '0px',
