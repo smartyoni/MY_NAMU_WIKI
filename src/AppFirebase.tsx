@@ -993,13 +993,64 @@ Firebase와 연결되었습니다! 🚀`);
                             <div
                               key={doc.id}
                               className={`document-item ${currentDoc?.id === doc.id ? 'active' : ''}`}
-                              onClick={() => handleSelectDocument(doc)}
                               style={{ 
                                 cursor: 'pointer',
-                                marginBottom: '4px'
+                                marginBottom: '4px',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'space-between',
+                                padding: '4px 8px',
+                                borderRadius: '4px',
+                                backgroundColor: currentDoc?.id === doc.id ? '#e3f2fd' : 'transparent',
+                                border: currentDoc?.id === doc.id ? '1px solid #2196f3' : '1px solid transparent'
                               }}
                             >
-                              {doc.title}
+                              <span
+                                onClick={() => handleSelectDocument(doc)}
+                                style={{ flex: 1, cursor: 'pointer' }}
+                              >
+                                {doc.title}
+                              </span>
+                              
+                              {/* 문서용 3점 메뉴 버튼 */}
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  console.log('문서 3점 메뉴 클릭됨:', doc.id);
+                                  // TODO: 문서 메뉴 기능 추가 필요
+                                }}
+                                style={{
+                                  background: 'none',
+                                  border: '1px solid transparent',
+                                  color: '#6c757d',
+                                  cursor: 'pointer',
+                                  fontSize: '16px',
+                                  fontWeight: 'bold',
+                                  opacity: 1,
+                                  padding: '4px 6px',
+                                  borderRadius: '4px',
+                                  lineHeight: '1',
+                                  flexShrink: 0,
+                                  minWidth: '20px',
+                                  height: '20px',
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  justifyContent: 'center',
+                                  position: 'relative',
+                                  zIndex: 100
+                                }}
+                                title="문서 메뉴"
+                                onMouseEnter={(e) => {
+                                  e.currentTarget.style.backgroundColor = '#e9ecef';
+                                  e.currentTarget.style.borderColor = '#6c757d';
+                                }}
+                                onMouseLeave={(e) => {
+                                  e.currentTarget.style.backgroundColor = 'transparent';
+                                  e.currentTarget.style.borderColor = 'transparent';
+                                }}
+                              >
+                                ⋮
+                              </button>
                             </div>
                           ))
                         ) : (
