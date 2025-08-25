@@ -699,7 +699,7 @@ Firebase와 연결되었습니다! 🚀`);
               
               return (
                 <React.Fragment key={category.id}>
-                  <div style={{ marginBottom: '8px' }}>
+                  <div style={{ marginBottom: '8px', position: 'relative' }}>
                     <div style={{ position: 'relative' }}>
                       {isEditing ? (
                       // 카테고리 이름 수정 모드
@@ -831,6 +831,7 @@ Firebase와 연결되었습니다! 🚀`);
                         <button
                           onClick={(e) => {
                             e.stopPropagation();
+                            console.log('3점 메뉴 클릭됨:', category.id, 'currentOpen:', categoryMenuOpen);
                             setCategoryMenuOpen(categoryMenuOpen === category.id ? null : category.id);
                           }}
                           style={{
@@ -849,7 +850,9 @@ Firebase와 연결되었습니다! 🚀`);
                             height: '24px',
                             display: 'flex',
                             alignItems: 'center',
-                            justifyContent: 'center'
+                            justifyContent: 'center',
+                            position: 'relative',
+                            zIndex: 100
                           }}
                           title="카테고리 메뉴"
                           onMouseEnter={(e) => {
@@ -871,21 +874,22 @@ Firebase와 연결되었습니다! 🚀`);
                   </div>
                   
                   
-                  {/* 드롭다운 메뉴를 카테고리 박스 밖으로 이동 */}
+                  {/* 드롭다운 메뉴 */}
                   {!isEditing && categoryMenuOpen === category.id && (
                     <div
                       className="category-dropdown-menu"
                       style={{
                         position: 'absolute',
-                        right: '5px',
+                        right: '0px',
                         top: '100%',
                         background: 'white',
                         border: '1px solid #dee2e6',
                         borderRadius: '4px',
-                        boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
-                        zIndex: 1000,
-                        minWidth: '120px',
-                        padding: '4px 0'
+                        boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+                        zIndex: 9999,
+                        minWidth: '140px',
+                        padding: '4px 0',
+                        marginTop: '2px'
                       }}
                     >
                             <button
