@@ -147,10 +147,62 @@
   .toolbar-section {
     flex-shrink: 0;
   }
+  
+  /* 모바일에서 셀렉트 박스 크기 조정 */
+  .font-size-select {
+    width: 55px;
+  }
+  
+  .font-family-select {
+    width: 75px;
+  }
+  
+  .toolbar-select {
+    font-size: 11px;
+    padding: 3px 4px;
+  }
+}
+
+/* 셀렉트 박스 스타일 */
+.toolbar-select {
+  background: white;
+  border: 1px solid #dee2e6;
+  border-radius: 4px;
+  padding: 4px 6px;
+  font-size: 12px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  outline: none;
+  margin: 0 2px;
+}
+
+.toolbar-select:hover {
+  border-color: #adb5bd;
+  background: #f8f9fa;
+}
+
+.toolbar-select:focus {
+  border-color: #007bff;
+  box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.25);
+}
+
+.font-size-select {
+  width: 60px;
+}
+
+.font-family-select {
+  width: 90px;
+}
+
+/* 셀렉트 박스 옵션 스타일 */
+.toolbar-select option {
+  padding: 4px;
+  font-size: 12px;
 }
 
 /* 툴팁 스타일 개선 */
-.toolbar-button[title]:hover::after {
+.toolbar-button[title]:hover::after,
+.toolbar-select[title]:hover::after {
   content: attr(title);
   position: absolute;
   bottom: 100%;
@@ -168,7 +220,8 @@
   pointer-events: none;
 }
 
-.toolbar-button[title]:hover::before {
+.toolbar-button[title]:hover::before,
+.toolbar-select[title]:hover::before {
   content: '';
   position: absolute;
   bottom: 100%;

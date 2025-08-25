@@ -30,7 +30,14 @@ const DocumentPanel: React.FC<DocumentPanelProps> = ({ className = '' }) => {
   const [title, setTitle] = useState('');
   const [showTOC, setShowTOC] = useState(false);
   const [headers, setHeaders] = useState<HeaderInfo[]>([]);
+  const [fontSize, setFontSize] = useState(() => {
+    return localStorage.getItem('wiki-font-size') || '14';
+  });
+  const [fontFamily, setFontFamily] = useState(() => {
+    return localStorage.getItem('wiki-font-family') || 'inherit';
+  });
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const contentViewerRef = useRef<HTMLDivElement>(null);
 
   const selectedDocument = getSelectedDocument();
 
@@ -51,6 +58,30 @@ const DocumentPanel: React.FC<DocumentPanelProps> = ({ className = '' }) => {
     const extractedHeaders = extractHeaders(content);
     setHeaders(extractedHeaders);
   }, [content]);
+
+  // 폰트 설정이 변경될 때 편집창과 뷰어에 적용
+  useEffect(() => {
+    if (textareaRef.current) {
+      textareaRef.current.style.fontSize = fontSize + 'px';
+      textareaRef.current.style.fontFamily = fontFamily;
+    }
+    if (contentViewerRef.current) {
+      contentViewerRef.current.style.fontSize = fontSize + 'px';
+      contentViewerRef.current.style.fontFamily = fontFamily;
+    }
+  }, [fontSize, fontFamily]);
+
+  // 폰트 크기 변경 핸들러
+  const handleFontSizeChange = (size: string) => {
+    setFontSize(size);
+    localStorage.setItem('wiki-font-size', size);
+  };
+
+  // 폰트 패밀리 변경 핸들러
+  const handleFontFamilyChange = (family: string) => {
+    setFontFamily(family);
+    localStorage.setItem('wiki-font-family', family);
+  };
 
   const handleSave = async () => {
     if (!selectedDocument) return;
@@ -506,7 +537,11 @@ const DocumentPanel: React.FC<DocumentPanelProps> = ({ className = '' }) => {
           <>
             <EditorToolbar 
               textareaRef={textareaRef} 
-              onTextChange={handleContentChange} 
+              onTextChange={handleContentChange}
+              fontSize={fontSize}
+              fontFamily={fontFamily}
+              onFontSizeChange={handleFontSizeChange}
+              onFontFamilyChange={handleFontFamilyChange}
             />
             <EmojiToolbar 
               textareaRef={textareaRef} 
@@ -555,7 +590,7 @@ const DocumentPanel: React.FC<DocumentPanelProps> = ({ className = '' }) => {
             autoFocus
           />
         ) : (
-          <div className="content-viewer">
+          <div ref={contentViewerRef} className="content-viewer">
             {renderMarkdown(content)}
           </div>
         )}

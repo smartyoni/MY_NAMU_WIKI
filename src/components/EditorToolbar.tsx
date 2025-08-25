@@ -1,9 +1,13 @@
-import React, { useRef } from 'react';
+import React, { useState } from 'react';
 import './EditorToolbar.css';
 
 interface EditorToolbarProps {
   textareaRef: React.RefObject<HTMLTextAreaElement>;
   onTextChange: (text: string) => void;
+  fontSize: string;
+  fontFamily: string;
+  onFontSizeChange: (size: string) => void;
+  onFontFamilyChange: (family: string) => void;
 }
 
 interface FormatAction {
@@ -13,7 +17,15 @@ interface FormatAction {
   title: string;
 }
 
-const EditorToolbar: React.FC<EditorToolbarProps> = ({ textareaRef, onTextChange }) => {
+const EditorToolbar: React.FC<EditorToolbarProps> = ({ 
+  textareaRef, 
+  onTextChange,
+  fontSize,
+  fontFamily,
+  onFontSizeChange,
+  onFontFamilyChange
+}) => {
+
   const insertText = (textarea: HTMLTextAreaElement, before: string, after: string = '') => {
     const start = textarea.selectionStart;
     const end = textarea.selectionEnd;
@@ -212,6 +224,48 @@ const EditorToolbar: React.FC<EditorToolbarProps> = ({ textareaRef, onTextChange
             {action.icon}
           </button>
         ))}
+      </div>
+
+      <div className="toolbar-section">
+        <span className="toolbar-label">스타일:</span>
+        
+        {/* 폰트 크기 선택 */}
+        <select
+          className="toolbar-select font-size-select"
+          value={fontSize}
+          onChange={(e) => onFontSizeChange(e.target.value)}
+          title="폰트 크기"
+        >
+          <option value="10">10px</option>
+          <option value="12">12px</option>
+          <option value="14">14px</option>
+          <option value="16">16px</option>
+          <option value="18">18px</option>
+          <option value="20">20px</option>
+          <option value="22">22px</option>
+          <option value="24">24px</option>
+          <option value="28">28px</option>
+          <option value="32">32px</option>
+        </select>
+
+        {/* 폰트 패밀리 선택 */}
+        <select
+          className="toolbar-select font-family-select"
+          value={fontFamily}
+          onChange={(e) => onFontFamilyChange(e.target.value)}
+          title="폰트 종류"
+        >
+          <option value="inherit">기본</option>
+          <option value="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif">시스템</option>
+          <option value="'Times New Roman', serif">Times</option>
+          <option value="'Arial', sans-serif">Arial</option>
+          <option value="'Courier New', monospace">Courier</option>
+          <option value="'Georgia', serif">Georgia</option>
+          <option value="'Verdana', sans-serif">Verdana</option>
+          <option value="'Malgun Gothic', '맑은 고딕', sans-serif">맑은고딕</option>
+          <option value="'Noto Sans KR', sans-serif">노토산스</option>
+          <option value="'D2Coding', 'Fira Code', 'Consolas', monospace">코딩폰트</option>
+        </select>
       </div>
     </div>
   );
