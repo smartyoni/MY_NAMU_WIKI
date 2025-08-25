@@ -1,0 +1,247 @@
+.mobile-tab-layout {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  background: #fff;
+}
+
+/* 브레드크럼 */
+.mobile-breadcrumb {
+  background: #f8f9fa;
+  border-bottom: 1px solid #dee2e6;
+  padding: 12px 16px;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+
+.breadcrumb-text {
+  font-size: 14px;
+  color: #6c757d;
+  font-weight: 500;
+  text-overflow: ellipsis;
+  overflow: hidden;
+  white-space: nowrap;
+}
+
+/* 탭 컨텐츠 */
+.mobile-tab-content {
+  flex: 1;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.mobile-tab-content > * {
+  flex: 1;
+  overflow-y: auto;
+}
+
+/* 하단 탭바 */
+.mobile-tab-bar {
+  display: flex;
+  background: #fff;
+  border-top: 1px solid #dee2e6;
+  box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.1);
+  position: sticky;
+  bottom: 0;
+  z-index: 100;
+}
+
+.tab-button {
+  flex: 1;
+  background: none;
+  border: none;
+  padding: 8px 4px 12px 4px;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  position: relative;
+  transition: all 0.2s ease;
+  min-height: 60px;
+}
+
+.tab-button:hover {
+  background-color: #f8f9fa;
+}
+
+.tab-button.active {
+  color: #007bff;
+  background-color: #e7f3ff;
+}
+
+.tab-button.has-selection {
+  position: relative;
+}
+
+.tab-button.has-selection::before {
+  content: '';
+  position: absolute;
+  top: 4px;
+  right: 8px;
+  width: 6px;
+  height: 6px;
+  background: #28a745;
+  border-radius: 50%;
+  z-index: 1;
+}
+
+.tab-icon {
+  font-size: 20px;
+  line-height: 1;
+}
+
+.tab-label {
+  font-size: 11px;
+  font-weight: 500;
+  line-height: 1;
+}
+
+.tab-badge {
+  position: absolute;
+  top: 2px;
+  right: 4px;
+  background: #dc3545;
+  color: white;
+  font-size: 10px;
+  font-weight: bold;
+  padding: 2px 6px;
+  border-radius: 10px;
+  min-width: 16px;
+  height: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+}
+
+.tab-button.active .tab-badge {
+  background: #007bff;
+}
+
+.tab-indicator {
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 32px;
+  height: 3px;
+  background: #007bff;
+  border-radius: 2px;
+}
+
+/* 빈 상태 메시지 조정 */
+.mobile-tab-content .empty-state {
+  padding: 40px 20px;
+  text-align: center;
+}
+
+.mobile-tab-content .empty-state h2 {
+  font-size: 24px;
+  margin-bottom: 12px;
+}
+
+.mobile-tab-content .empty-state p {
+  font-size: 16px;
+  margin-bottom: 16px;
+}
+
+.mobile-tab-content .empty-state .help-text {
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+/* 모바일 패널들 스타일 조정 */
+.mobile-tab-content .panel {
+  border: none;
+  border-radius: 0;
+  height: 100%;
+}
+
+.mobile-tab-content .panel-header {
+  position: sticky;
+  top: 0;
+  background: #fff;
+  z-index: 10;
+  border-bottom: 1px solid #dee2e6;
+}
+
+.mobile-tab-content .panel-header h3 {
+  font-size: 18px;
+}
+
+/* 문서 패널 특별 스타일 */
+.mobile-tab-content .document-panel {
+  border: none;
+}
+
+.mobile-tab-content .document-header {
+  position: sticky;
+  top: 0;
+  background: #fff;
+  z-index: 10;
+  border-bottom: 1px solid #dee2e6;
+}
+
+.mobile-tab-content .document-title {
+  font-size: 20px;
+}
+
+.mobile-tab-content .document-actions {
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.mobile-tab-content .action-button {
+  font-size: 14px;
+  padding: 8px 12px;
+}
+
+/* 에디터 툴바 모바일 최적화 */
+.mobile-tab-content .editor-toolbar,
+.mobile-tab-content .emoji-toolbar {
+  padding: 8px 12px;
+}
+
+.mobile-tab-content .toolbar-button,
+.mobile-tab-content .emoji-button {
+  min-width: 36px;
+  height: 36px;
+  font-size: 16px;
+}
+
+/* 스크롤 최적화 */
+.mobile-tab-content .category-list,
+.mobile-tab-content .folder-list,
+.mobile-tab-content .document-content {
+  -webkit-overflow-scrolling: touch;
+}
+
+/* 세이프 에어리어 대응 */
+@supports (padding-bottom: env(safe-area-inset-bottom)) {
+  .mobile-tab-bar {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+}
+
+/* 가로 모드에서 탭바 높이 조정 */
+@media screen and (orientation: landscape) and (max-height: 500px) {
+  .mobile-tab-bar {
+    padding: 4px 0 8px 0;
+  }
+  
+  .tab-button {
+    min-height: 44px;
+    padding: 4px 4px 8px 4px;
+  }
+  
+  .tab-icon {
+    font-size: 16px;
+  }
+  
+  .tab-label {
+    font-size: 10px;
+  }
+}

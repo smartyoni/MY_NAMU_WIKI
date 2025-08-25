@@ -66,7 +66,7 @@ const FolderPanel: React.FC<FolderPanelProps> = ({ className = '' }) => {
     const documentTitle = window.prompt('새 문서 제목을 입력하세요:');
     if (documentTitle && documentTitle.trim()) {
       try {
-        const documentId = await createDocument(folderId, documentTitle.trim(), '새 문서입니다. 내용을 작성해주세요.');
+        const documentId = await createDocument(folderId, documentTitle.trim(), '');
         selectDocument(documentId);
       } catch (error) {
         console.error('문서 생성 실패:', error);

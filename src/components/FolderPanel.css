@@ -54,7 +54,7 @@
   background: #f8f9fa;
   border: 1px solid #dee2e6;
   border-radius: 8px;
-  overflow: hidden;
+  overflow: visible;
   transition: all 0.2s ease;
 }
 
@@ -118,10 +118,10 @@
 }
 
 .folder-menu {
-  opacity: 0;
+  opacity: 1;
   transition: opacity 0.2s ease;
   position: relative;
-  z-index: 1001;
+  z-index: 10000;
 }
 
 .folder-header:hover .folder-menu,

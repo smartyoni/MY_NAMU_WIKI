@@ -164,6 +164,11 @@
 
 /* --- Mobile Styles --- */
 @media (max-width: 768px) {
+  .app {
+    height: 100vh;
+    height: 100dvh; /* Dynamic viewport height for mobile browsers */
+  }
+  
   .app-body {
     flex-direction: column;
   }
