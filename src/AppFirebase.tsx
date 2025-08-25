@@ -691,46 +691,6 @@ Firebase와 연결되었습니다! 🚀`);
           
           {/* 트리 구조 카테고리 뷰 */}
           <div style={{ marginBottom: '15px' }}>
-            {/* 전체 문서 카테고리 */}
-            <div style={{ marginBottom: '8px' }}>
-              <div
-                onClick={() => toggleCategoryExpansion('all')}
-                style={{
-                  padding: '6px 10px',
-                  margin: '2px 0',
-                  borderRadius: '4px',
-                  cursor: 'pointer',
-                  fontSize: '13px',
-                  backgroundColor: 'transparent',
-                  border: '1px solid transparent',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '8px'
-                }}
-              >
-                <span style={{ fontSize: '12px', width: '12px' }}>
-                  {expandedCategories.has('all') ? '▼' : '▶'}
-                </span>
-                📂 모든 문서 ({documents.length})
-              </div>
-              
-              {/* 모든 문서 하위 리스트 */}
-              {expandedCategories.has('all') && documents.map((doc) => (
-                <div
-                  key={doc.id}
-                  className={`document-item ${currentDoc?.id === doc.id ? 'active' : ''}`}
-                  onClick={() => handleSelectDocument(doc)}
-                  style={{ 
-                    cursor: 'pointer',
-                    marginLeft: '20px',
-                    marginBottom: '4px'
-                  }}
-                >
-                  {doc.title}
-                </div>
-              ))}
-            </div>
-
             {/* 카테고리별 트리 구조 */}
             {categories.map(category => {
               const categoryDocs = documents.filter(doc => doc.category === category.id);
@@ -874,22 +834,36 @@ Firebase와 연결되었습니다! 🚀`);
                             setCategoryMenuOpen(categoryMenuOpen === category.id ? null : category.id);
                           }}
                           style={{
-                            background: 'none',
-                            border: 'none',
+                            background: categoryMenuOpen === category.id ? '#e9ecef' : 'none',
+                            border: '1px solid ' + (categoryMenuOpen === category.id ? '#6c757d' : 'transparent'),
                             color: '#6c757d',
                             cursor: 'pointer',
-                            fontSize: '14px',
-                            opacity: 0.7,
-                            padding: '4px',
-                            borderRadius: '3px',
+                            fontSize: '16px',
+                            fontWeight: 'bold',
+                            opacity: 1,
+                            padding: '6px 8px',
+                            borderRadius: '4px',
                             lineHeight: '1',
-                            flexShrink: 0
+                            flexShrink: 0,
+                            minWidth: '24px',
+                            height: '24px',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center'
                           }}
                           title="카테고리 메뉴"
-                          onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#f8f9fa'}
-                          onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+                          onMouseEnter={(e) => {
+                            e.currentTarget.style.backgroundColor = '#e9ecef';
+                            e.currentTarget.style.borderColor = '#6c757d';
+                          }}
+                          onMouseLeave={(e) => {
+                            if (categoryMenuOpen !== category.id) {
+                              e.currentTarget.style.backgroundColor = 'transparent';
+                              e.currentTarget.style.borderColor = 'transparent';
+                            }
+                          }}
                         >
-                          ⋮
+                          ⋯
                         </button>
                       </div>
                     )}
