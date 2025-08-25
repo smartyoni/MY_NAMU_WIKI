@@ -35,7 +35,7 @@ function App() {
   const [isEditMode, setIsEditMode] = useState(false);
   const [isSidebarVisible, setIsSidebarVisible] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
-  const [mobileView, setMobileView] = useState<'edit' | 'preview'>('edit');
+  const [webView, setWebView] = useState<'edit' | 'preview'>('edit');
   const [images, setImages] = useState<{[key: string]: string}>(() => {
     const saved = localStorage.getItem('wiki-images');
     return saved ? JSON.parse(saved) : {};
@@ -51,6 +51,20 @@ function App() {
     window.addEventListener('resize', checkMobile);
     return () => window.removeEventListener('resize', checkMobile);
   }, []);
+
+  // 앱 시작시 마지막에 본 문서 로드
+  React.useEffect(() => {
+    const lastViewedDocId = localStorage.getItem('last-viewed-doc-id');
+    if (lastViewedDocId && documents.length > 0) {
+      const lastDoc = documents.find(doc => doc.id === lastViewedDocId);
+      if (lastDoc) {
+        setCurrentDoc(lastDoc);
+        setContent(lastDoc.content);
+        setHistory([lastDoc.content]);
+        setHistoryIndex(0);
+      }
+    }
+  }, [documents]);
 
   // 모바일에서 사이드바 외부 클릭시 닫기
   React.useEffect(() => {
@@ -123,6 +137,9 @@ function App() {
     // 히스토리 초기화
     setHistory([newDoc.content]);
     setHistoryIndex(0);
+    
+    // 마지막에 본 문서 ID 저장
+    localStorage.setItem('last-viewed-doc-id', newDoc.id);
   };
 
   const handleSelectDocument = (doc: {id: string, title: string, content: string}) => {
@@ -133,6 +150,9 @@ function App() {
     // 히스토리 초기화
     setHistory([doc.content]);
     setHistoryIndex(0);
+    
+    // 마지막에 본 문서 ID 저장
+    localStorage.setItem('last-viewed-doc-id', doc.id);
   };
 
   const handleEditDocument = () => {
@@ -739,29 +759,57 @@ function App() {
         <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
           {currentDoc ? (
             isEditMode ? (
-              // 편집 모드: 좌우 분할 (데스크톱) 또는 탭 (모바일)
-              <div className="editor-preview-container" style={{ flex: 1, display: 'flex', flexDirection: isMobile ? 'column' : 'row' }}>
-                {/* 모바일 뷰 전환 버튼 */}
-                {isMobile && (
-                  <div className="mobile-view-switcher">
-                    <button
-                      className={mobileView === 'edit' ? 'active' : ''}
-                      onClick={() => setMobileView('edit')}
-                    >
-                      ✏️ 편집
-                    </button>
-                    <button
-                      className={mobileView === 'preview' ? 'active' : ''}
-                      onClick={() => setMobileView('preview')}
-                    >
-                      👁️ 미리보기
-                    </button>
-                  </div>
-                )}
+              // 편집 모드: 탭 기반 (웹과 모바일 동일)
+              <div className="editor-preview-container" style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
+                {/* 뷰 전환 탭 버튼 */}
+                <div className="view-switcher" style={{
+                  display: 'flex',
+                  borderBottom: '1px solid #dee2e6',
+                  background: '#f8f9fa'
+                }}>
+                  <button
+                    className={webView === 'edit' ? 'active' : ''}
+                    onClick={() => setWebView('edit')}
+                    style={{
+                      padding: '12px 24px',
+                      background: webView === 'edit' ? '#007bff' : 'transparent',
+                      color: webView === 'edit' ? 'white' : '#495057',
+                      border: 'none',
+                      borderBottom: webView === 'edit' ? '3px solid #007bff' : '3px solid transparent',
+                      cursor: 'pointer',
+                      fontSize: '14px',
+                      fontWeight: '500',
+                      transition: 'all 0.2s'
+                    }}
+                  >
+                    ✏️ 편집
+                  </button>
+                  <button
+                    className={webView === 'preview' ? 'active' : ''}
+                    onClick={() => setWebView('preview')}
+                    style={{
+                      padding: '12px 24px',
+                      background: webView === 'preview' ? '#007bff' : 'transparent',
+                      color: webView === 'preview' ? 'white' : '#495057',
+                      border: 'none',
+                      borderBottom: webView === 'preview' ? '3px solid #007bff' : '3px solid transparent',
+                      cursor: 'pointer',
+                      fontSize: '14px',
+                      fontWeight: '500',
+                      transition: 'all 0.2s'
+                    }}
+                  >
+                    👁️ 미리보기
+                  </button>
+                </div>
                 {/* 편집기 */}
                 <div 
-                  className={`editor-pane ${isMobile && mobileView !== 'edit' ? 'hidden-mobile' : ''}`}
-                  style={{ flex: 1, display: 'flex', flexDirection: 'column' }}
+                  className="editor-pane"
+                  style={{ 
+                    flex: 1, 
+                    display: webView === 'edit' ? 'flex' : 'none',
+                    flexDirection: 'column' 
+                  }}
                 >
                   {/* 편집 헤더 */}
                   <div style={{ padding: '12px', background: '#f8f9fa', borderBottom: '1px solid #dee2e6', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -787,7 +835,7 @@ function App() {
                           cursor: 'pointer'
                         }}
                       >
-                        저장하고 보기
+                        저장
                       </button>
                     </div>
                   </div>
@@ -910,12 +958,11 @@ function App() {
                 
                 {/* 미리보기 */}
                 <div 
-                  className={`preview-pane ${isMobile && mobileView !== 'preview' ? 'hidden-mobile' : ''}`}
+                  className="preview-pane"
                   style={{ 
                     flex: 1, 
-                    display: 'flex', 
-                    flexDirection: 'column', 
-                    borderLeft: isMobile ? 'none' : '1px solid #dee2e6'
+                    display: webView === 'preview' ? 'flex' : 'none',
+                    flexDirection: 'column'
                   }}
                 >
                   <div className="preview-header">

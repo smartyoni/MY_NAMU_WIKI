@@ -865,22 +865,14 @@ Firebase와 연결되었습니다! 🚀`);
                         >
                           {category.name} ({categoryDocs.length})
                         </span>
-                      </div>
-                    )}
-                    
-                    {/* 3점 메뉴 버튼 */}
-                    {!isEditing && (
-                      <div className="category-menu-container" style={{ position: 'relative' }}>
+                        
+                        {/* 3점 메뉴 버튼 - 같은 라인에 위치 */}
                         <button
                           onClick={(e) => {
                             e.stopPropagation();
                             setCategoryMenuOpen(categoryMenuOpen === category.id ? null : category.id);
                           }}
                           style={{
-                            position: 'absolute',
-                            right: '5px',
-                            top: '50%',
-                            transform: 'translateY(-50%)',
                             background: 'none',
                             border: 'none',
                             color: '#6c757d',
@@ -889,7 +881,8 @@ Firebase와 연결되었습니다! 🚀`);
                             opacity: 0.7,
                             padding: '4px',
                             borderRadius: '3px',
-                            lineHeight: '1'
+                            lineHeight: '1',
+                            flexShrink: 0
                           }}
                           title="카테고리 메뉴"
                           onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#f8f9fa'}
@@ -897,24 +890,28 @@ Firebase와 연결되었습니다! 🚀`);
                         >
                           ⋮
                         </button>
-                        
-                        {/* 드롭다운 메뉴 */}
-                        {categoryMenuOpen === category.id && (
-                          <div
-                            className="category-dropdown-menu"
-                            style={{
-                              position: 'absolute',
-                              right: '0',
-                              top: '100%',
-                              background: 'white',
-                              border: '1px solid #dee2e6',
-                              borderRadius: '4px',
-                              boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
-                              zIndex: 1000,
-                              minWidth: '120px',
-                              padding: '4px 0'
-                            }}
-                          >
+                      </div>
+                    )}
+                    
+                  </div>
+                  
+                  {/* 드롭다운 메뉴를 카테고리 박스 밖으로 이동 */}
+                  {!isEditing && categoryMenuOpen === category.id && (
+                    <div
+                      className="category-dropdown-menu"
+                      style={{
+                        position: 'absolute',
+                        right: '5px',
+                        top: '100%',
+                        background: 'white',
+                        border: '1px solid #dee2e6',
+                        borderRadius: '4px',
+                        boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+                        zIndex: 1000,
+                        minWidth: '120px',
+                        padding: '4px 0'
+                      }}
+                    >
                             <button
                               onClick={(e) => {
                                 e.stopPropagation();
@@ -1005,10 +1002,8 @@ Firebase와 연결되었습니다! 🚀`);
                                 </button>
                               </>
                             )}
-                          </div>
-                        )}
-                      </div>
-                    )}
+                    </div>
+                  )}
                   </div>
 
                   {/* 카테고리 하위 문서 리스트 */}
@@ -1229,41 +1224,10 @@ Firebase와 연결되었습니다! 🚀`);
                   {/* 편집기 */}
                   <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }} className={`editor-pane ${mobileView !== 'editor' ? 'hidden-mobile' : ''}`}>
                     <div className="editor-header">
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flex: 1 }}>
                         <span style={{ fontSize: '12px', color: '#6c757d' }}>편집 모드</span>
-                        {/* 카테고리 선택 드롭다운 */}
-                        {currentDoc && (
-                          <select
-                            value={currentDoc.category || 'general'}
-                            onChange={async (e) => {
-                              const newCategory = e.target.value;
-                              try {
-                                await updateDocument(currentDoc.id, { category: newCategory });
-                                const updatedDoc = { ...currentDoc, category: newCategory };
-                                setCurrentDoc(updatedDoc);
-                                localStorage.setItem('current-document', JSON.stringify(updatedDoc));
-                              } catch (error) {
-                                console.error('Error updating document category:', error);
-                              }
-                            }}
-                            style={{
-                              padding: '4px 8px',
-                              fontSize: '11px',
-                              border: '1px solid #dee2e6',
-                              borderRadius: '3px',
-                              background: 'white'
-                            }}
-                            title="문서 카테고리 변경"
-                          >
-                            {categories.map(category => (
-                              <option key={category.id} value={category.id}>
-                                {category.name}
-                              </option>
-                            ))}
-                          </select>
-                        )}
-                      </div>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                        
+                        {/* 문서명 수정과 편집 버튼을 카테고리 드롭다운 바로 옆에 배치 */}
                         {isEditingTitle ? (
                           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                             <input
@@ -1332,6 +1296,7 @@ Firebase와 연결되었습니다! 🚀`);
                             <span style={{ fontSize: '11px', color: '#6c757d' }}>✏️</span>
                           </div>
                         )}
+                        
                         <button
                           onClick={() => handleDeleteDocument(currentDoc.id)}
                           style={{
@@ -1348,11 +1313,13 @@ Firebase와 연결되었습니다! 🚀`);
                         >
                           🗑️ 삭제
                         </button>
+                      </div>
+                      <div style={{ display: 'flex', alignItems: 'center' }}>
                         <button
                           onClick={handleSaveAndView}
                           className="editor-header-btn"
                         >
-                          저장하고 보기
+                          저장
                         </button>
                       </div>
                     </div>
@@ -1438,7 +1405,7 @@ Firebase와 연결되었습니다! 🚀`);
               // 읽기 모드
               <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
                 <div className="editor-header">
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flex: 1 }}>
                     <span style={{ fontSize: '12px', color: '#6c757d' }}>읽기 모드</span>
                     {/* 카테고리 선택 드롭다운 */}
                     {currentDoc && (
@@ -1471,8 +1438,8 @@ Firebase와 연결되었습니다! 🚀`);
                         ))}
                       </select>
                     )}
-                  </div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                    
+                    {/* 문서명 수정과 편집 버튼을 카테고리 드롭다운 바로 옆에 배치 */}
                     {isEditingTitle ? (
                       <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                         <input
@@ -1541,6 +1508,7 @@ Firebase와 연결되었습니다! 🚀`);
                         <span style={{ fontSize: '11px', color: '#6c757d' }}>✏️</span>
                       </div>
                     )}
+                    
                     <button
                       onClick={handleEditDocument}
                       className="editor-header-btn edit"
