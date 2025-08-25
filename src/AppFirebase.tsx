@@ -2640,7 +2640,7 @@ console.log("Hello, World!");
                             fontFamily: 'inherit',
                             resize: 'vertical'
                           }}
-                          placeholder="댓글 내용..."
+                          placeholder=" 댓글 내용..."
                           autoFocus
                         />
                         <div style={{ display: 'flex', gap: '4px', marginTop: '8px' }}>
@@ -2760,7 +2760,7 @@ console.log("Hello, World!");
                     fontFamily: 'inherit',
                     resize: 'vertical'
                   }}
-                  placeholder="댓글을 작성하세요..."
+                  placeholder=" 댓글을 작성하세요..."
                   onKeyDown={(e) => {
                     if (e.key === 'Enter' && e.ctrlKey) {
                       e.preventDefault();
