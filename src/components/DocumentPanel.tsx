@@ -9,6 +9,13 @@ interface DocumentPanelProps {
   className?: string;
 }
 
+interface HeaderInfo {
+  level: number;
+  text: string;
+  id: string;
+  number: string;
+}
+
 const DocumentPanel: React.FC<DocumentPanelProps> = ({ className = '' }) => {
   const { 
     uiState,
@@ -21,6 +28,8 @@ const DocumentPanel: React.FC<DocumentPanelProps> = ({ className = '' }) => {
   const [isEditMode, setIsEditMode] = useState(false);
   const [content, setContent] = useState('');
   const [title, setTitle] = useState('');
+  const [showTOC, setShowTOC] = useState(false);
+  const [headers, setHeaders] = useState<HeaderInfo[]>([]);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   const selectedDocument = getSelectedDocument();
@@ -36,6 +45,12 @@ const DocumentPanel: React.FC<DocumentPanelProps> = ({ className = '' }) => {
       setIsEditMode(false);
     }
   }, [selectedDocument]);
+
+  // 내용이 변경될 때마다 헤더 추출
+  useEffect(() => {
+    const extractedHeaders = extractHeaders(content);
+    setHeaders(extractedHeaders);
+  }, [content]);
 
   const handleSave = async () => {
     if (!selectedDocument) return;
@@ -94,23 +109,110 @@ const DocumentPanel: React.FC<DocumentPanelProps> = ({ className = '' }) => {
     }
   };
 
+  // 헤더 추출 및 넘버링 함수
+  const extractHeaders = (text: string): HeaderInfo[] => {
+    if (!text) return [];
+    
+    const lines = text.split('\n');
+    const headerList: HeaderInfo[] = [];
+    const numberStack = [0, 0, 0]; // H1, H2, H3 카운터
+    
+    lines.forEach((line, index) => {
+      if (line.startsWith('# ')) {
+        numberStack[0]++;
+        numberStack[1] = 0;
+        numberStack[2] = 0;
+        const text = line.slice(2).trim();
+        const id = `header-${index}-${text.replace(/\s+/g, '-').toLowerCase()}`;
+        headerList.push({
+          level: 1,
+          text,
+          id,
+          number: `${numberStack[0]}.`
+        });
+      } else if (line.startsWith('## ')) {
+        numberStack[1]++;
+        numberStack[2] = 0;
+        const text = line.slice(3).trim();
+        const id = `header-${index}-${text.replace(/\s+/g, '-').toLowerCase()}`;
+        headerList.push({
+          level: 2,
+          text,
+          id,
+          number: `${numberStack[0]}.${numberStack[1]}`
+        });
+      } else if (line.startsWith('### ')) {
+        numberStack[2]++;
+        const text = line.slice(4).trim();
+        const id = `header-${index}-${text.replace(/\s+/g, '-').toLowerCase()}`;
+        headerList.push({
+          level: 3,
+          text,
+          id,
+          number: `${numberStack[0]}.${numberStack[1]}.${numberStack[2]}`
+        });
+      }
+    });
+    
+    return headerList;
+  };
+
+  // 목차 스크롤 함수
+  const scrollToHeader = (headerId: string) => {
+    const element = document.getElementById(headerId);
+    if (element) {
+      element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  };
+
   const renderMarkdown = (text: string) => {
     if (!text) return '내용이 없습니다.';
     
     const lines = text.split('\n');
     const result: React.ReactNode[] = [];
+    const numberStack = [0, 0, 0]; // H1, H2, H3 카운터
     
     for (let i = 0; i < lines.length; i++) {
       let line = lines[i];
       let element: React.ReactNode = null;
       
-      // 헤더 처리
+      // 헤더 처리 with 자동 넘버링
       if (line.startsWith('### ')) {
-        element = <h3 key={i} className="md-h3">{processInlineMarkdown(line.slice(4))}</h3>;
+        numberStack[2]++;
+        const text = line.slice(4).trim();
+        const id = `header-${i}-${text.replace(/\s+/g, '-').toLowerCase()}`;
+        const number = `${numberStack[0]}.${numberStack[1]}.${numberStack[2]}`;
+        element = (
+          <h3 key={i} id={id} className="md-h3 numbered-header">
+            <span className="header-number">{number}</span>
+            {processInlineMarkdown(text)}
+          </h3>
+        );
       } else if (line.startsWith('## ')) {
-        element = <h2 key={i} className="md-h2">{processInlineMarkdown(line.slice(3))}</h2>;
+        numberStack[1]++;
+        numberStack[2] = 0;
+        const text = line.slice(3).trim();
+        const id = `header-${i}-${text.replace(/\s+/g, '-').toLowerCase()}`;
+        const number = `${numberStack[0]}.${numberStack[1]}`;
+        element = (
+          <h2 key={i} id={id} className="md-h2 numbered-header">
+            <span className="header-number">{number}</span>
+            {processInlineMarkdown(text)}
+          </h2>
+        );
       } else if (line.startsWith('# ')) {
-        element = <h1 key={i} className="md-h1">{processInlineMarkdown(line.slice(2))}</h1>;
+        numberStack[0]++;
+        numberStack[1] = 0;
+        numberStack[2] = 0;
+        const text = line.slice(2).trim();
+        const id = `header-${i}-${text.replace(/\s+/g, '-').toLowerCase()}`;
+        const number = `${numberStack[0]}.`;
+        element = (
+          <h1 key={i} id={id} className="md-h1 numbered-header">
+            <span className="header-number">{number}</span>
+            {processInlineMarkdown(text)}
+          </h1>
+        );
       }
       // 체크리스트 처리
       else if (line.match(/^- \[x\] /)) {
@@ -375,13 +477,24 @@ const DocumentPanel: React.FC<DocumentPanelProps> = ({ className = '' }) => {
               </button>
             </>
           ) : (
-            <button 
-              className="action-button edit-button"
-              onClick={handleEdit}
-              title="편집"
-            >
-              ✏️ 편집
-            </button>
+            <>
+              <button 
+                className="action-button edit-button"
+                onClick={handleEdit}
+                title="편집"
+              >
+                ✏️ 편집
+              </button>
+              {headers.length > 0 && (
+                <button 
+                  className={`action-button toc-button ${showTOC ? 'active' : ''}`}
+                  onClick={() => setShowTOC(!showTOC)}
+                  title="목차"
+                >
+                  📋 목차 ({headers.length})
+                </button>
+              )}
+            </>
           )}
           <ThreeDotsMenu 
             menuItems={getDocumentMenuItems()}
@@ -402,6 +515,34 @@ const DocumentPanel: React.FC<DocumentPanelProps> = ({ className = '' }) => {
           </>
         )}
       </div>
+
+      {/* 목차 */}
+      {showTOC && !isEditMode && headers.length > 0 && (
+        <div className="table-of-contents">
+          <div className="toc-header">
+            <h4>📋 목차</h4>
+            <button 
+              className="toc-close-btn"
+              onClick={() => setShowTOC(false)}
+              title="닫기"
+            >
+              ×
+            </button>
+          </div>
+          <div className="toc-list">
+            {headers.map((header, index) => (
+              <div
+                key={index}
+                className={`toc-item toc-level-${header.level}`}
+                onClick={() => scrollToHeader(header.id)}
+              >
+                <span className="toc-number">{header.number}</span>
+                <span className="toc-text">{header.text}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       <div className="document-content">
         {isEditMode ? (
