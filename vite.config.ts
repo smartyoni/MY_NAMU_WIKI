@@ -10,6 +10,7 @@ export default defineConfig({
     sourcemap: false,
     target: 'es2015',
     rollupOptions: {
+      external: ['firebase'],
       output: {
         manualChunks: {
           vendor: ['react', 'react-dom'],
