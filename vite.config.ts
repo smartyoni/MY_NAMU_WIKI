@@ -13,8 +13,7 @@ export default defineConfig({
       external: ['firebase'],
       output: {
         manualChunks: {
-          vendor: ['react', 'react-dom'],
-          firebase: ['firebase']
+          vendor: ['react', 'react-dom']
         }
       }
     }
