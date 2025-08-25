@@ -20,10 +20,21 @@ interface WikiCategory {
   order: number;
 }
 
+interface DocumentComment {
+  id: string;
+  documentId: string;
+  content: string;
+  createdAt: Date;
+  updatedAt: Date;
+  userId: string;
+  userName?: string;
+}
+
 interface DocumentContextType {
   documents: WikiDocument[];
   currentDocument: WikiDocument | null;
   categories: WikiCategory[];
+  comments: DocumentComment[];
   loading: boolean;
   error: string | null;
   
@@ -39,6 +50,12 @@ interface DocumentContextType {
   updateCategory: (id: string, updates: Partial<WikiCategory>) => Promise<void>;
   deleteCategory: (id: string) => Promise<void>;
   reorderCategory: (categoryId: string, newOrder: number) => Promise<void>;
+  
+  // 댓글 관리
+  createComment: (documentId: string, content: string) => Promise<string>;
+  updateComment: (commentId: string, content: string) => Promise<void>;
+  deleteComment: (commentId: string) => Promise<void>;
+  getCommentsByDocument: (documentId: string) => DocumentComment[];
   
   // 유틸리티
   getDocumentByTitle: (title: string) => WikiDocument | null;
@@ -65,6 +82,7 @@ export const DocumentProvider: React.FC<DocumentProviderProps> = ({
 }) => {
   const [documents, setDocuments] = useState<WikiDocument[]>([]);
   const [categories, setCategories] = useState<WikiCategory[]>([]);
+  const [comments, setComments] = useState<DocumentComment[]>([]);
   const [currentDocument, setCurrentDocument] = useState<WikiDocument | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -95,6 +113,33 @@ export const DocumentProvider: React.FC<DocumentProviderProps> = ({
       console.error('Error fetching documents:', err);
       setError('문서를 불러오는 중 오류가 발생했습니다.');
       setLoading(false);
+    });
+
+    return () => unsubscribe();
+  }, [userId]);
+
+  // Firebase에서 댓글 목록 실시간 구독
+  useEffect(() => {
+    const commentsRef = collection(db, 'users', userId, 'comments');
+    const q = query(commentsRef, orderBy('createdAt', 'desc'));
+    
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const cmts: DocumentComment[] = [];
+      snapshot.forEach((doc) => {
+        const data = doc.data();
+        cmts.push({
+          id: doc.id,
+          documentId: data.documentId,
+          content: data.content,
+          createdAt: data.createdAt?.toDate() || new Date(),
+          updatedAt: data.updatedAt?.toDate() || new Date(),
+          userId: data.userId,
+          userName: data.userName || '익명'
+        });
+      });
+      setComments(cmts);
+    }, (err) => {
+      console.error('Error fetching comments:', err);
     });
 
     return () => unsubscribe();
@@ -298,10 +343,65 @@ export const DocumentProvider: React.FC<DocumentProviderProps> = ({
     return documents.find(doc => doc.title === title) || null;
   };
 
+  // 댓글 관리 함수들
+  const createComment = async (documentId: string, content: string): Promise<string> => {
+    try {
+      const id = `comment-${Date.now()}`;
+      const now = new Date();
+      
+      const commentRef = doc(db, 'users', userId, 'comments', id);
+      await setDoc(commentRef, {
+        documentId,
+        content: content.trim(),
+        createdAt: now,
+        updatedAt: now,
+        userId,
+        userName: '사용자'
+      });
+      
+      return id;
+    } catch (err) {
+      console.error('Error creating comment:', err);
+      setError('댓글 생성 중 오류가 발생했습니다.');
+      throw err;
+    }
+  };
+
+  const updateComment = async (commentId: string, content: string): Promise<void> => {
+    try {
+      const commentRef = doc(db, 'users', userId, 'comments', commentId);
+      await setDoc(commentRef, {
+        content: content.trim(),
+        updatedAt: new Date()
+      }, { merge: true });
+    } catch (err) {
+      console.error('Error updating comment:', err);
+      setError('댓글 수정 중 오류가 발생했습니다.');
+      throw err;
+    }
+  };
+
+  const deleteComment = async (commentId: string): Promise<void> => {
+    try {
+      const commentRef = doc(db, 'users', userId, 'comments', commentId);
+      await deleteDoc(commentRef);
+    } catch (err) {
+      console.error('Error deleting comment:', err);
+      setError('댓글 삭제 중 오류가 발생했습니다.');
+      throw err;
+    }
+  };
+
+  const getCommentsByDocument = (documentId: string): DocumentComment[] => {
+    return comments.filter(comment => comment.documentId === documentId)
+                  .sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime());
+  };
+
   const value: DocumentContextType = {
     documents,
     currentDocument,
     categories,
+    comments,
     loading,
     error,
     createDocument,
@@ -313,6 +413,10 @@ export const DocumentProvider: React.FC<DocumentProviderProps> = ({
     updateCategory,
     deleteCategory,
     reorderCategory,
+    createComment,
+    updateComment,
+    deleteComment,
+    getCommentsByDocument,
     getDocumentByTitle
   };
 

@@ -7,6 +7,7 @@ function AppFirebase() {
   const {
     documents,
     categories,
+    comments,
     loading,
     error,
     createDocument,
@@ -15,29 +16,43 @@ function AppFirebase() {
     selectDocument,
     createCategory,
     updateCategory,
-    deleteCategory
+    deleteCategory,
+    createComment,
+    updateComment,
+    deleteComment,
+    getCommentsByDocument
   } = useDocuments();
 
-  const [content, setContent] = useState(`== Personal Wiki에 오신 것을 환영합니다! ==
+  const [content, setContent] = useState(`# Personal Wiki에 오신 것을 환영합니다! 👋
 
 **Firebase 연동 완료!** 🔥
 
-== 주요 기능 ==
-* **클라우드 저장** - Firebase Firestore
-* **실시간 동기화** - 다기기 동기화
-* **위키 문법** 지원 (굵게, 기울임, 취소선, 제목)
-* **실시간 미리보기** 제공
-* **접기/펼치기** 블록: {{{fold:예시|숨겨진 내용이 여기에 들어갑니다}}}
-* **실행취소/다시실행** (Ctrl+Z/Ctrl+Y)
-* **문법 버튼** 툴바로 쉬운 편집
+## 주요 기능
+- **클라우드 저장** - Firebase Firestore
+- **실시간 동기화** - 다기기 동기화
+- **마크다운 문법** 지원 (굵게, *기울임*, ~~취소선~~, 제목)
+- **실시간 미리보기** 제공
+- **체크리스트** 지원: 
+  - [x] 완료된 작업
+  - [ ] 진행 중인 작업
+- **실행취소/다시실행** (Ctrl+Z/Ctrl+Y)
+- **문법 버튼** 툴바로 쉬운 편집
 
-== 사용 방법 ==
+## 사용 방법
 1. 좌측에서 **새 문서** 생성
 2. **편집** 버튼으로 내용 수정
 3. **자동 클라우드 저장** ☁️
 4. **어디서든 접근 가능**
 
-Firebase와 연결되었습니다! 🚀`);
+> Firebase와 연결되었습니다! 🚀
+
+### 마크다운 문법 예시
+\`\`\`javascript
+// 코드 블록도 지원합니다
+console.log("Hello, World!");
+\`\`\`
+
+[링크 예시](https://github.com)`);
 
   const [currentDoc, setCurrentDoc] = useState<any>(() => {
     // 새로고침 후에도 현재 문서 상태 유지
@@ -53,6 +68,7 @@ Firebase와 연결되었습니다! 🚀`);
   });
 
   const [mobileView, setMobileView] = useState<'editor' | 'preview'>('editor');
+  const [desktopView, setDesktopView] = useState<'split' | 'editor' | 'preview'>('split');
   const [isSidebarVisible, setIsSidebarVisible] = useState(false);
   const [isEditingTitle, setIsEditingTitle] = useState(false);
   const [editingTitle, setEditingTitle] = useState('');
@@ -71,6 +87,15 @@ Firebase와 연결되었습니다! 🚀`);
   const [editingDocumentTitle, setEditingDocumentTitle] = useState('');
   const [tocOpen, setTocOpen] = useState(false);
   const [collapsedSections, setCollapsedSections] = useState<Set<string>>(new Set());
+  
+  // 댓글 관련 상태
+  const [commentsOpen, setCommentsOpen] = useState(false);
+  const [newCommentContent, setNewCommentContent] = useState('');
+  const [editingCommentId, setEditingCommentId] = useState<string | null>(null);
+  const [editingCommentContent, setEditingCommentContent] = useState('');
+  
+  // 내보내기 관련 상태
+  const [exportMenuOpen, setExportMenuOpen] = useState(false);
 
   const toggleSidebar = () => {
     setIsSidebarVisible(!isSidebarVisible);
@@ -118,13 +143,23 @@ Firebase와 연결되었습니다! 🚀`);
       if (tocOpen && !target.closest('.toc-container')) {
         setTocOpen(false);
       }
+      
+      // 댓글 외부 클릭 시 닫기
+      if (commentsOpen && !target.closest('.comments-container')) {
+        setCommentsOpen(false);
+      }
+      
+      // 내보내기 메뉴 외부 클릭 시 닫기
+      if (exportMenuOpen && !target.closest('.export-menu-container')) {
+        setExportMenuOpen(false);
+      }
     };
 
     document.addEventListener('mousedown', handleClickOutside);
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
     };
-  }, [categoryMenuOpen, documentMenuOpen, tocOpen]);
+  }, [categoryMenuOpen, documentMenuOpen, tocOpen, commentsOpen, exportMenuOpen]);
 
 
   // 툴바 버튼 스타일
@@ -146,7 +181,7 @@ Firebase와 연결되었습니다! 🚀`);
     if (!newDocTitle.trim()) return;
     
     try {
-      const newContent = `== ${newDocTitle} ==\n\n새 문서입니다. 내용을 작성해주세요.`;
+      const newContent = `# ${newDocTitle}\n\n새 문서입니다. **마크다운** 문법을 사용하여 내용을 작성해주세요.\n\n## 섹션 1\n- 리스트 항목\n- [ ] 할 일\n\n> 인용문 예시`;
       const id = await createDocument(newDocTitle, newContent);
       
       // 선택된 카테고리 또는 newDocCategory로 문서 생성
@@ -373,6 +408,211 @@ Firebase와 연결되었습니다! 🚀`);
       console.error('Error duplicating document:', error);
       alert('문서 복사 중 오류가 발생했습니다.');
     }
+  };
+
+  // 댓글 관리 함수들
+  const handleCreateComment = async () => {
+    if (!currentDoc || !newCommentContent.trim()) return;
+    
+    try {
+      console.log('댓글 생성 시작:', currentDoc.id);
+      await createComment(currentDoc.id, newCommentContent);
+      setNewCommentContent('');
+      console.log('댓글 생성 완료');
+    } catch (error) {
+      console.error('Error creating comment:', error);
+      alert('댓글 생성 중 오류가 발생했습니다.');
+    }
+  };
+
+  const handleStartEditComment = (commentId: string, content: string) => {
+    setEditingCommentId(commentId);
+    setEditingCommentContent(content);
+  };
+
+  const handleSaveComment = async () => {
+    if (!editingCommentId || !editingCommentContent.trim()) return;
+    
+    try {
+      console.log('댓글 수정 시작:', editingCommentId);
+      await updateComment(editingCommentId, editingCommentContent);
+      setEditingCommentId(null);
+      setEditingCommentContent('');
+      console.log('댓글 수정 완료');
+    } catch (error) {
+      console.error('Error updating comment:', error);
+      alert('댓글 수정 중 오류가 발생했습니다.');
+    }
+  };
+
+  const handleCancelEditComment = () => {
+    setEditingCommentId(null);
+    setEditingCommentContent('');
+  };
+
+  const handleDeleteComment = async (commentId: string) => {
+    if (window.confirm('댓글을 삭제하시겠습니까?')) {
+      try {
+        console.log('댓글 삭제 시작:', commentId);
+        await deleteComment(commentId);
+        console.log('댓글 삭제 완료');
+      } catch (error) {
+        console.error('Error deleting comment:', error);
+        alert('댓글 삭제 중 오류가 발생했습니다.');
+      }
+    }
+  };
+
+  // 내보내기 관련 함수들
+  const handleExportAsText = () => {
+    if (!currentDoc) return;
+    
+    // 마크다운을 일반 텍스트로 변환
+    const textContent = currentDoc.content
+      .replace(/#{1,6}\s+(.+)/g, '$1') // 헤더 제거
+      .replace(/\*\*(.+?)\*\*/g, '$1') // 굵게 제거
+      .replace(/\*(.+?)\*/g, '$1') // 기울임 제거
+      .replace(/~~(.+?)~~/g, '$1') // 취소선 제거
+      .replace(/`(.+?)`/g, '$1') // 인라인 코드 제거
+      .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1') // 링크 제거
+      .replace(/^[-*+]\s+/gm, '• ') // 불릿 리스트 변환
+      .replace(/^\d+\.\s+/gm, '') // 번호 리스트 제거
+      .replace(/^>\s+/gm, '') // 인용문 제거
+      .replace(/```[\s\S]*?```/g, '') // 코드 블록 제거
+      .replace(/---/g, ''); // 구분선 제거
+    
+    const blob = new Blob([textContent], { type: 'text/plain;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${currentDoc.title}.txt`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    
+    setExportMenuOpen(false);
+    console.log('텍스트 파일 내보내기 완료:', currentDoc.title);
+  };
+
+  const handleExportAsMarkdown = () => {
+    if (!currentDoc) return;
+    
+    const blob = new Blob([currentDoc.content], { type: 'text/markdown;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${currentDoc.title}.md`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    
+    setExportMenuOpen(false);
+    console.log('마크다운 파일 내보내기 완료:', currentDoc.title);
+  };
+
+  const handleExportAsPDF = () => {
+    if (!currentDoc) return;
+    
+    // 새 창에서 PDF 인쇄 대화상자 열기
+    const printWindow = window.open('', '_blank');
+    if (printWindow) {
+      const htmlContent = parseMarkdown(currentDoc.content);
+      
+      printWindow.document.write(`
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <title>${currentDoc.title}</title>
+          <meta charset="utf-8">
+          <style>
+            body {
+              font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+              line-height: 1.6;
+              max-width: 800px;
+              margin: 0 auto;
+              padding: 40px 20px;
+              color: #333;
+            }
+            h1, h2, h3 { color: #2c3e50; margin-top: 30px; }
+            h1 { border-bottom: 2px solid #3498db; padding-bottom: 10px; }
+            h2 { border-bottom: 1px solid #bdc3c7; padding-bottom: 5px; }
+            pre { background: #f8f9fa; padding: 15px; border-radius: 5px; overflow-x: auto; }
+            code { background: #f8f9fa; padding: 2px 4px; border-radius: 3px; }
+            blockquote { 
+              border-left: 4px solid #3498db; 
+              margin: 20px 0; 
+              padding: 10px 20px; 
+              background: #ecf0f1; 
+            }
+            table { border-collapse: collapse; width: 100%; margin: 20px 0; }
+            th, td { border: 1px solid #bdc3c7; padding: 12px; text-align: left; }
+            th { background: #ecf0f1; font-weight: 600; }
+            ul, ol { padding-left: 30px; }
+            li { margin: 5px 0; }
+            @media print {
+              body { margin: 0; padding: 20px; }
+              h1 { page-break-before: avoid; }
+            }
+          </style>
+        </head>
+        <body>
+          <h1>${currentDoc.title}</h1>
+          <hr>
+          ${htmlContent}
+          <br><br>
+          <small style="color: #7f8c8d;">Generated from Personal Wiki • ${new Date().toLocaleDateString()}</small>
+        </body>
+        </html>
+      `);
+      
+      printWindow.document.close();
+      
+      // 페이지가 로드된 후 인쇄 대화상자 열기
+      setTimeout(() => {
+        printWindow.print();
+      }, 500);
+    }
+    
+    setExportMenuOpen(false);
+    console.log('PDF 내보내기 대화상자 열기:', currentDoc.title);
+  };
+
+  const handleShareLink = async () => {
+    if (!currentDoc) return;
+    
+    // 현재 페이지 URL + 문서 ID를 공유 링크로 생성
+    const shareUrl = `${window.location.origin}${window.location.pathname}?doc=${currentDoc.id}`;
+    
+    try {
+      if (navigator.share) {
+        // Web Share API 지원 시
+        await navigator.share({
+          title: currentDoc.title,
+          text: `"${currentDoc.title}" 문서를 공유합니다.`,
+          url: shareUrl
+        });
+        console.log('공유 완료');
+      } else {
+        // 클립보드에 복사
+        await navigator.clipboard.writeText(shareUrl);
+        alert('링크가 클립보드에 복사되었습니다!');
+        console.log('링크 복사 완료:', shareUrl);
+      }
+    } catch (error) {
+      console.error('공유 실패:', error);
+      // 폴백: 수동 복사
+      const textArea = document.createElement('textarea');
+      textArea.value = shareUrl;
+      document.body.appendChild(textArea);
+      textArea.select();
+      document.execCommand('copy');
+      document.body.removeChild(textArea);
+      alert('링크가 클립보드에 복사되었습니다!');
+    }
+    
+    setExportMenuOpen(false);
   };
 
   // 카테고리 펼침/접기 토글
@@ -607,8 +847,8 @@ Firebase와 연결되었습니다! 🚀`);
     let currentH1: OutlineItem | null = null;
 
     lines.forEach((line, index) => {
-      const h1Match = line.match(/^==\s*(.+?)\s*==$/);
-      const h2Match = line.match(/^===\s*(.+?)\s*===$/);
+      const h1Match = line.match(/^#\s+(.+)$/);
+      const h2Match = line.match(/^##\s+(.+)$/);
 
       if (h1Match) {
         h1Count++;
@@ -680,43 +920,92 @@ Firebase와 연결되었습니다! 🚀`);
     return toc;
   };
 
-  // Wiki 텍스트 파싱 (앵커 ID 포함)
-  const parseWikiText = (text: string): string => {
+  // 마크다운 텍스트 파싱 (앵커 ID 포함)
+  const parseMarkdown = (text: string): string => {
     let html = text;
     let h1Count = 0;
     let h2Count = 0;
+    let h3Count = 0;
     let currentH1 = 0;
+    let currentH2 = 0;
     
+    // 줄바꿈을 <br>로 변환 (코드 블록 제외)
     html = html.replace(/\n/g, '<br>');
     
-    // H1 제목을 앵커 ID와 함께 변환
-    html = html.replace(/==\s*(.+?)\s*==/g, (_, title) => {
+    // 코드 블록 (```)
+    html = html.replace(/```([a-z]*)<br>([\s\S]*?)```/g, (_, lang, code) => {
+      const codeContent = code.replace(/<br>/g, '\n').trim();
+      return `<pre style="background: #f8f9fa; padding: 12px; border-radius: 4px; margin: 10px 0; overflow-x: auto;"><code${lang ? ` class="language-${lang}"` : ''}>${codeContent}</code></pre>`;
+    });
+    
+    // 인라인 코드 (`)
+    html = html.replace(/`([^`]+)`/g, '<code style="background: #f8f9fa; padding: 2px 4px; border-radius: 3px; font-family: monospace;">$1</code>');
+    
+    // 제목들 (H1, H2, H3)
+    html = html.replace(/^# (.+?)(?:<br>|$)/gm, (_, title) => {
       h1Count++;
       currentH1 = h1Count;
-      h2Count = 0; // H2 카운터 리셋
+      h2Count = 0;
+      h3Count = 0;
       const id = `heading-h1-${h1Count}`;
-      return `<h2 id="${id}" style="scroll-margin-top: 80px;">${title.trim()}</h2>`;
+      return `<h1 id="${id}" style="scroll-margin-top: 80px; margin: 20px 0 10px 0;">${title.trim()}</h1>`;
     });
     
-    // H2 제목을 앵커 ID와 함께 변환
-    html = html.replace(/===\s*(.+?)\s*===/g, (_, title) => {
+    html = html.replace(/^## (.+?)(?:<br>|$)/gm, (_, title) => {
       h2Count++;
+      currentH2 = h2Count;
+      h3Count = 0;
       const id = `heading-h2-${currentH1}-${h2Count}`;
-      return `<h3 id="${id}" style="scroll-margin-top: 80px;">${title.trim()}</h3>`;
+      return `<h2 id="${id}" style="scroll-margin-top: 80px; margin: 18px 0 8px 0;">${title.trim()}</h2>`;
     });
     
-    html = html.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
-    html = html.replace(/~~(.+?)~~/g, '<del>$1</del>');
-    
-    // 접기 블록 처리
-    html = html.replace(/\{\{\{fold:([^|]+)\|([^|]+)\|\}\}\}/g, (_, title, content) => {
-      return `<details style="border: 1px solid #dee2e6; border-radius: 4px; margin: 10px 0; padding: 0;"><summary style="background: #f8f9fa; padding: 8px 12px; cursor: pointer; font-weight: 500; border-radius: 3px 3px 0 0;">${title.trim()}</summary><div style="padding: 12px;">${content.trim()}</div></details>`;
+    html = html.replace(/^### (.+?)(?:<br>|$)/gm, (_, title) => {
+      h3Count++;
+      const id = `heading-h3-${currentH1}-${currentH2}-${h3Count}`;
+      return `<h3 id="${id}" style="scroll-margin-top: 80px; margin: 16px 0 6px 0;">${title.trim()}</h3>`;
     });
-
     
+    // 텍스트 서식
+    html = html.replace(/\*\*\*(.+?)\*\*\*/g, '<strong><em>$1</em></strong>'); // 굵은 기울임
+    html = html.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>'); // 굵게
+    html = html.replace(/\*(.+?)\*/g, '<em>$1</em>'); // 기울임
+    html = html.replace(/~~(.+?)~~/g, '<del>$1</del>'); // 취소선
+    
+    // 인용문
+    html = html.replace(/^&gt; (.+?)(?:<br>|$)/gm, '<blockquote style="border-left: 4px solid #dee2e6; margin: 10px 0; padding: 10px 15px; background: #f8f9fa;">$1</blockquote>');
+    
+    // 링크
+    html = html.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank" rel="noopener noreferrer" style="color: #007bff; text-decoration: underline;">$1</a>');
+    
+    // 자동 링크
     html = html.replace(/(https?:\/\/[^\s<>"{}|\\^`\[\]]+)/g, '<a href="$1" target="_blank" rel="noopener noreferrer" style="color: #007bff; text-decoration: underline;">$1</a>');
-    html = html.replace(/^\*\s(.+)$/gm, '<li>$1</li>');
-    html = html.replace(/(<li>.*<\/li>)/s, '<ul>$1</ul>');
+    
+    // 불릿 리스트
+    html = html.replace(/^- (.+?)(?=<br>|$)/gm, '<li>$1</li>');
+    html = html.replace(/^• (.+?)(?=<br>|$)/gm, '<li>$1</li>');
+    html = html.replace(/^\\* (.+?)(?=<br>|$)/gm, '<li>$1</li>');
+    
+    // 번호 리스트
+    html = html.replace(/^\d+\. (.+?)(?=<br>|$)/gm, '<li>$1</li>');
+    
+    // 리스트를 ul/ol로 감싸기
+    html = html.replace(/(<li>.*?<\/li>)/gs, (match) => {
+      return `<ul style="margin: 10px 0; padding-left: 20px;">${match}</ul>`;
+    });
+    
+    // 체크박스
+    html = html.replace(/- \[ \] (.+?)(?=<br>|$)/gm, '<div style="margin: 5px 0;"><input type="checkbox" disabled style="margin-right: 8px;"> $1</div>');
+    html = html.replace(/- \[x\] (.+?)(?=<br>|$)/gm, '<div style="margin: 5px 0;"><input type="checkbox" checked disabled style="margin-right: 8px;"> $1</div>');
+    
+    // 표 (간단한 구현)
+    html = html.replace(/\|(.+?)\|<br>/g, (match) => {
+      const cells = match.slice(1, -4).split('|').map(cell => `<td style="border: 1px solid #dee2e6; padding: 8px;">${cell.trim()}</td>`).join('');
+      return `<tr>${cells}</tr>`;
+    });
+    html = html.replace(/(<tr>.*?<\/tr>)+/g, '<table style="border-collapse: collapse; margin: 10px 0; width: 100%;">$&</table>');
+    
+    // 구분선
+    html = html.replace(/^---<br>|^---$/gm, '<hr style="border: none; border-top: 1px solid #dee2e6; margin: 20px 0;">');
     
     return html;
   };
@@ -1502,13 +1791,109 @@ Firebase와 연결되었습니다! 🚀`);
             isEditMode ? (
               // 편집 모드
               <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
-                <div className="mobile-view-switcher">
-                  <button onClick={() => setMobileView('editor')} className={mobileView === 'editor' ? 'active' : ''}>편집</button>
-                  <button onClick={() => setMobileView('preview')} className={mobileView === 'preview' ? 'active' : ''}>미리보기</button>
+                {/* 통합 뷰 스위처 */}
+                <div style={{ 
+                  display: 'flex', 
+                  gap: '4px', 
+                  padding: '8px 16px', 
+                  background: '#f8f9fa', 
+                  borderBottom: '1px solid #dee2e6',
+                  alignItems: 'center'
+                }}>
+                  <span style={{ fontSize: '12px', color: '#6c757d', marginRight: '12px' }}>편집 모드:</span>
+                  
+                  {/* 데스크톱 뷰 스위처 */}
+                  <div className="desktop-view-switcher" style={{ display: 'flex', gap: '4px' }}>
+                    <button 
+                      onClick={() => setDesktopView('split')} 
+                      style={{
+                        padding: '6px 12px',
+                        fontSize: '12px',
+                        background: desktopView === 'split' ? '#007bff' : '#f8f9fa',
+                        color: desktopView === 'split' ? 'white' : '#495057',
+                        border: '1px solid #dee2e6',
+                        borderRadius: '4px',
+                        cursor: 'pointer'
+                      }}
+                    >
+                      분할 보기
+                    </button>
+                    <button 
+                      onClick={() => setDesktopView('editor')} 
+                      style={{
+                        padding: '6px 12px',
+                        fontSize: '12px',
+                        background: desktopView === 'editor' ? '#007bff' : '#f8f9fa',
+                        color: desktopView === 'editor' ? 'white' : '#495057',
+                        border: '1px solid #dee2e6',
+                        borderRadius: '4px',
+                        cursor: 'pointer'
+                      }}
+                    >
+                      편집만
+                    </button>
+                    <button 
+                      onClick={() => setDesktopView('preview')} 
+                      style={{
+                        padding: '6px 12px',
+                        fontSize: '12px',
+                        background: desktopView === 'preview' ? '#007bff' : '#f8f9fa',
+                        color: desktopView === 'preview' ? 'white' : '#495057',
+                        border: '1px solid #dee2e6',
+                        borderRadius: '4px',
+                        cursor: 'pointer'
+                      }}
+                    >
+                      미리보기만
+                    </button>
+                  </div>
+                  
+                  {/* 모바일 뷰 스위처 */}
+                  <div className="mobile-view-switcher" style={{ display: 'none', gap: '4px' }}>
+                    <button 
+                      onClick={() => setMobileView('editor')} 
+                      style={{
+                        padding: '6px 12px',
+                        fontSize: '12px',
+                        background: mobileView === 'editor' ? '#007bff' : '#f8f9fa',
+                        color: mobileView === 'editor' ? 'white' : '#495057',
+                        border: '1px solid #dee2e6',
+                        borderRadius: '4px',
+                        cursor: 'pointer'
+                      }}
+                    >
+                      편집
+                    </button>
+                    <button 
+                      onClick={() => setMobileView('preview')} 
+                      style={{
+                        padding: '6px 12px',
+                        fontSize: '12px',
+                        background: mobileView === 'preview' ? '#007bff' : '#f8f9fa',
+                        color: mobileView === 'preview' ? 'white' : '#495057',
+                        border: '1px solid #dee2e6',
+                        borderRadius: '4px',
+                        cursor: 'pointer'
+                      }}
+                    >
+                      미리보기
+                    </button>
+                  </div>
                 </div>
-                <div style={{ flex: 1, display: 'flex' }} className="editor-preview-container">
+                
+                <div style={{ 
+                  flex: 1, 
+                  display: 'flex',
+                  flexDirection: desktopView === 'split' ? 'row' : 'column'
+                }} className="editor-preview-container">
                   {/* 편집기 */}
-                  <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }} className={`editor-pane ${mobileView !== 'editor' ? 'hidden-mobile' : ''}`}>
+                  {(desktopView === 'split' || desktopView === 'editor' || (window.innerWidth <= 768 && mobileView === 'editor')) && (
+                    <div style={{ 
+                      flex: desktopView === 'split' ? 1 : 1, 
+                      display: 'flex', 
+                      flexDirection: 'column',
+                      borderRight: desktopView === 'split' ? '1px solid #dee2e6' : 'none'
+                    }} className="editor-pane">
                     <div className="editor-header">
                       <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flex: 1 }}>
                         <span style={{ fontSize: '12px', color: '#6c757d' }}>편집 모드</span>
@@ -1610,7 +1995,7 @@ Firebase와 연결되었습니다! 🚀`);
                       </div>
                     </div>
                     
-                    {/* 위키 문법 버튼 툴바 */}
+                    {/* 실행취소/다시실행 툴바 */}
                     <div className="editor-toolbar">
                       <span style={{ fontSize: '11px', color: '#6c757d', marginRight: '8px' }}>실행취소:</span>
                       <button
@@ -1629,13 +2014,6 @@ Firebase와 연결되었습니다! 🚀`);
                       >
                         ↷
                       </button>
-                      <div style={{ width: '1px', height: '20px', background: '#dee2e6', margin: '0 8px' }}></div>
-                      <span style={{ fontSize: '11px', color: '#6c757d', marginRight: '8px' }}>문법:</span>
-                      <button onClick={() => insertText('**', '**', '굵은 텍스트')} style={toolbarButtonStyle} title="굵게"><b>B</b></button>
-                      <button onClick={() => insertText('~~', '~~', '취소선 텍스트')} style={toolbarButtonStyle} title="취소선"><s>S</s></button>
-                      <button onClick={() => insertText('== ', ' ==', '제목')} style={toolbarButtonStyle} title="큰 제목">H1</button>
-                      <button onClick={() => insertText('=== ', ' ===', '소제목')} style={toolbarButtonStyle} title="작은 제목">H2</button>
-                      <button onClick={() => insertText('{{{fold:', '|}}}', '제목|내용')} style={{...toolbarButtonStyle, fontSize: '10px'}} title="접기/펼치기">접기</button>
                     </div>
                     
                     <textarea
@@ -1653,12 +2031,19 @@ Firebase와 연결되었습니다! 🚀`);
                         lineHeight: '1.6',
                         resize: 'none'
                       }}
-                      placeholder="위키 문서를 작성하세요... (텍스트 전용)"
+                      placeholder="마크다운 문서를 작성하세요..."
                     />
-                  </div>
+                    </div>
+                  )}
                   
                   {/* 미리보기 */}
-                  <div style={{ flex: 1, display: 'flex', flexDirection: 'column', borderLeft: '1px solid #dee2e6' }} className={`preview-pane ${mobileView !== 'preview' ? 'hidden-mobile' : ''}`}>
+                  {(desktopView === 'split' || desktopView === 'preview' || (window.innerWidth <= 768 && mobileView === 'preview')) && (
+                    <div style={{ 
+                      flex: desktopView === 'split' ? 1 : 1, 
+                      display: 'flex', 
+                      flexDirection: 'column', 
+                      borderLeft: desktopView === 'split' ? '1px solid #dee2e6' : 'none'
+                    }} className="preview-pane">
                     <div className="preview-header">
                       <span style={{ fontSize: '12px', color: '#6c757d' }}>미리보기</span>
                     </div>
@@ -1675,7 +2060,7 @@ Firebase와 연결되었습니다! 🚀`);
                       }}
                     >
                       <div style={{ padding: '20px', paddingBottom: '60px' }}>
-                        <div dangerouslySetInnerHTML={{ __html: parseWikiText(content) }} />
+                        <div dangerouslySetInnerHTML={{ __html: parseMarkdown(content) }} />
                         
                         <div style={{ textAlign: 'center', marginTop: '30px', paddingTop: '15px', borderTop: '1px solid #dee2e6'}}>
                           <button onClick={scrollToTop} className="scroll-top-btn">
@@ -1684,7 +2069,8 @@ Firebase와 연결되었습니다! 🚀`);
                         </div>
                       </div>
                     </div>
-                  </div>
+                    </div>
+                  )}
                 </div>
               </div>
             ) : (
@@ -1801,6 +2187,113 @@ Firebase와 연결되었습니다! 🚀`);
                     >
                       편집
                     </button>
+                    
+                    {/* 내보내기 버튼 */}
+                    <div className="export-menu-container" style={{ position: 'relative' }}>
+                      <button
+                        onClick={() => setExportMenuOpen(!exportMenuOpen)}
+                        className="editor-header-btn"
+                        style={{ display: 'flex', alignItems: 'center', gap: '4px' }}
+                      >
+                        📤 내보내기
+                      </button>
+                      
+                      {/* 내보내기 드롭다운 메뉴 */}
+                      {exportMenuOpen && (
+                        <div
+                          style={{
+                            position: 'absolute',
+                            top: '100%',
+                            right: '0px',
+                            background: 'white',
+                            border: '1px solid #dee2e6',
+                            borderRadius: '4px',
+                            boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+                            zIndex: 1000,
+                            minWidth: '160px',
+                            marginTop: '4px'
+                          }}
+                        >
+                          <button
+                            onClick={handleExportAsText}
+                            style={{
+                              width: '100%',
+                              padding: '8px 12px',
+                              background: 'none',
+                              border: 'none',
+                              textAlign: 'left',
+                              cursor: 'pointer',
+                              fontSize: '13px',
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: '8px'
+                            }}
+                            onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#f8f9fa'}
+                            onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+                          >
+                            📄 텍스트 파일 (.txt)
+                          </button>
+                          <button
+                            onClick={handleExportAsMarkdown}
+                            style={{
+                              width: '100%',
+                              padding: '8px 12px',
+                              background: 'none',
+                              border: 'none',
+                              textAlign: 'left',
+                              cursor: 'pointer',
+                              fontSize: '13px',
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: '8px'
+                            }}
+                            onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#f8f9fa'}
+                            onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+                          >
+                            📝 마크다운 (.md)
+                          </button>
+                          <hr style={{ margin: '4px 0', border: 'none', borderTop: '1px solid #dee2e6' }} />
+                          <button
+                            onClick={handleExportAsPDF}
+                            style={{
+                              width: '100%',
+                              padding: '8px 12px',
+                              background: 'none',
+                              border: 'none',
+                              textAlign: 'left',
+                              cursor: 'pointer',
+                              fontSize: '13px',
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: '8px'
+                            }}
+                            onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#f8f9fa'}
+                            onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+                          >
+                            📄 PDF 파일
+                          </button>
+                          <button
+                            onClick={handleShareLink}
+                            style={{
+                              width: '100%',
+                              padding: '8px 12px',
+                              background: 'none',
+                              border: 'none',
+                              textAlign: 'left',
+                              cursor: 'pointer',
+                              fontSize: '13px',
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: '8px'
+                            }}
+                            onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#f8f9fa'}
+                            onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+                          >
+                            🔗 링크 복사
+                          </button>
+                        </div>
+                      )}
+                    </div>
                   </div>
                 </div>
                 <div 
@@ -1816,7 +2309,7 @@ Firebase와 연결되었습니다! 🚀`);
                   }}
                 >
                   <div style={{ padding: '20px', paddingBottom: '60px' }}>
-                    <div dangerouslySetInnerHTML={{ __html: parseWikiText(currentDoc.content) }} />
+                    <div dangerouslySetInnerHTML={{ __html: parseMarkdown(currentDoc.content) }} />
                     
                     <div style={{ textAlign: 'center', marginTop: '30px', paddingTop: '15px', borderTop: '1px solid #dee2e6'}}>
                       <button onClick={scrollToTop} className="scroll-top-btn">
@@ -1844,7 +2337,7 @@ Firebase와 연결되었습니다! 🚀`);
                 }}
               >
                 <div style={{ padding: '20px' }}>
-                  <div dangerouslySetInnerHTML={{ __html: parseWikiText(content) }} />
+                  <div dangerouslySetInnerHTML={{ __html: parseMarkdown(content) }} />
                 </div>
               </div>
             </div>
@@ -1855,33 +2348,63 @@ Firebase와 연결되었습니다! 🚀`);
         새 문서
       </button>
       
-      {/* 플로팅 목차 버튼 */}
+      {/* 플로팅 버튼들 */}
       {currentDoc && (
-        <div className="toc-container" style={{ position: 'relative' }}>
-          <button 
-            onClick={() => setTocOpen(!tocOpen)}
-            style={{
-              position: 'fixed',
-              right: '20px',
-              bottom: '80px',
-              width: '50px',
-              height: '50px',
-              borderRadius: '25px',
-              background: '#007bff',
-              color: 'white',
-              border: 'none',
-              fontSize: '20px',
-              cursor: 'pointer',
-              boxShadow: '0 2px 10px rgba(0,0,0,0.2)',
-              zIndex: 999,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center'
-            }}
-            title="아웃라인"
-          >
-            🌳
-          </button>
+        <div>
+          {/* 댓글 버튼 */}
+          <div className="comments-container" style={{ position: 'relative' }}>
+            <button 
+              onClick={() => setCommentsOpen(!commentsOpen)}
+              style={{
+                position: 'fixed',
+                right: '20px',
+                bottom: '140px',
+                width: '50px',
+                height: '50px',
+                borderRadius: '25px',
+                background: '#28a745',
+                color: 'white',
+                border: 'none',
+                fontSize: '20px',
+                cursor: 'pointer',
+                boxShadow: '0 2px 10px rgba(0,0,0,0.2)',
+                zIndex: 999,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center'
+              }}
+              title="댓글"
+            >
+              💬
+            </button>
+          </div>
+          
+          {/* 목차 버튼 */}
+          <div className="toc-container" style={{ position: 'relative' }}>
+            <button 
+              onClick={() => setTocOpen(!tocOpen)}
+              style={{
+                position: 'fixed',
+                right: '20px',
+                bottom: '80px',
+                width: '50px',
+                height: '50px',
+                borderRadius: '25px',
+                background: '#007bff',
+                color: 'white',
+                border: 'none',
+                fontSize: '20px',
+                cursor: 'pointer',
+                boxShadow: '0 2px 10px rgba(0,0,0,0.2)',
+                zIndex: 999,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center'
+              }}
+              title="아웃라인"
+            >
+              🌳
+            </button>
           
           {/* 목차 팝업 */}
           {tocOpen && (
@@ -2050,6 +2573,226 @@ Firebase와 연결되었습니다! 🚀`);
                     == 제목 == 또는 === 소제목 ===을 사용해보세요.
                   </div>
                 )}
+              </div>
+            </div>
+          )}
+          
+          {/* 댓글 팝업 */}
+          {commentsOpen && (
+            <div
+              style={{
+                position: 'fixed',
+                right: '20px',
+                bottom: '200px',
+                background: 'white',
+                border: '1px solid #dee2e6',
+                borderRadius: '8px',
+                boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+                zIndex: 1000,
+                minWidth: '350px',
+                maxWidth: '400px',
+                maxHeight: '500px',
+                display: 'flex',
+                flexDirection: 'column'
+              }}
+            >
+              <div style={{
+                padding: '12px 16px',
+                borderBottom: '1px solid #dee2e6',
+                background: '#f8f9fa',
+                borderRadius: '8px 8px 0 0',
+                fontWeight: '600',
+                fontSize: '14px',
+                color: '#495057',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px'
+              }}>
+                💬 댓글 ({getCommentsByDocument(currentDoc.id).length})
+              </div>
+              
+              {/* 댓글 목록 */}
+              <div style={{ 
+                flex: 1, 
+                overflow: 'auto', 
+                maxHeight: '300px',
+                padding: '8px 0'
+              }}>
+                {getCommentsByDocument(currentDoc.id).map((comment) => (
+                  <div key={comment.id} style={{
+                    padding: '8px 16px',
+                    borderBottom: '1px solid #f8f9fa',
+                    margin: '4px 0'
+                  }}>
+                    {editingCommentId === comment.id ? (
+                      // 댓글 편집 모드
+                      <div>
+                        <textarea
+                          value={editingCommentContent}
+                          onChange={(e) => setEditingCommentContent(e.target.value)}
+                          style={{
+                            width: '100%',
+                            minHeight: '60px',
+                            padding: '8px',
+                            border: '1px solid #dee2e6',
+                            borderRadius: '4px',
+                            fontSize: '13px',
+                            fontFamily: 'inherit',
+                            resize: 'vertical'
+                          }}
+                          placeholder="댓글 내용..."
+                          autoFocus
+                        />
+                        <div style={{ display: 'flex', gap: '4px', marginTop: '8px' }}>
+                          <button
+                            onClick={handleSaveComment}
+                            style={{
+                              padding: '4px 8px',
+                              fontSize: '11px',
+                              background: '#28a745',
+                              color: 'white',
+                              border: 'none',
+                              borderRadius: '3px',
+                              cursor: 'pointer'
+                            }}
+                          >
+                            저장
+                          </button>
+                          <button
+                            onClick={handleCancelEditComment}
+                            style={{
+                              padding: '4px 8px',
+                              fontSize: '11px',
+                              background: '#6c757d',
+                              color: 'white',
+                              border: 'none',
+                              borderRadius: '3px',
+                              cursor: 'pointer'
+                            }}
+                          >
+                            취소
+                          </button>
+                        </div>
+                      </div>
+                    ) : (
+                      // 댓글 읽기 모드
+                      <div>
+                        <div style={{
+                          fontSize: '13px',
+                          color: '#495057',
+                          marginBottom: '6px',
+                          lineHeight: '1.4'
+                        }}>
+                          {comment.content}
+                        </div>
+                        <div style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'space-between',
+                          fontSize: '11px',
+                          color: '#6c757d'
+                        }}>
+                          <div>
+                            {comment.userName} • {comment.createdAt.toLocaleDateString()} {comment.createdAt.toLocaleTimeString()}
+                          </div>
+                          <div style={{ display: 'flex', gap: '8px' }}>
+                            <button
+                              onClick={() => handleStartEditComment(comment.id, comment.content)}
+                              style={{
+                                background: 'none',
+                                border: 'none',
+                                color: '#007bff',
+                                cursor: 'pointer',
+                                fontSize: '11px'
+                              }}
+                            >
+                              수정
+                            </button>
+                            <button
+                              onClick={() => handleDeleteComment(comment.id)}
+                              style={{
+                                background: 'none',
+                                border: 'none',
+                                color: '#dc3545',
+                                cursor: 'pointer',
+                                fontSize: '11px'
+                              }}
+                            >
+                              삭제
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                ))}
+                
+                {getCommentsByDocument(currentDoc.id).length === 0 && (
+                  <div style={{
+                    padding: '20px',
+                    textAlign: 'center',
+                    color: '#6c757d',
+                    fontSize: '12px'
+                  }}>
+                    아직 댓글이 없습니다.<br/>
+                    첫 번째 댓글을 작성해보세요!
+                  </div>
+                )}
+              </div>
+              
+              {/* 새 댓글 작성 */}
+              <div style={{
+                padding: '12px 16px',
+                borderTop: '1px solid #dee2e6',
+                background: '#f8f9fa',
+                borderRadius: '0 0 8px 8px'
+              }}>
+                <textarea
+                  value={newCommentContent}
+                  onChange={(e) => setNewCommentContent(e.target.value)}
+                  style={{
+                    width: '100%',
+                    minHeight: '60px',
+                    padding: '8px',
+                    border: '1px solid #dee2e6',
+                    borderRadius: '4px',
+                    fontSize: '13px',
+                    fontFamily: 'inherit',
+                    resize: 'vertical'
+                  }}
+                  placeholder="댓글을 작성하세요..."
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' && e.ctrlKey) {
+                      e.preventDefault();
+                      handleCreateComment();
+                    }
+                  }}
+                />
+                <div style={{
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  marginTop: '8px'
+                }}>
+                  <span style={{ fontSize: '11px', color: '#6c757d' }}>
+                    Ctrl + Enter로 빠른 작성
+                  </span>
+                  <button
+                    onClick={handleCreateComment}
+                    disabled={!newCommentContent.trim()}
+                    style={{
+                      padding: '6px 12px',
+                      fontSize: '12px',
+                      background: newCommentContent.trim() ? '#28a745' : '#6c757d',
+                      color: 'white',
+                      border: 'none',
+                      borderRadius: '4px',
+                      cursor: newCommentContent.trim() ? 'pointer' : 'not-allowed'
+                    }}
+                  >
+                    댓글 작성
+                  </button>
+                </div>
               </div>
             </div>
           )}
