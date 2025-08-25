@@ -588,3 +588,9 @@
     margin-right: 8px;
   }
 }
+
+/* 문서 3점 메뉴 위치 조정 */
+.document-menu .three-dots-dropdown {
+  right: auto;
+  left: 0;
+}
