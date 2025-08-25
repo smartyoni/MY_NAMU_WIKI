@@ -66,6 +66,9 @@ Firebase와 연결되었습니다! 🚀`);
   const [editingCategoryId, setEditingCategoryId] = useState<string | null>(null);
   const [editingCategoryName, setEditingCategoryName] = useState('');
   const [categoryMenuOpen, setCategoryMenuOpen] = useState<string | null>(null);
+  const [documentMenuOpen, setDocumentMenuOpen] = useState<string | null>(null);
+  const [editingDocumentId, setEditingDocumentId] = useState<string | null>(null);
+  const [editingDocumentTitle, setEditingDocumentTitle] = useState('');
   const [tocOpen, setTocOpen] = useState(false);
   const [collapsedSections, setCollapsedSections] = useState<Set<string>>(new Set());
 
@@ -106,6 +109,11 @@ Firebase와 연결되었습니다! 🚀`);
         setCategoryMenuOpen(null);
       }
       
+      // 문서 메뉴 외부 클릭 시 닫기
+      if (documentMenuOpen && !target.closest('.document-menu-container')) {
+        setDocumentMenuOpen(null);
+      }
+      
       // TOC 외부 클릭 시 닫기
       if (tocOpen && !target.closest('.toc-container')) {
         setTocOpen(false);
@@ -116,7 +124,7 @@ Firebase와 연결되었습니다! 🚀`);
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
     };
-  }, [categoryMenuOpen, tocOpen]);
+  }, [categoryMenuOpen, documentMenuOpen, tocOpen]);
 
 
   // 툴바 버튼 스타일
@@ -295,6 +303,75 @@ Firebase와 연결되었습니다! 🚀`);
         console.error('Error deleting category:', error);
         alert('카테고리 삭제 중 오류가 발생했습니다.');
       }
+    }
+  };
+
+  // 문서 관리 함수들
+  const handleStartEditDocument = (documentId: string, currentTitle: string) => {
+    setEditingDocumentId(documentId);
+    setEditingDocumentTitle(currentTitle);
+    setDocumentMenuOpen(null);
+  };
+
+  const handleCancelEditDocument = () => {
+    setEditingDocumentId(null);
+    setEditingDocumentTitle('');
+  };
+
+  const handleSaveDocumentTitle = async (documentId: string) => {
+    if (!editingDocumentTitle.trim()) {
+      console.log('문서 제목이 비어있음');
+      return;
+    }
+
+    try {
+      console.log('문서 제목 수정:', documentId, '→', editingDocumentTitle.trim());
+      await updateDocument(documentId, { title: editingDocumentTitle.trim() });
+      setEditingDocumentId(null);
+      setEditingDocumentTitle('');
+      console.log('문서 제목 수정 완료');
+    } catch (err) {
+      console.error('Error updating document title:', err);
+      alert('문서 제목 변경 중 오류가 발생했습니다.');
+    }
+  };
+
+  const handleDocumentKeyDown = (e: React.KeyboardEvent, documentId: string) => {
+    if (e.key === 'Enter') {
+      handleSaveDocumentTitle(documentId);
+    } else if (e.key === 'Escape') {
+      handleCancelEditDocument();
+    }
+  };
+
+  const handleDeleteDocumentFromMenu = async (documentId: string, documentTitle: string) => {
+    if (window.confirm(`"${documentTitle}" 문서를 삭제하시겠습니까?`)) {
+      try {
+        console.log('문서 삭제 시작:', documentId, documentTitle);
+        await deleteDocument(documentId);
+        console.log('문서 삭제 완료:', documentId);
+      } catch (error) {
+        console.error('Error deleting document:', error);
+        alert('문서 삭제 중 오류가 발생했습니다.');
+      }
+    }
+  };
+
+  const handleDuplicateDocument = async (doc: any) => {
+    try {
+      console.log('문서 복사 시작:', doc.title);
+      const newTitle = `${doc.title} (복사본)`;
+      const newContent = doc.content;
+      const id = await createDocument(newTitle, newContent);
+      
+      // 같은 카테고리로 설정
+      await updateDocument(id, { category: doc.category });
+      
+      console.log('문서 복사 완료:', newTitle);
+      alert(`"${newTitle}" 문서가 생성되었습니다.`);
+    } catch (error) {
+      console.error('Error duplicating document:', error);
+      alert('문서 복사 중 오류가 발생했습니다.');
     }
   };
 
@@ -1015,70 +1092,222 @@ Firebase와 연결되었습니다! 🚀`);
                     {isExpanded && (
                       <div style={{ marginLeft: '20px' }}>
                         {categoryDocs.length > 0 ? (
-                          categoryDocs.map((doc) => (
-                            <div
-                              key={doc.id}
-                              className={`document-item ${currentDoc?.id === doc.id ? 'active' : ''}`}
-                              style={{ 
-                                cursor: 'pointer',
-                                marginBottom: '4px',
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'space-between',
-                                padding: '4px 8px',
-                                borderRadius: '4px',
-                                backgroundColor: currentDoc?.id === doc.id ? '#e3f2fd' : 'transparent',
-                                border: currentDoc?.id === doc.id ? '1px solid #2196f3' : '1px solid transparent'
-                              }}
-                            >
-                              <span
-                                onClick={() => handleSelectDocument(doc)}
-                                style={{ flex: 1, cursor: 'pointer' }}
-                              >
-                                {doc.title}
-                              </span>
-                              
-                              {/* 문서용 3점 메뉴 버튼 */}
-                              <button
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  console.log('문서 3점 메뉴 클릭됨:', doc.id);
-                                  // TODO: 문서 메뉴 기능 추가 필요
-                                }}
-                                style={{
-                                  background: 'none',
-                                  border: '1px solid transparent',
-                                  color: '#6c757d',
-                                  cursor: 'pointer',
-                                  fontSize: '16px',
-                                  fontWeight: 'bold',
-                                  opacity: 1,
-                                  padding: '4px 6px',
-                                  borderRadius: '4px',
-                                  lineHeight: '1',
-                                  flexShrink: 0,
-                                  minWidth: '20px',
-                                  height: '20px',
-                                  display: 'flex',
-                                  alignItems: 'center',
-                                  justifyContent: 'center',
-                                  position: 'relative',
-                                  zIndex: 100
-                                }}
-                                title="문서 메뉴"
-                                onMouseEnter={(e) => {
-                                  e.currentTarget.style.backgroundColor = '#e9ecef';
-                                  e.currentTarget.style.borderColor = '#6c757d';
-                                }}
-                                onMouseLeave={(e) => {
-                                  e.currentTarget.style.backgroundColor = 'transparent';
-                                  e.currentTarget.style.borderColor = 'transparent';
-                                }}
-                              >
-                                ⋮
-                              </button>
-                            </div>
-                          ))
+                          categoryDocs.map((doc) => {
+                            const isEditing = editingDocumentId === doc.id;
+                            
+                            return (
+                              <React.Fragment key={doc.id}>
+                                <div
+                                  className={`document-item ${currentDoc?.id === doc.id ? 'active' : ''}`}
+                                  style={{ 
+                                    cursor: 'pointer',
+                                    marginBottom: '4px',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'space-between',
+                                    padding: '4px 8px',
+                                    borderRadius: '4px',
+                                    backgroundColor: currentDoc?.id === doc.id ? '#e3f2fd' : 'transparent',
+                                    border: currentDoc?.id === doc.id ? '1px solid #2196f3' : (isEditing ? '2px solid #007bff' : '1px solid transparent'),
+                                    position: 'relative'
+                                  }}
+                                >
+                                  {isEditing ? (
+                                    // 문서 제목 편집 모드
+                                    <>
+                                      <input
+                                        type="text"
+                                        value={editingDocumentTitle}
+                                        onChange={(e) => setEditingDocumentTitle(e.target.value)}
+                                        onKeyDown={(e) => handleDocumentKeyDown(e, doc.id)}
+                                        style={{
+                                          flex: 1,
+                                          padding: '2px 6px',
+                                          fontSize: '13px',
+                                          border: 'none',
+                                          outline: 'none',
+                                          background: 'transparent',
+                                          minWidth: '80px'
+                                        }}
+                                        autoFocus
+                                        placeholder="문서 제목"
+                                      />
+                                      <div style={{ display: 'flex', gap: '4px', marginLeft: '8px' }}>
+                                        <button
+                                          onClick={() => handleSaveDocumentTitle(doc.id)}
+                                          style={{
+                                            padding: '2px 6px',
+                                            fontSize: '10px',
+                                            background: '#28a745',
+                                            color: 'white',
+                                            border: 'none',
+                                            borderRadius: '2px',
+                                            cursor: 'pointer'
+                                          }}
+                                          title="저장"
+                                        >
+                                          ✓
+                                        </button>
+                                        <button
+                                          onClick={handleCancelEditDocument}
+                                          style={{
+                                            padding: '2px 6px',
+                                            fontSize: '10px',
+                                            background: '#6c757d',
+                                            color: 'white',
+                                            border: 'none',
+                                            borderRadius: '2px',
+                                            cursor: 'pointer'
+                                          }}
+                                          title="취소"
+                                        >
+                                          ×
+                                        </button>
+                                      </div>
+                                    </>
+                                  ) : (
+                                    // 문서 일반 표시 모드
+                                    <>
+                                      <span
+                                        onClick={() => handleSelectDocument(doc)}
+                                        style={{ flex: 1, cursor: 'pointer' }}
+                                      >
+                                        {doc.title}
+                                      </span>
+                                      
+                                      {/* 문서용 3점 메뉴 버튼 */}
+                                      <button
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          console.log('문서 3점 메뉴 클릭됨:', doc.id, 'currentOpen:', documentMenuOpen);
+                                          setDocumentMenuOpen(documentMenuOpen === doc.id ? null : doc.id);
+                                        }}
+                                        style={{
+                                          background: documentMenuOpen === doc.id ? '#e9ecef' : 'none',
+                                          border: '1px solid ' + (documentMenuOpen === doc.id ? '#6c757d' : 'transparent'),
+                                          color: '#6c757d',
+                                          cursor: 'pointer',
+                                          fontSize: '16px',
+                                          fontWeight: 'bold',
+                                          opacity: 1,
+                                          padding: '4px 6px',
+                                          borderRadius: '4px',
+                                          lineHeight: '1',
+                                          flexShrink: 0,
+                                          minWidth: '20px',
+                                          height: '20px',
+                                          display: 'flex',
+                                          alignItems: 'center',
+                                          justifyContent: 'center',
+                                          position: 'relative',
+                                          zIndex: 100
+                                        }}
+                                        title="문서 메뉴"
+                                        onMouseEnter={(e) => {
+                                          e.currentTarget.style.backgroundColor = '#e9ecef';
+                                          e.currentTarget.style.borderColor = '#6c757d';
+                                        }}
+                                        onMouseLeave={(e) => {
+                                          if (documentMenuOpen !== doc.id) {
+                                            e.currentTarget.style.backgroundColor = 'transparent';
+                                            e.currentTarget.style.borderColor = 'transparent';
+                                          }
+                                        }}
+                                      >
+                                        ⋮
+                                      </button>
+                                    </>
+                                  )}
+                                </div>
+
+                                {/* 문서 드롭다운 메뉴 */}
+                                {!isEditing && documentMenuOpen === doc.id && (
+                                  <div
+                                    className="document-menu-container document-dropdown-menu"
+                                    style={{
+                                      position: 'absolute',
+                                      right: '0px',
+                                      top: '100%',
+                                      background: 'white',
+                                      border: '1px solid #dee2e6',
+                                      borderRadius: '4px',
+                                      boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+                                      zIndex: 9999,
+                                      minWidth: '140px',
+                                      padding: '4px 0',
+                                      marginTop: '2px',
+                                      marginLeft: '20px'
+                                    }}
+                                  >
+                                    <button
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        handleStartEditDocument(doc.id, doc.title);
+                                      }}
+                                      style={{
+                                        width: '100%',
+                                        padding: '6px 12px',
+                                        background: 'none',
+                                        border: 'none',
+                                        textAlign: 'left',
+                                        cursor: 'pointer',
+                                        fontSize: '12px',
+                                        color: '#495057'
+                                      }}
+                                      onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#f8f9fa'}
+                                      onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+                                    >
+                                      ✏️ 이름 수정
+                                    </button>
+                                    <hr style={{ margin: '4px 0', border: 'none', borderTop: '1px solid #dee2e6' }} />
+                                    <button
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        handleDuplicateDocument(doc);
+                                        setDocumentMenuOpen(null);
+                                      }}
+                                      style={{
+                                        width: '100%',
+                                        padding: '6px 12px',
+                                        background: 'none',
+                                        border: 'none',
+                                        textAlign: 'left',
+                                        cursor: 'pointer',
+                                        fontSize: '12px',
+                                        color: '#495057'
+                                      }}
+                                      onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#f8f9fa'}
+                                      onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+                                    >
+                                      📋 복사본 만들기
+                                    </button>
+                                    <hr style={{ margin: '4px 0', border: 'none', borderTop: '1px solid #dee2e6' }} />
+                                    <button
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        handleDeleteDocumentFromMenu(doc.id, doc.title);
+                                        setDocumentMenuOpen(null);
+                                      }}
+                                      style={{
+                                        width: '100%',
+                                        padding: '6px 12px',
+                                        background: 'none',
+                                        border: 'none',
+                                        textAlign: 'left',
+                                        cursor: 'pointer',
+                                        fontSize: '12px',
+                                        color: '#dc3545'
+                                      }}
+                                      onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#f8f9fa'}
+                                      onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+                                    >
+                                      🗑️ 삭제
+                                    </button>
+                                  </div>
+                                )}
+                              </React.Fragment>
+                            );
+                          })
                         ) : (
                           <p style={{ 
                             color: '#6c757d', 
