@@ -2577,6 +2577,8 @@ console.log("Hello, World!");
             </div>
           )}
           
+          </div>
+          
           {/* 댓글 팝업 */}
           {commentsOpen && (
             <div
