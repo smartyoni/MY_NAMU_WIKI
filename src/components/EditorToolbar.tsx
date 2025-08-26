@@ -67,6 +67,68 @@ const EditorToolbar: React.FC<EditorToolbarProps> = ({
     insertText(textarea, dateTimeString, '');
   };
 
+  const insertDetailsTemplate = (textarea: HTMLTextAreaElement) => {
+    const start = textarea.selectionStart;
+    const end = textarea.selectionEnd;
+    const selectedText = textarea.value.substring(start, end);
+    
+    if (selectedText.trim()) {
+      // 선택된 텍스트가 있으면 감싸기
+      const beforeText = textarea.value.substring(0, start);
+      const afterText = textarea.value.substring(end);
+      
+      const lines = selectedText.split('\n');
+      const firstLine = lines[0].trim();
+      const remainingLines = lines.slice(1);
+      
+      // 첫 번째 줄 헤딩 처리
+      let summaryTitle;
+      if (firstLine.match(/^#+\s/)) {
+        // 이미 헤딩이 있으면 헤딩은 유지하고 텍스트에 볼드 적용
+        const headingMatch = firstLine.match(/^(#+)\s+(.+)$/);
+        if (headingMatch) {
+          const headingLevel = headingMatch[1]; // ### 
+          const headingText = headingMatch[2];  // 제목 텍스트
+          summaryTitle = `${headingLevel} **${headingText}**`;
+        } else {
+          summaryTitle = firstLine;
+        }
+      } else {
+        // 헤딩이 없으면 ### 추가하고 볼드 처리
+        summaryTitle = `### **${firstLine}**`;
+      }
+      
+      // 나머지 내용 구성 (첫 줄 제외)
+      const contentText = remainingLines.join('\n');
+      
+      const wrappedTemplate = `<details>
+<summary>${summaryTitle}</summary>
+
+${contentText}
+
+</details>`;
+      
+      const newText = beforeText + wrappedTemplate + afterText;
+      onTextChange(newText);
+      
+      // 커서를 content 영역 시작으로 설정
+      setTimeout(() => {
+        textarea.focus();
+        const contentStart = start + `<details>\n<summary>${summaryTitle}</summary>\n\n`.length;
+        textarea.setSelectionRange(contentStart, contentStart);
+      }, 10);
+    } else {
+      // 선택된 텍스트가 없으면 기본 템플릿
+      const template = `<details>
+<summary>제목을 입력하세요</summary>
+
+내용을 입력하세요
+
+</details>`;
+      insertText(textarea, template, '');
+    }
+  };
+
   const formatActions: FormatAction[] = [
     {
       label: '볼드',
@@ -109,6 +171,12 @@ const EditorToolbar: React.FC<EditorToolbarProps> = ({
       icon: '📅',
       title: '현재 날짜와 시간 삽입',
       action: insertCurrentDateTime
+    },
+    {
+      label: '접기',
+      icon: '📋',
+      title: '접기/펼치기 블록 삽입',
+      action: insertDetailsTemplate
     }
   ];
 

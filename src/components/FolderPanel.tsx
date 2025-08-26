@@ -188,21 +188,21 @@ const FolderPanel: React.FC<FolderPanelProps> = ({ className = '' }) => {
                             className="folder-action-button"
                             onClick={(e) => {
                               e.stopPropagation();
-                              reorderFolder(folder.id, 'up');
-                            }}
-                            title="위로 이동"
-                          >
-                            ▲
-                          </button>
-                          <button 
-                            className="folder-action-button"
-                            onClick={(e) => {
-                              e.stopPropagation();
                               handleAddDocument(folder.id);
                             }}
                             title="문서 추가"
                           >
                             +
+                          </button>
+                          <button 
+                            className="folder-action-button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              reorderFolder(folder.id, 'up');
+                            }}
+                            title="위로 이동"
+                          >
+                            ▲
                           </button>
                           <button 
                             className="folder-action-button"

@@ -136,7 +136,47 @@ const DocumentPanel: React.FC<DocumentPanelProps> = ({ className = '' }) => {
     const numberStack = [0, 0, 0]; // H1, H2, H3 카운터
     
     lines.forEach((line, index) => {
-      if (line.startsWith('# ')) {
+      // <summary>로 시작하는 줄에서 헤딩 찾기
+      if (line.trim().startsWith('<summary>')) {
+        const summaryContent = line.replace(/<\/?summary>/g, '').trim();
+        if (summaryContent.startsWith('#')) {
+          let level = 0;
+          let text = '';
+          
+          if (summaryContent.startsWith('### ')) {
+            level = 3;
+            text = summaryContent.slice(4).trim();
+            numberStack[2]++;
+          } else if (summaryContent.startsWith('## ')) {
+            level = 2;
+            text = summaryContent.slice(3).trim();
+            numberStack[1]++;
+            numberStack[2] = 0;
+          } else if (summaryContent.startsWith('# ')) {
+            level = 1;
+            text = summaryContent.slice(2).trim();
+            numberStack[0]++;
+            numberStack[1] = 0;
+            numberStack[2] = 0;
+          }
+          
+          if (level > 0) {
+            const id = `header-${index}-${text.replace(/\s+/g, '-').toLowerCase()}`;
+            const number = level === 1 ? `${numberStack[0]}.` : 
+                          level === 2 ? `${numberStack[0]}.${numberStack[1]}` :
+                          `${numberStack[0]}.${numberStack[1]}.${numberStack[2]}`;
+            
+            headerList.push({
+              level,
+              text,
+              id,
+              number
+            });
+          }
+        }
+      }
+      // 일반 헤딩 처리
+      else if (line.startsWith('# ')) {
         numberStack[0]++;
         numberStack[1] = 0;
         numberStack[2] = 0;
@@ -194,8 +234,74 @@ const DocumentPanel: React.FC<DocumentPanelProps> = ({ className = '' }) => {
       let line = lines[i];
       let element: React.ReactNode = null;
       
+      // <details> 블록 처리
+      if (line.trim().startsWith('<details>')) {
+        console.log('Found details block at line', i);
+        let summaryText = '';
+        i++; // <details> 라인 건너뛰기
+        
+        // 빈 줄들 건너뛰면서 <summary> 찾기
+        while (i < lines.length && lines[i].trim() === '') {
+          console.log('Skipping empty line:', i);
+          i++;
+        }
+        
+        // <summary> 찾기
+        if (i < lines.length) {
+          console.log('Next line after skipping:', `"${lines[i]}"`, 'starts with summary:', lines[i].trim().startsWith('<summary>'));
+          if (lines[i].trim().startsWith('<summary>')) {
+            summaryText = lines[i].replace(/<\/?summary>/g, '').trim();
+            console.log('Found summary:', summaryText);
+            i++; // <summary> 라인 건너뛰기
+          }
+        }
+        
+        // </details>까지 내용 수집
+        const detailsLines: string[] = [];
+        while (i < lines.length && !lines[i].trim().startsWith('</details>')) {
+          console.log('Adding content line:', lines[i]);
+          detailsLines.push(lines[i]);
+          i++;
+        }
+        console.log('Details content lines:', detailsLines.length);
+        
+        // </details> 태그 확인
+        if (i < lines.length && lines[i].trim().startsWith('</details>')) {
+          console.log('Found closing </details> tag');
+        } else {
+          console.log('No closing </details> tag found - reached end of text');
+        }
+        
+        // 내부 마크다운 렌더링
+        const innerContent = renderMarkdown(detailsLines.join('\n'));
+        
+        // summary 텍스트도 마크다운 헤딩으로 렌더링
+        let summaryElement;
+        if (summaryText.startsWith('### ')) {
+          const text = summaryText.slice(4).trim();
+          summaryElement = <h3 className="md-h3">{processInlineMarkdown(text)}</h3>;
+        } else if (summaryText.startsWith('## ')) {
+          const text = summaryText.slice(3).trim();
+          summaryElement = <h2 className="md-h2">{processInlineMarkdown(text)}</h2>;
+        } else if (summaryText.startsWith('# ')) {
+          const text = summaryText.slice(2).trim();
+          summaryElement = <h1 className="md-h1">{processInlineMarkdown(text)}</h1>;
+        } else {
+          summaryElement = processInlineMarkdown(summaryText);
+        }
+        
+        element = (
+          <details key={i} className="md-details">
+            <summary className="md-summary">{summaryElement}</summary>
+            <div className="md-details-content">
+              {innerContent}
+            </div>
+          </details>
+        );
+      }
+      
       // 헤더 처리 with 자동 넘버링
-      if (line.startsWith('### ')) {
+      else if (line.startsWith('### ')) {
         numberStack[2]++;
         const text = line.slice(4).trim();
         const id = `header-${i}-${text.replace(/\s+/g, '-').toLowerCase()}`;

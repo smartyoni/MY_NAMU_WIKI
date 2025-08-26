@@ -318,6 +318,8 @@
   height: 2px;
   background: #dee2e6;
   margin: 1rem 0;
+  width: 50%;
+  margin-left: 0;
 }
 
 .md-li {
@@ -574,6 +576,45 @@
   white-space: nowrap;
 }
 
+/* Details/Summary 스타일 */
+.md-details {
+  margin: 8px 0;
+  border: 1px solid #e1e4e8;
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.md-summary {
+  padding: 8px 12px;
+  background-color: #f6f8fa;
+  border-bottom: 1px solid #e1e4e8;
+  cursor: pointer;
+  font-weight: 500;
+  user-select: none;
+  transition: background-color 0.2s ease;
+}
+
+.md-summary:hover {
+  background-color: #e1e4e8;
+}
+
+.md-summary::marker {
+  font-size: 0.8em;
+}
+
+.md-details-content {
+  padding: 8px 12px;
+  background-color: white;
+}
+
+.md-details-content > *:first-child {
+  margin-top: 0;
+}
+
+.md-details-content > *:last-child {
+  margin-bottom: 0;
+}
+
 /* 목차 버튼 스타일 */
 .toc-button {
   position: relative;
@@ -624,6 +665,89 @@
   
   .header-number {
     margin-right: 8px;
+  }
+  
+  /* 모바일 마크다운 스타일 개선 */
+  .md-h1 {
+    font-size: 1.5rem !important;
+    line-height: 1.3;
+    margin: 0.8rem 0 0.4rem 0 !important;
+  }
+  
+  .md-h2 {
+    font-size: 1.3rem !important;
+    line-height: 1.3;
+    margin: 0.6rem 0 0.3rem 0 !important;
+  }
+  
+  .md-h3 {
+    font-size: 1.1rem !important;
+    line-height: 1.3;
+    margin: 0.5rem 0 0.2rem 0 !important;
+  }
+  
+  .md-p {
+    font-size: 14px !important;
+    line-height: 1.5 !important;
+    margin: 0.4rem 0 !important;
+  }
+  
+  .md-bold {
+    font-weight: bold !important;
+  }
+  
+  .md-italic {
+    font-style: italic !important;
+  }
+  
+  .md-strike {
+    text-decoration: line-through !important;
+  }
+  
+  .md-inline-code {
+    font-size: 13px !important;
+    padding: 2px 4px !important;
+  }
+  
+  .md-code-block {
+    font-size: 12px !important;
+    padding: 8px !important;
+    margin: 0.5rem 0 !important;
+    overflow-x: auto;
+  }
+  
+  .md-quote {
+    font-size: 14px !important;
+    padding: 8px 12px !important;
+    margin: 0.4rem 0 !important;
+  }
+  
+  .md-li {
+    font-size: 14px !important;
+    margin: 0.2rem 0 !important;
+  }
+  
+  .md-oli {
+    font-size: 14px !important;
+    margin: 0.2rem 0 !important;
+  }
+  
+  .md-checkbox {
+    font-size: 14px !important;
+    margin: 0.2rem 0 !important;
+  }
+  
+  .md-details {
+    margin: 0.5rem 0 !important;
+  }
+  
+  .md-summary {
+    font-size: 14px !important;
+    padding: 6px 10px !important;
+  }
+  
+  .md-details-content {
+    padding: 6px 10px !important;
   }
 }
 
