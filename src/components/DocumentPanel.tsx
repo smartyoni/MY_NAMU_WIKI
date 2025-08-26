@@ -68,10 +68,20 @@ const DocumentPanel: React.FC<DocumentPanelProps> = ({ className = '' }) => {
     if (!selectedDocument) return;
     
     try {
-      await updateDocument(selectedDocument.id, { 
+      const updateData: any = {
         title: title.trim(),
-        content: content 
-      });
+        content: content
+      };
+      
+      // 즐겨찾기 정보가 있다면 보존
+      if (selectedDocument.isFavorite === true) {
+        updateData.isFavorite = selectedDocument.isFavorite;
+        if (selectedDocument.favoriteOrder !== undefined) {
+          updateData.favoriteOrder = selectedDocument.favoriteOrder;
+        }
+      }
+      
+      await updateDocument(selectedDocument.id, updateData);
       setIsEditMode(false);
     } catch (error) {
       console.error('문서 저장 실패:', error);

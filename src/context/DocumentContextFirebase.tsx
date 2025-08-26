@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, type ReactNode } from 'react';
-import { collection, doc, setDoc, deleteDoc, onSnapshot, query, orderBy, where } from 'firebase/firestore';
+import { collection, doc, setDoc, deleteDoc, onSnapshot, query, orderBy, where, deleteField } from 'firebase/firestore';
 import { db } from '../firebase';
 import { Category, Folder, WikiDocument, UIState } from '../types';
 
@@ -233,7 +233,9 @@ export const DocumentProvider: React.FC<DocumentProviderProps> = ({
           updatedAt: data.updatedAt?.toDate() || new Date(),
           lastModified: data.lastModified?.toDate() || new Date(),
           userId: data.userId,
-          tags: data.tags || []
+          tags: data.tags || [],
+          isFavorite: data.isFavorite || false,
+          favoriteOrder: data.favoriteOrder
         });
       });
       setDocuments(docs);
@@ -709,29 +711,29 @@ export const DocumentProvider: React.FC<DocumentProviderProps> = ({
       // undefined나 false를 false로, true를 true로 처리
       const currentFavoriteStatus = document.isFavorite === true;
       const isFavorite = !currentFavoriteStatus;
-      let favoriteOrder = document.favoriteOrder || 0;
+      let favoriteOrder = 0;
 
       if (isFavorite) {
-        // 즐겨찾기 추가시 현재 최대 order + 1
-        const favoriteDocuments = documents.filter(doc => doc.isFavorite === true);
+        // 즐겨찾기 추가시 현재 최대 order + 1 (현재 문서 제외)
+        const favoriteDocuments = documents.filter(doc => 
+          doc.isFavorite === true && doc.id !== documentId
+        );
         favoriteOrder = favoriteDocuments.length > 0 
           ? Math.max(...favoriteDocuments.map(doc => doc.favoriteOrder || 0)) + 1 
           : 1;
       }
 
-      await updateDocument(documentId, { 
-        isFavorite,
-        favoriteOrder: isFavorite ? favoriteOrder : undefined
-      });
+      const updateData: any = {
+        isFavorite
+      };
       
-      // 로컬 상태 강제 업데이트
-      setDocuments(prevDocs => 
-        prevDocs.map(doc => 
-          doc.id === documentId 
-            ? { ...doc, isFavorite, favoriteOrder: isFavorite ? favoriteOrder : undefined }
-            : doc
-        )
-      );
+      if (isFavorite) {
+        updateData.favoriteOrder = favoriteOrder;
+      } else {
+        updateData.favoriteOrder = deleteField();
+      }
+      
+      await updateDocument(documentId, updateData);
     } catch (error) {
       console.error('즐겨찾기 토글 실패:', error);
       throw error;
@@ -741,7 +743,11 @@ export const DocumentProvider: React.FC<DocumentProviderProps> = ({
   const getFavoriteDocuments = (): WikiDocument[] => {
     return documents
       .filter(doc => doc.isFavorite === true)
-      .sort((a, b) => (a.favoriteOrder || 0) - (b.favoriteOrder || 0));
+      .sort((a, b) => {
+        const orderA = a.favoriteOrder || Number.MAX_SAFE_INTEGER;
+        const orderB = b.favoriteOrder || Number.MAX_SAFE_INTEGER;
+        return orderA - orderB;
+      });
   };
 
   // 댓글 관리 함수들

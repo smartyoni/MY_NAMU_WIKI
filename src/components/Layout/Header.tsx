@@ -22,7 +22,13 @@ const Header: React.FC<HeaderProps> = () => {
   }, []);
 
   useEffect(() => {
-    const favorites = documents.filter(doc => doc.isFavorite === true).sort((a, b) => (a.favoriteOrder || 0) - (b.favoriteOrder || 0));
+    const favorites = documents
+      .filter(doc => doc.isFavorite === true)
+      .sort((a, b) => {
+        const orderA = a.favoriteOrder || Number.MAX_SAFE_INTEGER;
+        const orderB = b.favoriteOrder || Number.MAX_SAFE_INTEGER;
+        return orderA - orderB;
+      });
     setFavoriteDocuments(favorites);
   }, [documents]);
 
