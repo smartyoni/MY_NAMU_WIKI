@@ -9,7 +9,7 @@ const Header: React.FC<HeaderProps> = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [searchResults, setSearchResults] = useState<any[]>([]);
   const [showResults, setShowResults] = useState(false);
-  const { searchDocuments, selectDocument, selectFolder, selectCategory, folders, categories } = useDocuments();
+  const { searchDocuments, selectDocument, selectFolder, selectCategory, folders, categories, createQuickMemo } = useDocuments();
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -52,6 +52,25 @@ const Header: React.FC<HeaderProps> = () => {
       selectDocument(document.id);
     }
     clearSearch();
+  };
+
+  const handleQuickMemo = async () => {
+    try {
+      await createQuickMemo('');
+      // 모바일에서 에디터로 자동 스크롤 및 포커스 (약간의 지연 후)
+      setTimeout(() => {
+        const editorTextarea = document.querySelector('.editor textarea') as HTMLTextAreaElement;
+        if (editorTextarea) {
+          editorTextarea.focus();
+          // 템플릿 텍스트 끝으로 커서 이동
+          editorTextarea.setSelectionRange(editorTextarea.value.length, editorTextarea.value.length);
+          // 모바일에서 스크롤
+          editorTextarea.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+      }, 500);
+    } catch (error) {
+      console.error('빠른메모 생성 실패:', error);
+    }
   };
 
   const formatDateTime = (date: Date) => {
@@ -113,6 +132,13 @@ const Header: React.FC<HeaderProps> = () => {
         </div>
       </div>
       <div className="header-right">
+        <button 
+          className="quick-memo-button"
+          onClick={handleQuickMemo}
+          title="빠른메모 (새 메모를 바로 작성)"
+        >
+          ⚡
+        </button>
         <span className="production-mode">3단 계층 구조</span>
       </div>
     </header>

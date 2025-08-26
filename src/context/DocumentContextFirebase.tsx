@@ -59,6 +59,9 @@ interface DocumentContextType {
   getDocumentsByFolder: (folderId: string) => WikiDocument[];
   getSelectedDocument: () => WikiDocument | null;
   searchDocuments: (searchTerm: string) => Promise<WikiDocument[]>;
+  
+  // 빠른메모
+  createQuickMemo: (content: string) => Promise<string>;
 }
 
 const DocumentContext = createContext<DocumentContextType | undefined>(undefined);
@@ -539,6 +542,77 @@ export const DocumentProvider: React.FC<DocumentProviderProps> = ({
     );
   };
 
+  // 빠른메모 함수
+  const createQuickMemo = async (content: string): Promise<string> => {
+    try {
+      // INBOX 카테고리 찾기 또는 생성
+      let inboxCategory = categories.find(cat => cat.name === 'INBOX');
+      if (!inboxCategory) {
+        const inboxCategoryId = await createCategory('INBOX', '#6c757d');
+        inboxCategory = { 
+          id: inboxCategoryId, 
+          name: 'INBOX', 
+          color: '#6c757d', 
+          order: categories.length,
+          createdAt: new Date(),
+          updatedAt: new Date()
+        };
+      }
+
+      // 빠른메모 폴더 찾기 또는 생성
+      let quickMemoFolder = folders.find(folder => 
+        folder.categoryId === inboxCategory!.id && folder.name === '빠른메모'
+      );
+      if (!quickMemoFolder) {
+        const quickMemoFolderId = await createFolder(inboxCategory.id, '빠른메모');
+        quickMemoFolder = {
+          id: quickMemoFolderId,
+          categoryId: inboxCategory.id,
+          name: '빠른메모',
+          order: 0,
+          isExpanded: true,
+          createdAt: new Date(),
+          updatedAt: new Date()
+        };
+      }
+
+      // 자동 제목 생성
+      const now = new Date();
+      const dateString = now.toLocaleDateString('ko-KR');
+      const timeString = now.toLocaleTimeString('ko-KR', { hour12: false, hour: '2-digit', minute: '2-digit' });
+      const autoTitle = `메모 ${dateString} ${timeString}`;
+
+      // 기본 메모 템플릿 생성
+      const defaultContent = content || `# ${autoTitle}
+
+작성일: ${now.toLocaleDateString('ko-KR', { 
+  year: 'numeric', 
+  month: 'long', 
+  day: 'numeric',
+  weekday: 'long'
+})} ${now.toLocaleTimeString('ko-KR', {
+  hour: '2-digit',
+  minute: '2-digit'
+})}
+
+---
+
+`;
+
+      // 문서 생성
+      const documentId = await createDocument(quickMemoFolder.id, autoTitle, defaultContent);
+      
+      // 자동으로 해당 문서 선택
+      selectCategory(inboxCategory.id);
+      selectFolder(quickMemoFolder.id);
+      selectDocument(documentId);
+      
+      return documentId;
+    } catch (error) {
+      console.error('빠른메모 생성 실패:', error);
+      throw error;
+    }
+  };
 
   // 댓글 관리 함수들
   const createComment = async (documentId: string, content: string): Promise<string> => {
@@ -625,7 +699,8 @@ export const DocumentProvider: React.FC<DocumentProviderProps> = ({
     getFoldersByCategory,
     getDocumentsByFolder,
     getSelectedDocument,
-    searchDocuments
+    searchDocuments,
+    createQuickMemo
   };
 
   return (
