@@ -22,6 +22,86 @@
   font-weight: 600;
 }
 
+.add-folder-button {
+  background: #28a745;
+  color: white;
+  border: none;
+  border-radius: 50%;
+  width: 32px;
+  height: 32px;
+  font-size: 18px;
+  font-weight: bold;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+  line-height: 1;
+}
+
+.add-folder-button:hover {
+  background: #218838;
+  transform: scale(1.05);
+}
+
+.folder-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  width: 100%;
+}
+
+.folder-title-line {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+}
+
+.folder-name {
+  flex: 1;
+}
+
+.folder-actions {
+  display: flex;
+  flex-direction: row;
+  gap: 4px;
+  margin-top: 2px;
+  margin-left: 0; /* 폴더명 왼쪽 끝에 정렬 */
+  align-self: flex-start;
+}
+
+.folder-action-button {
+  background: #6c757d;
+  color: white;
+  border: none;
+  border-radius: 3px;
+  width: 20px;
+  height: 20px;
+  font-size: 10px;
+  font-weight: bold;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+  line-height: 1;
+}
+
+.folder-action-button:hover {
+  background: #5a6268;
+  transform: scale(1.1);
+}
+
+.folder-action-button:nth-child(2) {
+  background: #28a745;
+}
+
+.folder-action-button:nth-child(2):hover {
+  background: #218838;
+}
+
 .folder-list {
   flex: 1;
   overflow-y: auto;

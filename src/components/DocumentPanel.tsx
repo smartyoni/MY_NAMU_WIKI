@@ -1,8 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useDocuments } from '../context/DocumentContextFirebase';
-import ThreeDotsMenu from './ThreeDotsMenu';
 import EditorToolbar from './EditorToolbar';
-import EmojiToolbar from './EmojiToolbar';
+import ConfirmModal from './ConfirmModal';
 import './DocumentPanel.css';
 
 interface DocumentPanelProps {
@@ -30,12 +29,7 @@ const DocumentPanel: React.FC<DocumentPanelProps> = ({ className = '' }) => {
   const [title, setTitle] = useState('');
   const [showTOC, setShowTOC] = useState(false);
   const [headers, setHeaders] = useState<HeaderInfo[]>([]);
-  const [fontSize, setFontSize] = useState(() => {
-    return localStorage.getItem('wiki-font-size') || '14';
-  });
-  const [fontFamily, setFontFamily] = useState(() => {
-    return localStorage.getItem('wiki-font-family') || 'inherit';
-  });
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const contentViewerRef = useRef<HTMLDivElement>(null);
 
@@ -59,29 +53,6 @@ const DocumentPanel: React.FC<DocumentPanelProps> = ({ className = '' }) => {
     setHeaders(extractedHeaders);
   }, [content]);
 
-  // 폰트 설정이 변경될 때 편집창과 뷰어에 적용
-  useEffect(() => {
-    if (textareaRef.current) {
-      textareaRef.current.style.fontSize = fontSize + 'px';
-      textareaRef.current.style.fontFamily = fontFamily;
-    }
-    if (contentViewerRef.current) {
-      contentViewerRef.current.style.fontSize = fontSize + 'px';
-      contentViewerRef.current.style.fontFamily = fontFamily;
-    }
-  }, [fontSize, fontFamily]);
-
-  // 폰트 크기 변경 핸들러
-  const handleFontSizeChange = (size: string) => {
-    setFontSize(size);
-    localStorage.setItem('wiki-font-size', size);
-  };
-
-  // 폰트 패밀리 변경 핸들러
-  const handleFontFamilyChange = (family: string) => {
-    setFontFamily(family);
-    localStorage.setItem('wiki-font-family', family);
-  };
 
   const handleSave = async () => {
     if (!selectedDocument) return;
@@ -109,16 +80,24 @@ const DocumentPanel: React.FC<DocumentPanelProps> = ({ className = '' }) => {
     setIsEditMode(true);
   };
 
-  const handleDelete = async () => {
+  const handleDelete = () => {
+    if (!selectedDocument) return;
+    setShowDeleteModal(true);
+  };
+
+  const handleConfirmDelete = async () => {
     if (!selectedDocument) return;
     
-    if (window.confirm('정말로 이 문서를 삭제하시겠습니까?')) {
-      try {
-        await deleteDocument(selectedDocument.id);
-      } catch (error) {
-        console.error('문서 삭제 실패:', error);
-      }
+    try {
+      await deleteDocument(selectedDocument.id);
+      setShowDeleteModal(false);
+    } catch (error) {
+      console.error('문서 삭제 실패:', error);
     }
+  };
+
+  const handleCancelDelete = () => {
+    setShowDeleteModal(false);
   };
 
   const handleTitleSave = async () => {
@@ -134,7 +113,6 @@ const DocumentPanel: React.FC<DocumentPanelProps> = ({ className = '' }) => {
   const handleCopyContent = async () => {
     try {
       await navigator.clipboard.writeText(content);
-      alert('문서 내용이 클립보드에 복사되었습니다.');
     } catch (error) {
       console.error('복사 실패:', error);
     }
@@ -421,23 +399,6 @@ const DocumentPanel: React.FC<DocumentPanelProps> = ({ className = '' }) => {
     // 실시간 자동저장은 제거하고 사용자가 명시적으로 저장할 때만 저장
   };
 
-  const getDocumentMenuItems = () => [
-    {
-      label: '위로 이동',
-      icon: '↑',
-      onClick: () => selectedDocument && reorderDocument(selectedDocument.id, 'up')
-    },
-    {
-      label: '아래로 이동',
-      icon: '↓',
-      onClick: () => selectedDocument && reorderDocument(selectedDocument.id, 'down')
-    },
-    {
-      label: '삭제',
-      icon: '🗑️',
-      onClick: handleDelete
-    }
-  ];
 
   if (!selectedDocument) {
     return (
@@ -500,12 +461,42 @@ const DocumentPanel: React.FC<DocumentPanelProps> = ({ className = '' }) => {
                 💾 저장
               </button>
               <button 
+                className="action-button cancel-button"
+                onClick={handleCancel}
+                title="취소"
+              >
+                ❌ 취소
+              </button>
+              <button 
                 className="action-button copy-button"
                 onClick={handleCopyContent}
-                title="복사"
+                title="수정 중인 내용 복사"
               >
                 📋 복사
               </button>
+              <button 
+                className="action-button delete-button"
+                onClick={handleDelete}
+                title="삭제"
+              >
+                🗑️ 삭제
+              </button>
+              <div className="move-buttons">
+                <button 
+                  className="action-button move-button"
+                  onClick={() => selectedDocument && reorderDocument(selectedDocument.id, 'up')}
+                  title="위로 이동"
+                >
+                  ↑
+                </button>
+                <button 
+                  className="action-button move-button"
+                  onClick={() => selectedDocument && reorderDocument(selectedDocument.id, 'down')}
+                  title="아래로 이동"
+                >
+                  ↓
+                </button>
+              </div>
             </>
           ) : (
             <>
@@ -516,6 +507,20 @@ const DocumentPanel: React.FC<DocumentPanelProps> = ({ className = '' }) => {
               >
                 ✏️ 편집
               </button>
+              <button 
+                className="action-button copy-button"
+                onClick={handleCopyContent}
+                title="문서 내용 복사"
+              >
+                📋 복사
+              </button>
+              <button 
+                className="action-button delete-button"
+                onClick={handleDelete}
+                title="삭제"
+              >
+                🗑️ 삭제
+              </button>
               {headers.length > 0 && (
                 <button 
                   className={`action-button toc-button ${showTOC ? 'active' : ''}`}
@@ -525,29 +530,31 @@ const DocumentPanel: React.FC<DocumentPanelProps> = ({ className = '' }) => {
                   📋 목차 ({headers.length})
                 </button>
               )}
+              <div className="move-buttons">
+                <button 
+                  className="action-button move-button"
+                  onClick={() => selectedDocument && reorderDocument(selectedDocument.id, 'up')}
+                  title="위로 이동"
+                >
+                  ↑
+                </button>
+                <button 
+                  className="action-button move-button"
+                  onClick={() => selectedDocument && reorderDocument(selectedDocument.id, 'down')}
+                  title="아래로 이동"
+                >
+                  ↓
+                </button>
+              </div>
             </>
           )}
-          <ThreeDotsMenu 
-            menuItems={getDocumentMenuItems()}
-            className="document-menu"
-          />
         </div>
         
         {isEditMode && (
-          <>
-            <EditorToolbar 
-              textareaRef={textareaRef} 
-              onTextChange={handleContentChange}
-              fontSize={fontSize}
-              fontFamily={fontFamily}
-              onFontSizeChange={handleFontSizeChange}
-              onFontFamilyChange={handleFontFamilyChange}
-            />
-            <EmojiToolbar 
-              textareaRef={textareaRef} 
-              onTextChange={handleContentChange} 
-            />
-          </>
+          <EditorToolbar 
+            textareaRef={textareaRef} 
+            onTextChange={handleContentChange}
+          />
         )}
       </div>
 
@@ -604,6 +611,14 @@ const DocumentPanel: React.FC<DocumentPanelProps> = ({ className = '' }) => {
           </small>
         </div>
       </div>
+      
+      <ConfirmModal
+        isOpen={showDeleteModal}
+        title="문서 삭제"
+        message="정말로 이 문서를 삭제하시겠습니까?"
+        onConfirm={handleConfirmDelete}
+        onCancel={handleCancelDelete}
+      />
     </div>
   );
 };

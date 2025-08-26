@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Folder } from '../types';
 import { useDocuments } from '../context/DocumentContextFirebase';
-import ThreeDotsMenu from './ThreeDotsMenu';
+import ConfirmModal from './ConfirmModal';
 import './FolderPanel.css';
 
 interface FolderPanelProps {
@@ -19,12 +19,14 @@ const FolderPanel: React.FC<FolderPanelProps> = ({ className = '' }) => {
     reorderFolder,
     toggleFolder,
     createDocument,
+    createFolder,
     getFoldersByCategory,
     getDocumentsByFolder
   } = useDocuments();
 
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editingName, setEditingName] = useState('');
+  const [deleteModalState, setDeleteModalState] = useState<{isOpen: boolean, folderId: string | null}>({isOpen: false, folderId: null});
 
   const selectedFolders = uiState.selectedCategoryId 
     ? getFoldersByCategory(uiState.selectedCategoryId)
@@ -52,12 +54,34 @@ const FolderPanel: React.FC<FolderPanelProps> = ({ className = '' }) => {
     setEditingName('');
   };
 
-  const handleDelete = async (folderId: string) => {
-    if (window.confirm('정말로 이 폴더를 삭제하시겠습니까? 하위 문서도 모두 삭제됩니다.')) {
+  const handleDelete = (folderId: string) => {
+    setDeleteModalState({isOpen: true, folderId});
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!deleteModalState.folderId) return;
+    
+    try {
+      await deleteFolder(deleteModalState.folderId);
+      setDeleteModalState({isOpen: false, folderId: null});
+    } catch (error) {
+      console.error('폴더 삭제 실패:', error);
+    }
+  };
+
+  const handleCancelDelete = () => {
+    setDeleteModalState({isOpen: false, folderId: null});
+  };
+
+  const handleAddFolder = async () => {
+    if (!uiState.selectedCategoryId) return;
+    
+    const folderName = window.prompt('새 폴더 이름을 입력하세요:');
+    if (folderName && folderName.trim()) {
       try {
-        await deleteFolder(folderId);
+        await createFolder(uiState.selectedCategoryId, folderName.trim());
       } catch (error) {
-        console.error('폴더 삭제 실패:', error);
+        console.error('폴더 생성 실패:', error);
       }
     }
   };
@@ -84,33 +108,6 @@ const FolderPanel: React.FC<FolderPanelProps> = ({ className = '' }) => {
     selectDocument(documentId);
   };
 
-  const getMenuItems = (folder: Folder) => [
-    {
-      label: '문서 추가',
-      icon: '📄',
-      onClick: () => handleAddDocument(folder.id)
-    },
-    {
-      label: '이름 변경',
-      icon: '✏️',
-      onClick: () => handleEditStart(folder)
-    },
-    {
-      label: '위로 이동',
-      icon: '↑',
-      onClick: () => reorderFolder(folder.id, 'up')
-    },
-    {
-      label: '아래로 이동',
-      icon: '↓',
-      onClick: () => reorderFolder(folder.id, 'down')
-    },
-    {
-      label: '삭제',
-      icon: '🗑️',
-      onClick: () => handleDelete(folder.id)
-    }
-  ];
 
   if (!uiState.selectedCategoryId) {
     return (
@@ -129,6 +126,13 @@ const FolderPanel: React.FC<FolderPanelProps> = ({ className = '' }) => {
     <div className={`folder-panel ${className}`}>
       <div className="panel-header">
         <h3>폴더</h3>
+        <button 
+          className="add-folder-button"
+          onClick={handleAddFolder}
+          title="폴더 추가"
+        >
+          +
+        </button>
       </div>
 
       <div className="folder-list">
@@ -173,16 +177,45 @@ const FolderPanel: React.FC<FolderPanelProps> = ({ className = '' }) => {
                       onClick={() => handleFolderClick(folder)}
                     >
                       <div className="folder-content">
-                        <span className={`folder-icon ${isExpanded ? 'expanded' : ''}`}>
-                          {isExpanded ? '📂' : '📁'}
-                        </span>
-                        <span className="folder-name">{folder.name}</span>
-                        <span className="document-count">({folderDocuments.length})</span>
+                        <div className="folder-title-line">
+                          <span className={`folder-icon ${isExpanded ? 'expanded' : ''}`}>
+                            {isExpanded ? '📂' : '📁'}
+                          </span>
+                          <span className="folder-name">{folder.name}</span>
+                        </div>
+                        <div className="folder-actions">
+                          <button 
+                            className="folder-action-button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              reorderFolder(folder.id, 'up');
+                            }}
+                            title="위로 이동"
+                          >
+                            ▲
+                          </button>
+                          <button 
+                            className="folder-action-button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleAddDocument(folder.id);
+                            }}
+                            title="문서 추가"
+                          >
+                            +
+                          </button>
+                          <button 
+                            className="folder-action-button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              reorderFolder(folder.id, 'down');
+                            }}
+                            title="아래로 이동"
+                          >
+                            ▼
+                          </button>
+                        </div>
                       </div>
-                      <ThreeDotsMenu 
-                        menuItems={getMenuItems(folder)}
-                        className="folder-menu"
-                      />
                     </div>
 
                     {isExpanded && (
@@ -212,6 +245,14 @@ const FolderPanel: React.FC<FolderPanelProps> = ({ className = '' }) => {
           })
         )}
       </div>
+      
+      <ConfirmModal
+        isOpen={deleteModalState.isOpen}
+        title="폴더 삭제"
+        message="정말로 이 폴더를 삭제하시겠습니까? 하위 문서도 모두 삭제됩니다."
+        onConfirm={handleConfirmDelete}
+        onCancel={handleCancelDelete}
+      />
     </div>
   );
 };

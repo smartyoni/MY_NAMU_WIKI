@@ -462,15 +462,27 @@ export const DocumentProvider: React.FC<DocumentProviderProps> = ({
       const document = documents.find(doc => doc.id === documentId);
       if (!document) return;
       
-      const folderDocuments = documents.filter(doc => doc.folderId === document.folderId);
-      const currentOrder = document.order;
-      const targetOrder = direction === 'up' ? currentOrder - 1 : currentOrder + 1;
-      const targetDocument = folderDocuments.find(doc => doc.order === targetOrder);
+      // 같은 폴더의 문서들을 order 순으로 정렬
+      const folderDocuments = documents
+        .filter(doc => doc.folderId === document.folderId)
+        .sort((a, b) => a.order - b.order);
       
-      if (targetDocument) {
-        await updateDocument(documentId, { order: targetOrder });
-        await updateDocument(targetDocument.id, { order: currentOrder });
-      }
+      // 현재 문서의 인덱스 찾기
+      const currentIndex = folderDocuments.findIndex(doc => doc.id === documentId);
+      if (currentIndex === -1) return;
+      
+      // 이동할 위치 계산
+      const targetIndex = direction === 'up' ? currentIndex - 1 : currentIndex + 1;
+      
+      // 경계 검사
+      if (targetIndex < 0 || targetIndex >= folderDocuments.length) return;
+      
+      // 두 문서의 order 값을 교환
+      const currentDoc = folderDocuments[currentIndex];
+      const targetDoc = folderDocuments[targetIndex];
+      
+      await updateDocument(currentDoc.id, { order: targetDoc.order });
+      await updateDocument(targetDoc.id, { order: currentDoc.order });
     } catch (err) {
       console.error('Error reordering document:', err);
       throw err;

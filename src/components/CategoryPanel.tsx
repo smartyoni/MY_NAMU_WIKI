@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Category } from '../types';
 import { useDocuments } from '../context/DocumentContextFirebase';
 import ThreeDotsMenu from './ThreeDotsMenu';
+import ConfirmModal from './ConfirmModal';
 import './CategoryPanel.css';
 
 interface CategoryPanelProps {
@@ -25,6 +26,7 @@ const CategoryPanel: React.FC<CategoryPanelProps> = ({ className = '' }) => {
   const [newCategoryColor, setNewCategoryColor] = useState('#007bff');
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editingName, setEditingName] = useState('');
+  const [deleteModalState, setDeleteModalState] = useState<{isOpen: boolean, categoryId: string | null}>({isOpen: false, categoryId: null});
 
   const handleCreateCategory = async () => {
     if (!newCategoryName.trim()) return;
@@ -61,14 +63,23 @@ const CategoryPanel: React.FC<CategoryPanelProps> = ({ className = '' }) => {
     setEditingName('');
   };
 
-  const handleDelete = async (categoryId: string) => {
-    if (window.confirm('정말로 이 카테고리를 삭제하시겠습니까? 하위 폴더와 문서도 모두 삭제됩니다.')) {
-      try {
-        await deleteCategory(categoryId);
-      } catch (error) {
-        console.error('카테고리 삭제 실패:', error);
-      }
+  const handleDelete = (categoryId: string) => {
+    setDeleteModalState({isOpen: true, categoryId});
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!deleteModalState.categoryId) return;
+    
+    try {
+      await deleteCategory(deleteModalState.categoryId);
+      setDeleteModalState({isOpen: false, categoryId: null});
+    } catch (error) {
+      console.error('카테고리 삭제 실패:', error);
     }
+  };
+
+  const handleCancelDelete = () => {
+    setDeleteModalState({isOpen: false, categoryId: null});
   };
 
   const handleAddFolder = async (categoryId: string) => {
@@ -211,6 +222,14 @@ const CategoryPanel: React.FC<CategoryPanelProps> = ({ className = '' }) => {
           </div>
         </div>
       )}
+      
+      <ConfirmModal
+        isOpen={deleteModalState.isOpen}
+        title="카테고리 삭제"
+        message="정말로 이 카테고리를 삭제하시겠습니까? 하위 폴더와 문서도 모두 삭제됩니다."
+        onConfirm={handleConfirmDelete}
+        onCancel={handleCancelDelete}
+      />
     </div>
   );
 };
