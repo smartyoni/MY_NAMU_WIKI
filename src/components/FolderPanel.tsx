@@ -11,6 +11,7 @@ interface FolderPanelProps {
 const FolderPanel: React.FC<FolderPanelProps> = ({ className = '' }) => {
   const { 
     folders,
+    categories,
     uiState,
     selectFolder,
     selectDocument,
@@ -31,6 +32,8 @@ const FolderPanel: React.FC<FolderPanelProps> = ({ className = '' }) => {
   const selectedFolders = uiState.selectedCategoryId 
     ? getFoldersByCategory(uiState.selectedCategoryId)
     : [];
+    
+  const selectedCategory = categories.find(c => c.id === uiState.selectedCategoryId);
 
   const handleEditStart = (folder: Folder) => {
     setEditingId(folder.id);
@@ -125,7 +128,7 @@ const FolderPanel: React.FC<FolderPanelProps> = ({ className = '' }) => {
   return (
     <div className={`folder-panel ${className}`}>
       <div className="panel-header">
-        <h3>폴더</h3>
+        <h3>{selectedCategory ? `${selectedCategory.name} > 폴더` : '폴더'}</h3>
         <button 
           className="add-folder-button"
           onClick={handleAddFolder}
