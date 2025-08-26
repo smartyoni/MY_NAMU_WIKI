@@ -67,11 +67,17 @@
   display: flex;
   flex-direction: row;
   gap: 4px;
-  margin-top: 2px;
-  margin-left: 0; /* 폴더명 왼쪽 끝에 정렬 */
-  align-self: flex-start;
+  position: absolute;
+  top: 100%;
+  left: 12px;
+  background: white;
+  border: 1px solid #dee2e6;
+  border-radius: 4px;
+  padding: 4px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
   opacity: 0;
   transition: opacity 0.2s ease;
+  z-index: 20;
 }
 
 .folder-header:hover .folder-actions {
@@ -155,6 +161,12 @@
   border-radius: 8px;
   overflow: visible;
   transition: all 0.2s ease;
+  position: relative;
+  z-index: 1;
+}
+
+.folder-item:hover {
+  z-index: 10;
 }
 
 .folder-item:hover {
@@ -170,11 +182,11 @@
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
-  padding: 12px;
+  padding: 6px 12px;
   cursor: pointer;
   transition: background-color 0.2s ease;
   position: relative;
-  min-height: 48px;
+  min-height: 24px;
 }
 
 .folder-header:hover {
