@@ -9,7 +9,9 @@ const Header: React.FC<HeaderProps> = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [searchResults, setSearchResults] = useState<any[]>([]);
   const [showResults, setShowResults] = useState(false);
-  const { searchDocuments, selectDocument, selectFolder, selectCategory, folders, categories, createQuickMemo } = useDocuments();
+  const [showFavorites, setShowFavorites] = useState(false);
+  const [favoriteDocuments, setFavoriteDocuments] = useState<any[]>([]);
+  const { searchDocuments, selectDocument, selectFolder, selectCategory, folders, categories, createQuickMemo, documents } = useDocuments();
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -18,6 +20,11 @@ const Header: React.FC<HeaderProps> = () => {
 
     return () => clearInterval(timer);
   }, []);
+
+  useEffect(() => {
+    const favorites = documents.filter(doc => doc.isFavorite === true).sort((a, b) => (a.favoriteOrder || 0) - (b.favoriteOrder || 0));
+    setFavoriteDocuments(favorites);
+  }, [documents]);
 
   const handleSearch = async (term: string) => {
     setSearchTerm(term);
@@ -42,6 +49,17 @@ const Header: React.FC<HeaderProps> = () => {
     setShowResults(false);
   };
 
+  const toggleFavorites = () => {
+    setShowFavorites(!showFavorites);
+    if (showResults) {
+      setShowResults(false);
+    }
+  };
+
+  const closeFavorites = () => {
+    setShowFavorites(false);
+  };
+
   const handleDocumentSelect = (document: any) => {
     const folder = folders.find(f => f.id === document.folderId);
     const category = folder ? categories.find(c => c.id === folder.categoryId) : null;
@@ -52,6 +70,7 @@ const Header: React.FC<HeaderProps> = () => {
       selectDocument(document.id);
     }
     clearSearch();
+    closeFavorites();
   };
 
   const handleQuickMemo = async () => {
@@ -109,6 +128,13 @@ const Header: React.FC<HeaderProps> = () => {
               ×
             </button>
           )}
+          <button 
+            className="favorites-btn" 
+            onClick={toggleFavorites}
+            title="즐겨찾기 목록"
+          >
+            ⭐
+          </button>
           {showResults && searchResults.length > 0 && (
             <div className="search-results">
               {searchResults.map((doc) => (
@@ -127,6 +153,32 @@ const Header: React.FC<HeaderProps> = () => {
                   </div>
                 </div>
               ))}
+            </div>
+          )}
+          {showFavorites && (
+            <div className="search-results">
+              {favoriteDocuments.length > 0 ? (
+                favoriteDocuments.map((doc) => (
+                  <div 
+                    key={doc.id} 
+                    className="search-result-item"
+                    onClick={() => handleDocumentSelect(doc)}
+                  >
+                    <div className="search-result-title">⭐ {doc.title}</div>
+                    <div className="search-result-path">
+                      {(() => {
+                        const folder = folders.find(f => f.id === doc.folderId);
+                        const category = folder ? categories.find(c => c.id === folder.categoryId) : null;
+                        return category && folder ? `${category.name} > ${folder.name}` : '';
+                      })()}
+                    </div>
+                  </div>
+                ))
+              ) : (
+                <div className="search-result-item no-results">
+                  즐겨찾기한 문서가 없습니다.
+                </div>
+              )}
             </div>
           )}
         </div>

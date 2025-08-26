@@ -62,6 +62,10 @@ interface DocumentContextType {
   
   // 빠른메모
   createQuickMemo: (content: string) => Promise<string>;
+  
+  // 즐겨찾기 관리
+  toggleFavorite: (documentId: string) => Promise<void>;
+  getFavoriteDocuments: () => WikiDocument[];
 }
 
 const DocumentContext = createContext<DocumentContextType | undefined>(undefined);
@@ -633,6 +637,52 @@ export const DocumentProvider: React.FC<DocumentProviderProps> = ({
     }
   };
 
+  // 즐겨찾기 함수
+  const toggleFavorite = async (documentId: string): Promise<void> => {
+    try {
+      const document = documents.find(doc => doc.id === documentId);
+      if (!document) {
+        return;
+      }
+
+      // undefined나 false를 false로, true를 true로 처리
+      const currentFavoriteStatus = document.isFavorite === true;
+      const isFavorite = !currentFavoriteStatus;
+      let favoriteOrder = document.favoriteOrder || 0;
+
+      if (isFavorite) {
+        // 즐겨찾기 추가시 현재 최대 order + 1
+        const favoriteDocuments = documents.filter(doc => doc.isFavorite === true);
+        favoriteOrder = favoriteDocuments.length > 0 
+          ? Math.max(...favoriteDocuments.map(doc => doc.favoriteOrder || 0)) + 1 
+          : 1;
+      }
+
+      await updateDocument(documentId, { 
+        isFavorite,
+        favoriteOrder: isFavorite ? favoriteOrder : undefined
+      });
+      
+      // 로컬 상태 강제 업데이트
+      setDocuments(prevDocs => 
+        prevDocs.map(doc => 
+          doc.id === documentId 
+            ? { ...doc, isFavorite, favoriteOrder: isFavorite ? favoriteOrder : undefined }
+            : doc
+        )
+      );
+    } catch (error) {
+      console.error('즐겨찾기 토글 실패:', error);
+      throw error;
+    }
+  };
+
+  const getFavoriteDocuments = (): WikiDocument[] => {
+    return documents
+      .filter(doc => doc.isFavorite === true)
+      .sort((a, b) => (a.favoriteOrder || 0) - (b.favoriteOrder || 0));
+  };
+
   // 댓글 관리 함수들
   const createComment = async (documentId: string, content: string): Promise<string> => {
     try {
@@ -719,7 +769,9 @@ export const DocumentProvider: React.FC<DocumentProviderProps> = ({
     getDocumentsByFolder,
     getSelectedDocument,
     searchDocuments,
-    createQuickMemo
+    createQuickMemo,
+    toggleFavorite,
+    getFavoriteDocuments
   };
 
   return (

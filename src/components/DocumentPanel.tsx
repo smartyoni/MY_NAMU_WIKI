@@ -21,7 +21,8 @@ const DocumentPanel: React.FC<DocumentPanelProps> = ({ className = '' }) => {
     updateDocument,
     deleteDocument,
     reorderDocument,
-    getSelectedDocument
+    getSelectedDocument,
+    toggleFavorite
   } = useDocuments();
 
   const [isEditMode, setIsEditMode] = useState(false);
@@ -133,6 +134,18 @@ const DocumentPanel: React.FC<DocumentPanelProps> = ({ className = '' }) => {
       textarea.focus();
       textarea.setSelectionRange(textarea.value.length, textarea.value.length);
       textarea.scrollTop = textarea.scrollHeight;
+    }
+  };
+
+  const handleFavoriteToggle = async (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (!selectedDocument) return;
+    
+    try {
+      await toggleFavorite(selectedDocument.id);
+    } catch (error) {
+      console.error('즐겨찾기 토글 실패:', error);
     }
   };
 
@@ -690,6 +703,13 @@ const DocumentPanel: React.FC<DocumentPanelProps> = ({ className = '' }) => {
                 title="문서 내용 복사"
               >
                 📋 복사
+              </button>
+              <button 
+                className={`action-button favorite-button ${selectedDocument.isFavorite === true ? 'active' : ''}`}
+                onClick={handleFavoriteToggle}
+                title={selectedDocument.isFavorite === true ? "즐겨찾기 해제" : "즐겨찾기 추가"}
+              >
+                {selectedDocument.isFavorite === true ? '⭐' : '☆'} 즐겨찾기
               </button>
               <button 
                 className="action-button delete-button"

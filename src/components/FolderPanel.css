@@ -317,6 +317,20 @@
   transition: all 0.2s ease;
 }
 
+.document-main {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+  min-width: 0;
+}
+
+.favorite-star {
+  font-size: 12px;
+  color: #ffc107;
+  flex-shrink: 0;
+}
+
 .document-item:hover {
   background-color: #f8f9fa;
 }

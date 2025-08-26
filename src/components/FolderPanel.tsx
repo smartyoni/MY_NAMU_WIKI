@@ -244,8 +244,11 @@ const FolderPanel: React.FC<FolderPanelProps> = ({ className = '' }) => {
                               className={`document-item ${uiState.selectedDocumentId === document.id ? 'selected' : ''}`}
                               onClick={(e) => handleDocumentClick(e, document.id)}
                             >
-                              <span className="document-icon">📄</span>
-                              <span className="document-title">{document.title}</span>
+                              <div className="document-main">
+                                <span className="document-icon">📄</span>
+                                <span className="document-title">{document.title}</span>
+                                {document.isFavorite === true && <span className="favorite-star">⭐</span>}
+                              </div>
                             </div>
                           ))
                         )}

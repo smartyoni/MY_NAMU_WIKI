@@ -140,6 +140,29 @@
   background: #138496;
 }
 
+.favorite-button {
+  background: #f8f9fa;
+  color: #495057;
+  border: 1px solid #dee2e6;
+  pointer-events: auto;
+  cursor: pointer;
+}
+
+.favorite-button:hover {
+  background: #e9ecef;
+  border-color: #adb5bd;
+}
+
+.favorite-button.active {
+  background: #fff3cd;
+  color: #856404;
+  border-color: #ffeaa7;
+}
+
+.favorite-button.active:hover {
+  background: #ffeaa7;
+}
+
 .move-buttons {
   display: flex;
   gap: 4px;

@@ -28,6 +28,8 @@ export interface WikiDocument {
   lastModified: Date;
   userId: string;
   tags?: string[];
+  isFavorite?: boolean;
+  favoriteOrder?: number;
 }
 
 export interface UIState {

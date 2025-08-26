@@ -3,7 +3,7 @@ import './ThreeDotsMenu.css';
 
 interface MenuItem {
   label: string;
-  onClick: () => void;
+  onClick: (e?: MouseEvent) => void;
   icon?: string;
 }
 
