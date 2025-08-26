@@ -70,6 +70,12 @@
   margin-top: 2px;
   margin-left: 0; /* 폴더명 왼쪽 끝에 정렬 */
   align-self: flex-start;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
+.folder-header:hover .folder-actions {
+  opacity: 1;
 }
 
 .folder-action-button {
