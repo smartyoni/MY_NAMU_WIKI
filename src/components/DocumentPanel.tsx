@@ -370,6 +370,52 @@ const DocumentPanel: React.FC<DocumentPanelProps> = ({ className = '' }) => {
         }
         element = <pre key={i} className="md-code-block"><code>{codeLines.join('\n')}</code></pre>;
       }
+      // 테이블 처리
+      else if (line.includes('|') && i < lines.length - 1 && lines[i + 1].includes('|')) {
+        // 테이블인지 확인 (다음 줄도 |를 포함해야 함)
+        const tableLines = [];
+        let tableIndex = i;
+        
+        // 테이블 라인들 수집
+        while (tableIndex < lines.length && lines[tableIndex].includes('|')) {
+          tableLines.push(lines[tableIndex]);
+          tableIndex++;
+        }
+        
+        if (tableLines.length >= 2) {
+          const [headerLine, separatorLine, ...dataLines] = tableLines;
+          
+          // 헤더와 데이터 파싱
+          const headers = headerLine.split('|').map(h => h.trim()).filter(h => h);
+          const rows = dataLines.map(line => 
+            line.split('|').map(cell => cell.trim()).filter(cell => cell || cell === '')
+          ).filter(row => row.length > 0);
+          
+          element = (
+            <table key={i} className="md-table">
+              <thead>
+                <tr>
+                  {headers.map((header, idx) => (
+                    <th key={idx} className="md-th">{processInlineMarkdown(header)}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {rows.map((row, rowIdx) => (
+                  <tr key={rowIdx}>
+                    {row.map((cell, cellIdx) => (
+                      <td key={cellIdx} className="md-td">{processInlineMarkdown(cell)}</td>
+                    ))}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          );
+          
+          // 테이블 전체를 처리했으므로 인덱스 조정
+          i = tableIndex - 1;
+        }
+      }
       // 수평선 처리
       else if (line.trim() === '---') {
         element = <hr key={i} className="md-hr" />;
