@@ -18,13 +18,16 @@ const MobileTabLayout: React.FC<MobileTabLayoutProps> = ({
   const [activeTab, setActiveTab] = useState<TabType>('category');
   const { uiState, categories, folders, documents } = useDocuments();
 
-  // 선택된 항목에 따라 자동으로 탭 활성화
+  // 선택된 항목에 따라 자동으로 다음 단계 탭으로 이동
   React.useEffect(() => {
     if (uiState.selectedDocumentId) {
+      // 문서가 선택되면 문서 탭으로
       setActiveTab('document');
-    } else if (uiState.selectedFolderId) {
-      setActiveTab('folder');
     } else if (uiState.selectedCategoryId) {
+      // 카테고리가 선택되면 폴더 탭으로
+      setActiveTab('folder');
+    } else {
+      // 아무것도 선택되지 않으면 카테고리 탭으로
       setActiveTab('category');
     }
   }, [uiState.selectedDocumentId, uiState.selectedFolderId, uiState.selectedCategoryId]);
