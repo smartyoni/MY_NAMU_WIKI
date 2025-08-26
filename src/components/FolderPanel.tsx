@@ -214,6 +214,16 @@ const FolderPanel: React.FC<FolderPanelProps> = ({ className = '' }) => {
                           >
                             ▼
                           </button>
+                          <button 
+                            className="folder-action-button folder-delete-button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleDelete(folder.id);
+                            }}
+                            title="폴더 삭제"
+                          >
+                            삭제
+                          </button>
                         </div>
                       </div>
                     </div>

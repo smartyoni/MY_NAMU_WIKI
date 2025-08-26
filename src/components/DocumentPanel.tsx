@@ -118,6 +118,15 @@ const DocumentPanel: React.FC<DocumentPanelProps> = ({ className = '' }) => {
     }
   };
 
+  const handleGoToBottom = () => {
+    if (textareaRef.current) {
+      const textarea = textareaRef.current;
+      textarea.focus();
+      textarea.setSelectionRange(textarea.value.length, textarea.value.length);
+      textarea.scrollTop = textarea.scrollHeight;
+    }
+  };
+
   // 헤더 추출 및 넘버링 함수
   const extractHeaders = (text: string): HeaderInfo[] => {
     if (!text) return [];
@@ -495,6 +504,13 @@ const DocumentPanel: React.FC<DocumentPanelProps> = ({ className = '' }) => {
                   title="아래로 이동"
                 >
                   ↓
+                </button>
+                <button 
+                  className="action-button move-button"
+                  onClick={handleGoToBottom}
+                  title="문서 맨 아래로 이동"
+                >
+                  ⬇️
                 </button>
               </div>
             </>
