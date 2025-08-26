@@ -39,7 +39,16 @@ const DocumentPanel: React.FC<DocumentPanelProps> = ({ className = '' }) => {
     if (selectedDocument) {
       setContent(selectedDocument.content);
       setTitle(selectedDocument.title);
-      setIsEditMode(false);
+      
+      // 빠른메모이고 내용이 비어있으면 편집모드로 시작
+      const isQuickMemo = selectedDocument.title.startsWith('메모 ');
+      const isEmpty = !selectedDocument.content || selectedDocument.content.trim() === '';
+      
+      if (isQuickMemo && isEmpty) {
+        setIsEditMode(true);
+      } else {
+        setIsEditMode(false);
+      }
     } else {
       setContent('');
       setTitle('');

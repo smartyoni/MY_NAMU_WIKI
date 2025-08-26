@@ -31,7 +31,6 @@
 
 .three-dots-dropdown {
   position: absolute;
-  top: 100%;
   right: 0;
   z-index: 9999;
   min-width: 140px;
@@ -40,7 +39,16 @@
   border-radius: 6px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
   padding: 4px 0;
+}
+
+.dropdown-bottom {
+  top: 100%;
   margin-top: 2px;
+}
+
+.dropdown-top {
+  bottom: 100%;
+  margin-bottom: 2px;
 }
 
 .menu-item {

@@ -274,39 +274,66 @@ export const DocumentProvider: React.FC<DocumentProviderProps> = ({
   };
 
   const deleteCategory = async (id: string): Promise<void> => {
-    if (id === 'general') {
-      throw new Error('기본 카테고리는 삭제할 수 없습니다.');
+    console.log('삭제 시도하는 카테고리 ID:', id);
+    
+    // 사용자가 원한다면 모든 카테고리 삭제 허용
+    // 단, 최소 1개의 카테고리는 남겨두기
+    if (categories.length <= 1) {
+      throw new Error('최소 1개의 카테고리는 유지되어야 합니다.');
     }
     
     try {
+      console.log('카테고리 삭제 시작:', id);
+      
+      // 해당 카테고리의 모든 폴더 찾기
       const categoryFolders = folders.filter(folder => folder.categoryId === id);
+      console.log('삭제할 폴더들:', categoryFolders.length);
+      
+      // 각 폴더와 그 안의 문서들 삭제
       for (const folder of categoryFolders) {
+        console.log('폴더 삭제 중:', folder.id);
         await deleteFolder(folder.id);
       }
       
+      // 카테고리 자체 삭제
+      console.log('카테고리 문서 삭제 중:', id);
       const categoryRef = doc(db, 'users', userId, 'categories', id);
       await deleteDoc(categoryRef);
       
+      console.log('카테고리 삭제 완료:', id);
+      
     } catch (err) {
       console.error('Error deleting category:', err);
-      setError('카테고리 삭제 중 오류가 발생했습니다.');
+      setError(`카테고리 삭제 중 오류가 발생했습니다: ${err}`);
       throw err;
     }
   };
 
   const reorderCategory = async (categoryId: string, direction: 'up' | 'down'): Promise<void> => {
     try {
-      const category = categories.find(cat => cat.id === categoryId);
-      if (!category) return;
+      // 카테고리를 order 순으로 정렬
+      const sortedCategories = [...categories].sort((a, b) => a.order - b.order);
+      const currentIndex = sortedCategories.findIndex(cat => cat.id === categoryId);
       
-      const currentOrder = category.order;
-      const targetOrder = direction === 'up' ? currentOrder - 1 : currentOrder + 1;
-      const targetCategory = categories.find(cat => cat.order === targetOrder);
+      if (currentIndex === -1) return;
       
-      if (targetCategory) {
-        await updateCategory(categoryId, { order: targetOrder });
-        await updateCategory(targetCategory.id, { order: currentOrder });
+      let targetIndex: number;
+      if (direction === 'up') {
+        targetIndex = currentIndex - 1;
+      } else {
+        targetIndex = currentIndex + 1;
       }
+      
+      // 범위 확인
+      if (targetIndex < 0 || targetIndex >= sortedCategories.length) return;
+      
+      const currentCategory = sortedCategories[currentIndex];
+      const targetCategory = sortedCategories[targetIndex];
+      
+      // order 값 교환
+      await updateCategory(currentCategory.id, { order: targetCategory.order });
+      await updateCategory(targetCategory.id, { order: currentCategory.order });
+      
     } catch (err) {
       console.error('Error reordering category:', err);
       throw err;
@@ -355,13 +382,19 @@ export const DocumentProvider: React.FC<DocumentProviderProps> = ({
 
   const deleteFolder = async (id: string): Promise<void> => {
     try {
+      console.log('폴더 삭제 시작:', id);
       const folderDocuments = documents.filter(doc => doc.folderId === id);
+      console.log('삭제할 문서들:', folderDocuments.length);
+      
       for (const document of folderDocuments) {
+        console.log('문서 삭제 중:', document.id);
         await deleteDocument(document.id);
       }
       
+      console.log('폴더 문서 삭제 중:', id);
       const folderRef = doc(db, 'users', userId, 'folders', id);
       await deleteDoc(folderRef);
+      console.log('폴더 삭제 완료:', id);
       
     } catch (err) {
       console.error('Error deleting folder:', err);
@@ -582,22 +615,8 @@ export const DocumentProvider: React.FC<DocumentProviderProps> = ({
       const timeString = now.toLocaleTimeString('ko-KR', { hour12: false, hour: '2-digit', minute: '2-digit' });
       const autoTitle = `메모 ${dateString} ${timeString}`;
 
-      // 기본 메모 템플릿 생성
-      const defaultContent = content || `# ${autoTitle}
-
-작성일: ${now.toLocaleDateString('ko-KR', { 
-  year: 'numeric', 
-  month: 'long', 
-  day: 'numeric',
-  weekday: 'long'
-})} ${now.toLocaleTimeString('ko-KR', {
-  hour: '2-digit',
-  minute: '2-digit'
-})}
-
----
-
-`;
+      // 빈 내용으로 메모 생성
+      const defaultContent = content || ``;
 
       // 문서 생성
       const documentId = await createDocument(quickMemoFolder.id, autoTitle, defaultContent);

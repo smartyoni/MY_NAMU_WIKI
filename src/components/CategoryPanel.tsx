@@ -64,6 +64,8 @@ const CategoryPanel: React.FC<CategoryPanelProps> = ({ className = '' }) => {
   };
 
   const handleDelete = (categoryId: string) => {
+    const category = categories.find(cat => cat.id === categoryId);
+    console.log('삭제 요청 카테고리:', { id: categoryId, name: category?.name });
     setDeleteModalState({isOpen: true, categoryId});
   };
 
@@ -71,10 +73,13 @@ const CategoryPanel: React.FC<CategoryPanelProps> = ({ className = '' }) => {
     if (!deleteModalState.categoryId) return;
     
     try {
+      console.log('UI에서 카테고리 삭제 시도:', deleteModalState.categoryId);
       await deleteCategory(deleteModalState.categoryId);
+      console.log('UI에서 카테고리 삭제 성공');
       setDeleteModalState({isOpen: false, categoryId: null});
     } catch (error) {
       console.error('카테고리 삭제 실패:', error);
+      alert(`카테고리 삭제 실패: ${error}`);
     }
   };
 
@@ -140,7 +145,7 @@ const CategoryPanel: React.FC<CategoryPanelProps> = ({ className = '' }) => {
       </div>
 
       <div className="category-list">
-        {categories.map((category) => (
+        {[...categories].sort((a, b) => a.order - b.order).map((category) => (
           <div
             key={category.id}
             className={`category-item ${uiState.selectedCategoryId === category.id ? 'selected' : ''}`}

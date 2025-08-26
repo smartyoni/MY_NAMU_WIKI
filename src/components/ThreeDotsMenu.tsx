@@ -14,7 +14,9 @@ interface ThreeDotsMenuProps {
 
 const ThreeDotsMenu: React.FC<ThreeDotsMenuProps> = ({ menuItems, className = '' }) => {
   const [isOpen, setIsOpen] = useState(false);
+  const [dropdownPosition, setDropdownPosition] = useState<'bottom' | 'top'>('bottom');
   const menuRef = useRef<HTMLDivElement>(null);
+  const dropdownRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -32,9 +34,30 @@ const ThreeDotsMenu: React.FC<ThreeDotsMenuProps> = ({ menuItems, className = ''
     };
   }, [isOpen]);
 
+  const calculatePosition = () => {
+    if (menuRef.current) {
+      const rect = menuRef.current.getBoundingClientRect();
+      const menuHeight = menuItems.length * 40 + 20; // 대략적인 메뉴 높이 계산
+      const spaceBelow = window.innerHeight - rect.bottom;
+      const spaceAbove = rect.top;
+      
+      // 아래쪽 공간이 부족하고 위쪽에 충분한 공간이 있으면 위로 표시
+      if (spaceBelow < menuHeight && spaceAbove > menuHeight) {
+        setDropdownPosition('top');
+      } else {
+        setDropdownPosition('bottom');
+      }
+    }
+  };
+
   const handleMenuClick = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
+    
+    if (!isOpen) {
+      calculatePosition();
+    }
+    
     setIsOpen(!isOpen);
   };
 
@@ -54,7 +77,10 @@ const ThreeDotsMenu: React.FC<ThreeDotsMenuProps> = ({ menuItems, className = ''
       </button>
       
       {isOpen && (
-        <div className="three-dots-dropdown">
+        <div 
+          ref={dropdownRef}
+          className={`three-dots-dropdown ${dropdownPosition === 'top' ? 'dropdown-top' : 'dropdown-bottom'}`}
+        >
           {menuItems.map((item, index) => (
             <button
               key={index}
