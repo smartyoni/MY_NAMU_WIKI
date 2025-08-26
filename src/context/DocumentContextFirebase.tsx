@@ -91,15 +91,51 @@ export const DocumentProvider: React.FC<DocumentProviderProps> = ({
   const [folders, setFolders] = useState<Folder[]>([]);
   const [documents, setDocuments] = useState<WikiDocument[]>([]);
   const [comments, setComments] = useState<DocumentComment[]>([]);
-  const [uiState, setUiState] = useState<UIState>({
-    selectedCategoryId: null,
-    selectedFolderId: null,
-    selectedDocumentId: null,
-    expandedFolders: new Set(),
-    isLoading: false
-  });
+  // localStorage에서 이전 상태 복원
+  const getInitialUIState = (): UIState => {
+    try {
+      const saved = localStorage.getItem('wiki-ui-state');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        return {
+          selectedCategoryId: parsed.selectedCategoryId || null,
+          selectedFolderId: parsed.selectedFolderId || null,
+          selectedDocumentId: parsed.selectedDocumentId || null,
+          expandedFolders: new Set(parsed.expandedFolders || []),
+          isLoading: false
+        };
+      }
+    } catch (error) {
+      console.warn('UI 상태 복원 실패:', error);
+    }
+    
+    return {
+      selectedCategoryId: null,
+      selectedFolderId: null,
+      selectedDocumentId: null,
+      expandedFolders: new Set(),
+      isLoading: false
+    };
+  };
+
+  const [uiState, setUiState] = useState<UIState>(getInitialUIState());
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  // UI 상태 변경 시 localStorage에 저장
+  useEffect(() => {
+    try {
+      const stateToSave = {
+        selectedCategoryId: uiState.selectedCategoryId,
+        selectedFolderId: uiState.selectedFolderId,
+        selectedDocumentId: uiState.selectedDocumentId,
+        expandedFolders: Array.from(uiState.expandedFolders)
+      };
+      localStorage.setItem('wiki-ui-state', JSON.stringify(stateToSave));
+    } catch (error) {
+      console.warn('UI 상태 저장 실패:', error);
+    }
+  }, [uiState.selectedCategoryId, uiState.selectedFolderId, uiState.selectedDocumentId, uiState.expandedFolders]);
 
   // Firebase에서 카테고리 목록 실시간 구독
   useEffect(() => {
@@ -210,6 +246,31 @@ export const DocumentProvider: React.FC<DocumentProviderProps> = ({
 
     return () => unsubscribe();
   }, [userId]);
+
+  // 데이터 로딩 완료 후 저장된 UI 상태 검증 및 복원
+  useEffect(() => {
+    if (!loading && categories.length > 0 && folders.length > 0 && documents.length > 0) {
+      const { selectedCategoryId, selectedFolderId, selectedDocumentId } = uiState;
+      
+      // 선택된 카테고리가 존재하는지 확인
+      if (selectedCategoryId && !categories.find(cat => cat.id === selectedCategoryId)) {
+        setUiState(prev => ({ ...prev, selectedCategoryId: null, selectedFolderId: null, selectedDocumentId: null }));
+        return;
+      }
+      
+      // 선택된 폴더가 존재하는지 확인
+      if (selectedFolderId && !folders.find(folder => folder.id === selectedFolderId)) {
+        setUiState(prev => ({ ...prev, selectedFolderId: null, selectedDocumentId: null }));
+        return;
+      }
+      
+      // 선택된 문서가 존재하는지 확인
+      if (selectedDocumentId && !documents.find(doc => doc.id === selectedDocumentId)) {
+        setUiState(prev => ({ ...prev, selectedDocumentId: null }));
+        return;
+      }
+    }
+  }, [loading, categories, folders, documents, uiState.selectedCategoryId, uiState.selectedFolderId, uiState.selectedDocumentId]);
 
   // Firebase에서 댓글 목록 실시간 구독
   useEffect(() => {
