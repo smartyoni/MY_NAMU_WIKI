@@ -116,8 +116,6 @@ const Header: React.FC<HeaderProps> = () => {
       <div className="header-left">
         <h1 className="logo">📚 Personal Wiki</h1>
         <span className="datetime">{formatDateTime(currentTime)}</span>
-      </div>
-      <div className="header-center">
         <div className="search-container">
           <input 
             type="text" 
@@ -188,16 +186,6 @@ const Header: React.FC<HeaderProps> = () => {
             </div>
           )}
         </div>
-      </div>
-      <div className="header-right">
-        <button 
-          className="quick-memo-button"
-          onClick={handleQuickMemo}
-          title="빠른메모 (새 메모를 바로 작성)"
-        >
-          ⚡
-        </button>
-        <span className="production-mode">3단 계층 구조</span>
       </div>
     </header>
   );
