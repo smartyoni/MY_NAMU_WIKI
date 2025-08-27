@@ -127,15 +127,21 @@ const BookmarkBar: React.FC<BookmarkBarProps> = ({ className = '' }) => {
   };
 
   const handleRightClick = (e: React.MouseEvent, bookmark: Bookmark) => {
+    console.log('우클릭 이벤트 발생:', bookmark.title);
     e.preventDefault();
+    e.stopPropagation();
     
     // 모달 위치 설정 (마우스 위치 기준)
     const x = Math.min(e.clientX, window.innerWidth - 180); // 화면 밖으로 나가지 않도록
     const y = Math.min(e.clientY, window.innerHeight - 150);
     
+    console.log('모달 위치:', { x, y });
+    
     setModalPosition({ x, y });
     setSelectedBookmark(bookmark);
     setShowActionModal(true);
+    
+    console.log('액션 모달 열림:', showActionModal);
   };
 
   const handleActionEdit = () => {
@@ -313,6 +319,11 @@ const BookmarkModal: React.FC<BookmarkModalProps> = ({ bookmark, onSave, onCance
       </div>
       
       {/* 북마크 액션 모달 */}
+      {console.log('BookmarkBar 렌더링 시 모달 상태:', { 
+        showActionModal, 
+        selectedBookmark: selectedBookmark?.title,
+        modalPosition 
+      })}
       <BookmarkActionModal
         isOpen={showActionModal}
         bookmark={selectedBookmark}

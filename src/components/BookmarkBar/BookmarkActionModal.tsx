@@ -19,7 +19,12 @@ const BookmarkActionModal: React.FC<BookmarkActionModalProps> = ({
   onCancel,
   position
 }) => {
-  if (!isOpen || !bookmark) return null;
+  console.log('BookmarkActionModal 렌더링:', { isOpen, bookmark: bookmark?.title, position });
+  
+  if (!isOpen || !bookmark) {
+    console.log('모달 숨김:', { isOpen, hasBookmark: !!bookmark });
+    return null;
+  }
 
   return (
     <>
