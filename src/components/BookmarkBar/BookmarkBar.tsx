@@ -327,12 +327,33 @@ const BookmarkModal: React.FC<BookmarkModalProps> = ({ bookmark, onSave, onCance
         </form>
       </div>
       
-      {/* 북마크 액션 모달 */}
+      {/* 북마크 액션 모달 - 임시 인라인 테스트 */}
       {console.log('BookmarkBar 렌더링 시 모달 상태:', { 
         showActionModal, 
         selectedBookmark: selectedBookmark?.title,
         modalPosition 
       })}
+      
+      {/* 임시 테스트 모달 */}
+      {showActionModal && selectedBookmark && (
+        <div style={{
+          position: 'fixed',
+          left: modalPosition.x,
+          top: modalPosition.y,
+          background: 'white',
+          border: '2px solid red',
+          padding: '20px',
+          zIndex: 9999,
+          borderRadius: '8px',
+          boxShadow: '0 4px 12px rgba(0,0,0,0.3)'
+        }}>
+          <div>테스트 모달: {selectedBookmark.title}</div>
+          <button onClick={handleActionEdit} style={{ margin: '5px', padding: '5px 10px' }}>편집</button>
+          <button onClick={handleActionDelete} style={{ margin: '5px', padding: '5px 10px' }}>삭제</button>
+          <button onClick={handleActionCancel} style={{ margin: '5px', padding: '5px 10px' }}>취소</button>
+        </div>
+      )}
+      
       <BookmarkActionModal
         isOpen={showActionModal}
         bookmark={selectedBookmark}
