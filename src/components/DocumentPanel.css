@@ -464,11 +464,11 @@
 /* 모바일 대응 */
 @media (max-width: 768px) {
   .document-header > div:first-child {
-    padding: 4px 12px;
-    min-height: 36px;
+    padding: 2px 12px;
+    min-height: 24px;
     flex-direction: row;
     align-items: center;
-    gap: 8px;
+    gap: 6px;
     justify-content: space-between;
   }
   
@@ -480,9 +480,9 @@
   }
   
   .document-title {
-    font-size: 15px;
+    font-size: 13px;
     white-space: nowrap;
-    line-height: 1.2;
+    line-height: 1.1;
     overflow: hidden;
     text-overflow: ellipsis;
   }
@@ -499,10 +499,10 @@
   }
   
   .action-button {
-    padding: 4px 8px;
-    font-size: 12px;
-    min-width: 32px;
-    height: 32px;
+    padding: 2px 6px;
+    font-size: 11px;
+    min-width: 28px;
+    height: 24px;
   }
   
   .back-button {
