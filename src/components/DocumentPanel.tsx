@@ -719,7 +719,7 @@ const DocumentPanel: React.FC<DocumentPanelProps> = ({ className = '' }) => {
                 onClick={handleFavoriteToggle}
                 title={selectedDocument.isFavorite === true ? "즐겨찾기 해제" : "즐겨찾기 추가"}
               >
-                {selectedDocument.isFavorite === true ? '⭐' : '☆'} 즐겨찾기
+                {selectedDocument.isFavorite === true ? '⭐' : '☆'}
               </button>
               <button 
                 className="action-button delete-button"
