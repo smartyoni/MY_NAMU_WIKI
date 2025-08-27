@@ -94,8 +94,11 @@ function AppContent() {
         documentPanel={<DocumentPanel />}
         isMobile={isMobile}
       />
+      {/* 번개와 폴더 버튼은 항상 표시 */}
       <FloatingButton onClick={handleQuickMemo} />
       <QuickMemoFolderButton onClick={handleQuickMemoFolder} />
+      
+      {/* 저장/삭제 버튼은 모바일에서만 표시 */}
       {hasSelectedDocument && isMobile && (
         <>
           <SaveButton onClick={handleSave} />
