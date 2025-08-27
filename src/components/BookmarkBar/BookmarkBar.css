@@ -25,9 +25,10 @@
   justify-content: center;
   width: 65px;
   height: 32px;
-  border: 1px solid #dee2e6;
+  border: 2px solid #000000;
   border-radius: 4px;
   color: #ffffff;
+  background-color: #6f42c1 !important;
   font-size: 12px;
   font-weight: bold;
   cursor: pointer;

@@ -182,7 +182,7 @@ const BookmarkBar: React.FC<BookmarkBarProps> = ({ className = '' }) => {
           <button
             key={bookmark.id}
             className={`bookmark-item ${draggedBookmark === bookmark.id ? 'dragging' : ''} ${dragOverIndex === index ? 'drag-over' : ''}`}
-            style={{ backgroundColor: bookmark.color || '#ffffff' }}
+            style={{ backgroundColor: '#6f42c1' }}
             draggable
             onDragStart={(e) => handleDragStart(e, bookmark.id)}
             onDragEnd={handleDragEnd}

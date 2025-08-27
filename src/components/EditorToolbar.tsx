@@ -28,13 +28,15 @@ const EditorToolbar: React.FC<EditorToolbarProps> = ({
     const newText = beforeText + before + selectedText + after + afterText;
     onTextChange(newText);
     
-    // 커서 위치 설정
+    // 커서 위치 설정 (스크롤 위치 유지)
     setTimeout(() => {
-      textarea.focus();
+      const scrollTop = textarea.scrollTop;
+      textarea.focus({ preventScroll: true });
       const newCursorPos = selectedText 
         ? start + before.length + selectedText.length + after.length
         : start + before.length;
       textarea.setSelectionRange(newCursorPos, newCursorPos);
+      textarea.scrollTop = scrollTop;
     }, 50);
   };
 
@@ -54,10 +56,12 @@ const EditorToolbar: React.FC<EditorToolbarProps> = ({
     const newText = beforeText + prefix + afterText;
     onTextChange(newText);
     
-    // 커서 위치 설정
+    // 커서 위치 설정 (스크롤 위치 유지)
     setTimeout(() => {
-      textarea.focus();
+      const scrollTop = textarea.scrollTop;
+      textarea.focus({ preventScroll: true });
       textarea.setSelectionRange(start + prefix.length, start + prefix.length);
+      textarea.scrollTop = scrollTop;
     }, 50);
   };
 
@@ -111,11 +115,13 @@ ${contentText}
       const newText = beforeText + wrappedTemplate + afterText;
       onTextChange(newText);
       
-      // 커서를 content 영역 시작으로 설정
+      // 커서를 content 영역 시작으로 설정 (스크롤 위치 유지)
       setTimeout(() => {
-        textarea.focus();
+        const scrollTop = textarea.scrollTop;
+        textarea.focus({ preventScroll: true });
         const contentStart = start + `<details>\n<summary>${summaryTitle}</summary>\n\n`.length;
         textarea.setSelectionRange(contentStart, contentStart);
+        textarea.scrollTop = scrollTop;
       }, 50);
     } else {
       // 선택된 텍스트가 없으면 기본 템플릿
