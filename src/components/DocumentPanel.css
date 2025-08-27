@@ -224,7 +224,7 @@
   flex: 1;
   padding: 24px;
   font-size: 15px;
-  line-height: 1.8;
+  line-height: 1.2;
   color: #495057;
   background: white;
   white-space: pre-wrap;
@@ -280,8 +280,8 @@
 }
 
 .md-p {
-  margin: 0.5rem 0;
-  line-height: 1.6;
+  margin: 0.3rem 0;
+  line-height: 1.1;
 }
 
 .md-bold {
@@ -394,8 +394,8 @@
 
 .md-oli {
   margin: 0.2rem 0;
-  list-style-type: decimal;
-  margin-left: 1.5rem;
+  list-style-type: none;
+  margin-left: 0;
 }
 
 .md-checkbox {
@@ -417,7 +417,7 @@
 
 .checkbox-text {
   flex: 1;
-  line-height: 1.4;
+  line-height: 1.0;
 }
 
 .checkbox-text.completed {
@@ -649,13 +649,15 @@
 }
 
 .md-summary {
-  padding: 8px 12px;
+  padding: 4px 12px;
   background-color: #f6f8fa;
   border-bottom: 1px solid #e1e4e8;
   cursor: pointer;
   font-weight: 500;
   user-select: none;
   transition: background-color 0.2s ease;
+  display: flex;
+  align-items: center;
 }
 
 .md-summary:hover {
@@ -663,7 +665,8 @@
 }
 
 .md-summary::marker {
-  font-size: 0.8em;
+  font-size: 1em;
+  content: '▶ ';
 }
 
 .md-details-content {
@@ -752,8 +755,8 @@
   
   .md-p {
     font-size: 14px !important;
-    line-height: 1.5 !important;
-    margin: 0.4rem 0 !important;
+    line-height: 1.0 !important;
+    margin: 0.25rem 0 !important;
   }
   
   .md-bold {
@@ -794,6 +797,8 @@
   .md-oli {
     font-size: 14px !important;
     margin: 0.2rem 0 !important;
+    list-style-type: none !important;
+    margin-left: 0 !important;
   }
   
   .md-checkbox {
@@ -807,7 +812,9 @@
   
   .md-summary {
     font-size: 14px !important;
-    padding: 6px 10px !important;
+    padding: 3px 10px !important;
+    display: flex !important;
+    align-items: center !important;
   }
   
   .md-details-content {

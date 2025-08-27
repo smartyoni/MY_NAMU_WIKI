@@ -35,7 +35,7 @@ const EditorToolbar: React.FC<EditorToolbarProps> = ({
         ? start + before.length + selectedText.length + after.length
         : start + before.length;
       textarea.setSelectionRange(newCursorPos, newCursorPos);
-    }, 10);
+    }, 50);
   };
 
   const insertAtLine = (textarea: HTMLTextAreaElement, prefix: string) => {
@@ -58,7 +58,7 @@ const EditorToolbar: React.FC<EditorToolbarProps> = ({
     setTimeout(() => {
       textarea.focus();
       textarea.setSelectionRange(start + prefix.length, start + prefix.length);
-    }, 10);
+    }, 50);
   };
 
   const insertCurrentDateTime = (textarea: HTMLTextAreaElement) => {
@@ -116,7 +116,7 @@ ${contentText}
         textarea.focus();
         const contentStart = start + `<details>\n<summary>${summaryTitle}</summary>\n\n`.length;
         textarea.setSelectionRange(contentStart, contentStart);
-      }, 10);
+      }, 50);
     } else {
       // 선택된 텍스트가 없으면 기본 템플릿
       const template = `<details>
