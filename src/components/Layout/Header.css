@@ -219,7 +219,7 @@
   }
   
   .favorites-bar {
-    display: none; /* 모바일에서는 숨김 */
+    display: none !important; /* 모바일에서는 숨김 */
   }
 }
 
