@@ -217,4 +217,41 @@
   .search-container {
     max-width: 200px;
   }
+  
+  .favorites-bar {
+    display: none; /* 모바일에서는 숨김 */
+  }
+}
+
+/* 즐겨찾기 바 스타일 */
+.favorites-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: 16px;
+  flex-wrap: wrap;
+}
+
+.favorite-item {
+  background: #ffc107;
+  color: white;
+  border: 1px solid #000;
+  border-radius: 4px;
+  padding: 6px 12px;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  min-width: 60px;
+  max-width: 80px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.favorite-item:hover {
+  background: #e0a800;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
 }

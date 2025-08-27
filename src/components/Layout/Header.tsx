@@ -186,6 +186,25 @@ const Header: React.FC<HeaderProps> = () => {
             </div>
           )}
         </div>
+        
+        {/* 즐겨찾기 바 */}
+        <div className="favorites-bar">
+          {favoriteDocuments.slice(0, 8).map((doc) => (
+            <button
+              key={doc.id}
+              className="favorite-item"
+              onClick={() => handleDocumentSelect(doc)}
+              onContextMenu={(e) => {
+                e.preventDefault();
+                // TODO: 편집 기능 추가
+                console.log('우클릭:', doc.title);
+              }}
+              title={`${doc.title} - 클릭하여 열기, 우클릭하여 편집`}
+            >
+              {doc.title.slice(0, 5)}
+            </button>
+          ))}
+        </div>
       </div>
     </header>
   );
