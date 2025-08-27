@@ -647,13 +647,6 @@ const DocumentPanel: React.FC<DocumentPanelProps> = ({ className = '' }) => {
           {isEditMode ? (
             <>
               <button 
-                className="action-button save-button"
-                onClick={handleSave}
-                title="저장"
-              >
-                💾 저장
-              </button>
-              <button 
                 className="action-button delete-button"
                 onClick={handleDelete}
                 title="삭제"
@@ -673,6 +666,13 @@ const DocumentPanel: React.FC<DocumentPanelProps> = ({ className = '' }) => {
                 title="수정 중인 내용 복사"
               >
                 📋 복사
+              </button>
+              <button 
+                className="action-button save-button"
+                onClick={handleSave}
+                title="저장"
+              >
+                💾 저장
               </button>
               <div className="move-buttons">
                 <button 
