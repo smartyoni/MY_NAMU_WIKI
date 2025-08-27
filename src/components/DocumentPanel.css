@@ -514,30 +514,6 @@
     padding: 4px 6px;
   }
   
-  /* 모바일에서 저장/삭제 버튼을 플로팅으로 변경 */
-  .save-button,
-  .delete-button {
-    position: fixed;
-    bottom: 20px;
-    width: 56px;
-    height: 56px;
-    border-radius: 50%;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-    z-index: 1000;
-    font-size: 20px;
-    padding: 0;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-  }
-  
-  .save-button {
-    right: 90px;
-  }
-  
-  .delete-button {
-    right: 20px;
-  }
   
   /* 모바일에서 이동 버튼 숨기기 */
   .move-buttons {

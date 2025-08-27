@@ -647,13 +647,6 @@ const DocumentPanel: React.FC<DocumentPanelProps> = ({ className = '' }) => {
           {isEditMode ? (
             <>
               <button 
-                className="action-button delete-button"
-                onClick={handleDelete}
-                title="삭제"
-              >
-                🗑️ 삭제
-              </button>
-              <button 
                 className="action-button cancel-button"
                 onClick={handleCancel}
                 title="취소"
