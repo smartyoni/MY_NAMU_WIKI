@@ -17,7 +17,9 @@
       "Bash(npm run typecheck:*)",
       "Bash(npm run dev:*)",
       "Bash(git pull:*)",
-      "Bash(npm install:*)"
+      "Bash(npm install:*)",
+      "Bash(git rm:*)",
+      "Bash(cat:*)"
     ],
     "deny": [],
     "ask": []

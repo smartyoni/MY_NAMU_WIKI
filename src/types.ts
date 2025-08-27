@@ -39,3 +39,17 @@ export interface UIState {
   expandedFolders: Set<string>;
   isLoading: boolean;
 }
+
+export interface Bookmark {
+  id: string;
+  title: string;
+  url: string;
+  order: number;
+  isDefault?: boolean;
+  color?: string;
+}
+
+export interface DocumentMoveRequest {
+  documentId: string;
+  direction: 'up' | 'down';
+}

@@ -1,6 +1,6 @@
 .three-column-layout {
   display: flex;
-  height: 100vh;
+  height: calc(100vh - 110px); /* 북마크바(50px) + 헤더(60px) 고려 */
   overflow: hidden;
 }
 
