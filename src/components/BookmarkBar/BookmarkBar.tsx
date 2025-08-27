@@ -69,6 +69,39 @@ const BookmarkBar: React.FC<BookmarkBarProps> = ({ className = '' }) => {
     console.log('모달 상태 변화:', { showActionModal, selectedBookmark: selectedBookmark?.title });
   }, [showActionModal, selectedBookmark]);
 
+  // 강제 body 모달 테스트
+  useEffect(() => {
+    if (showActionModal && selectedBookmark) {
+      const testModal = document.createElement('div');
+      testModal.id = 'test-modal';
+      testModal.style.cssText = `
+        position: fixed;
+        top: 50px;
+        right: 50px;
+        width: 200px;
+        height: 100px;
+        background: red;
+        color: white;
+        z-index: 99999;
+        padding: 10px;
+        border: 3px solid yellow;
+      `;
+      testModal.innerHTML = `
+        <div>Body 테스트 모달</div>
+        <div>${selectedBookmark.title}</div>
+      `;
+      
+      document.body.appendChild(testModal);
+      
+      return () => {
+        const existingModal = document.getElementById('test-modal');
+        if (existingModal) {
+          document.body.removeChild(existingModal);
+        }
+      };
+    }
+  }, [showActionModal, selectedBookmark]);
+
   const initializeDefaultBookmarks = async () => {
     try {
       console.log('기본 북마크 생성 시작:', defaultBookmarks.length, '개');
