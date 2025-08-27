@@ -10,6 +10,8 @@ const BookmarkBar: React.FC<BookmarkBarProps> = ({ className = '' }) => {
   const [bookmarks, setBookmarks] = useState<Bookmark[]>([]);
   const [showAddModal, setShowAddModal] = useState(false);
   const [editingBookmark, setEditingBookmark] = useState<Bookmark | null>(null);
+  const [draggedBookmark, setDraggedBookmark] = useState<string | null>(null);
+  const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
 
   // 랜덤 색상 배열
   const randomColors = [
@@ -124,14 +126,69 @@ const BookmarkBar: React.FC<BookmarkBarProps> = ({ className = '' }) => {
     }
   };
 
+  // 드래그 앤 드롭 핸들러들
+  const handleDragStart = (e: React.DragEvent, bookmarkId: string) => {
+    setDraggedBookmark(bookmarkId);
+    e.dataTransfer.effectAllowed = 'move';
+  };
+
+  const handleDragEnd = () => {
+    setDraggedBookmark(null);
+    setDragOverIndex(null);
+  };
+
+  const handleDragOver = (e: React.DragEvent, index: number) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+    setDragOverIndex(index);
+  };
+
+  const handleDragLeave = () => {
+    setDragOverIndex(null);
+  };
+
+  const handleDrop = (e: React.DragEvent, targetIndex: number) => {
+    e.preventDefault();
+    
+    if (!draggedBookmark) return;
+    
+    const draggedIndex = bookmarks.findIndex(b => b.id === draggedBookmark);
+    if (draggedIndex === -1 || draggedIndex === targetIndex) return;
+    
+    const newBookmarks = [...bookmarks];
+    const draggedItem = newBookmarks[draggedIndex];
+    
+    // 배열에서 드래그된 아이템 제거
+    newBookmarks.splice(draggedIndex, 1);
+    // 새 위치에 삽입
+    newBookmarks.splice(targetIndex, 0, draggedItem);
+    
+    // order 재정렬
+    const reorderedBookmarks = newBookmarks.map((bookmark, index) => ({
+      ...bookmark,
+      order: index + 1
+    }));
+    
+    setBookmarks(reorderedBookmarks);
+    saveBookmarks(reorderedBookmarks);
+    setDraggedBookmark(null);
+    setDragOverIndex(null);
+  };
+
   return (
     <div className={`bookmark-bar ${className}`}>
       <div className="bookmark-list">
-        {bookmarks.map((bookmark) => (
+        {bookmarks.map((bookmark, index) => (
           <button
             key={bookmark.id}
-            className="bookmark-item"
+            className={`bookmark-item ${draggedBookmark === bookmark.id ? 'dragging' : ''} ${dragOverIndex === index ? 'drag-over' : ''}`}
             style={{ backgroundColor: bookmark.color || '#ffffff' }}
+            draggable
+            onDragStart={(e) => handleDragStart(e, bookmark.id)}
+            onDragEnd={handleDragEnd}
+            onDragOver={(e) => handleDragOver(e, index)}
+            onDragLeave={handleDragLeave}
+            onDrop={(e) => handleDrop(e, index)}
             onClick={() => handleBookmarkClick(bookmark.url)}
             onDoubleClick={() => handleEditBookmark(bookmark)}
             onContextMenu={(e) => handleRightClick(e, bookmark)}

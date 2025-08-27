@@ -173,6 +173,35 @@
   background: #0056b3;
 }
 
+/* 드래그 앤 드롭 스타일 */
+.bookmark-item {
+  cursor: grab;
+}
+
+.bookmark-item:active {
+  cursor: grabbing;
+}
+
+.bookmark-item.dragging {
+  opacity: 0.5;
+  transform: rotate(5deg);
+  cursor: grabbing;
+}
+
+.bookmark-item.drag-over {
+  border-left: 3px solid #007bff;
+  animation: pulse 0.5s infinite;
+}
+
+@keyframes pulse {
+  0%, 100% {
+    border-left-color: #007bff;
+  }
+  50% {
+    border-left-color: #0056b3;
+  }
+}
+
 /* 반응형 디자인 - 모바일에서는 북마크바 숨김 */
 @media (max-width: 768px) {
   .bookmark-bar {
