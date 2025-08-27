@@ -1,4 +1,5 @@
 import React from 'react';
+import { createPortal } from 'react-dom';
 import { Bookmark } from '../../types';
 import './BookmarkActionModal.css';
 
@@ -21,16 +22,13 @@ const BookmarkActionModal: React.FC<BookmarkActionModalProps> = ({
 }) => {
   console.log('BookmarkActionModal 렌더링:', { isOpen, bookmark: bookmark?.title, position });
   
-  // 임시로 조건을 제거하여 강제 렌더링 테스트
-  // if (!isOpen || !bookmark) {
-  //   console.log('모달 숨김:', { isOpen, hasBookmark: !!bookmark });
-  //   return null;
-  // }
-  
-  // 임시 테스트용 데이터
-  const testBookmark = bookmark || { title: 'Test Bookmark', url: 'http://test.com' };
+  if (!isOpen || !bookmark) {
+    console.log('모달 숨김:', { isOpen, hasBookmark: !!bookmark });
+    return null;
+  }
 
-  return (
+  // React Portal을 사용해서 body에 렌더링
+  return createPortal(
     <>
       {/* 배경 오버레이 */}
       <div className="bookmark-action-overlay" onClick={onCancel} />
@@ -46,7 +44,7 @@ const BookmarkActionModal: React.FC<BookmarkActionModalProps> = ({
         }}
       >
         <div className="bookmark-action-header">
-          <span className="bookmark-title">"{testBookmark.title}"</span>
+          <span className="bookmark-title">"{bookmark.title}"</span>
         </div>
         
         <div className="bookmark-action-buttons">
@@ -72,7 +70,8 @@ const BookmarkActionModal: React.FC<BookmarkActionModalProps> = ({
           </button>
         </div>
       </div>
-    </>
+    </>,
+    document.body
   );
 };
 
