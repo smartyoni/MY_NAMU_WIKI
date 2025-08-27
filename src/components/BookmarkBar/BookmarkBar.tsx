@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useDocuments } from '../../context/DocumentContextFirebase';
 import { Bookmark } from '../../types';
+import BookmarkActionModal from './BookmarkActionModal';
 import './BookmarkBar.css';
 
 interface BookmarkBarProps {
@@ -20,6 +21,11 @@ const BookmarkBar: React.FC<BookmarkBarProps> = ({ className = '' }) => {
   const [editingBookmark, setEditingBookmark] = useState<Bookmark | null>(null);
   const [draggedBookmark, setDraggedBookmark] = useState<string | null>(null);
   const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
+  
+  // 액션 모달 상태
+  const [showActionModal, setShowActionModal] = useState(false);
+  const [selectedBookmark, setSelectedBookmark] = useState<Bookmark | null>(null);
+  const [modalPosition, setModalPosition] = useState({ x: 0, y: 0 });
 
   // 랜덤 색상 배열
   const randomColors = [
@@ -123,19 +129,37 @@ const BookmarkBar: React.FC<BookmarkBarProps> = ({ className = '' }) => {
   const handleRightClick = (e: React.MouseEvent, bookmark: Bookmark) => {
     e.preventDefault();
     
-    // 편집/삭제 선택 메뉴
-    const choice = window.confirm(`"${bookmark.title}" 북마크를 편집하시겠습니까?\n\n확인: 편집\n취소: 삭제`);
+    // 모달 위치 설정 (마우스 위치 기준)
+    const x = Math.min(e.clientX, window.innerWidth - 180); // 화면 밖으로 나가지 않도록
+    const y = Math.min(e.clientY, window.innerHeight - 150);
     
-    if (choice) {
-      // 확인 선택 시 편집
-      handleEditBookmark(bookmark);
-    } else {
-      // 취소 선택 시 삭제 확인
-      const shouldDelete = window.confirm(`정말로 "${bookmark.title}" 북마크를 삭제하시겠습니까?`);
+    setModalPosition({ x, y });
+    setSelectedBookmark(bookmark);
+    setShowActionModal(true);
+  };
+
+  const handleActionEdit = () => {
+    if (selectedBookmark) {
+      handleEditBookmark(selectedBookmark);
+    }
+    setShowActionModal(false);
+    setSelectedBookmark(null);
+  };
+
+  const handleActionDelete = async () => {
+    if (selectedBookmark) {
+      const shouldDelete = window.confirm(`정말로 "${selectedBookmark.title}" 북마크를 삭제하시겠습니까?`);
       if (shouldDelete) {
-        handleDeleteBookmark(bookmark.id);
+        await handleDeleteBookmark(selectedBookmark.id);
       }
     }
+    setShowActionModal(false);
+    setSelectedBookmark(null);
+  };
+
+  const handleActionCancel = () => {
+    setShowActionModal(false);
+    setSelectedBookmark(null);
   };
 
   // 드래그 앤 드롭 핸들러들
@@ -287,6 +311,16 @@ const BookmarkModal: React.FC<BookmarkModalProps> = ({ bookmark, onSave, onCance
           </div>
         </form>
       </div>
+      
+      {/* 북마크 액션 모달 */}
+      <BookmarkActionModal
+        isOpen={showActionModal}
+        bookmark={selectedBookmark}
+        onEdit={handleActionEdit}
+        onDelete={handleActionDelete}
+        onCancel={handleActionCancel}
+        position={modalPosition}
+      />
     </div>
   );
 };
