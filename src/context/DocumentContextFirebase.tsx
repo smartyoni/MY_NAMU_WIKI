@@ -62,6 +62,7 @@ interface DocumentContextType {
   
   // 빠른메모
   createQuickMemo: (content: string) => Promise<string>;
+  navigateToQuickMemoFolder: () => Promise<void>;
   
   // 즐겨찾기 관리
   toggleFavorite: (documentId: string) => Promise<void>;
@@ -700,6 +701,51 @@ export const DocumentProvider: React.FC<DocumentProviderProps> = ({
     }
   };
 
+  // 빠른메모 폴더로 바로 이동
+  const navigateToQuickMemoFolder = async (): Promise<void> => {
+    try {
+      // INBOX 카테고리 찾기 또는 생성
+      let inboxCategory = categories.find(cat => cat.name === 'INBOX');
+      if (!inboxCategory) {
+        const inboxCategoryId = await createCategory('INBOX', '#6c757d');
+        inboxCategory = { 
+          id: inboxCategoryId, 
+          name: 'INBOX', 
+          color: '#6c757d', 
+          order: categories.length,
+          createdAt: new Date(),
+          updatedAt: new Date()
+        };
+      }
+
+      // 빠른메모 폴더 찾기 또는 생성
+      let quickMemoFolder = folders.find(folder => 
+        folder.categoryId === inboxCategory!.id && folder.name === '빠른메모'
+      );
+      if (!quickMemoFolder) {
+        const quickMemoFolderId = await createFolder(inboxCategory.id, '빠른메모');
+        quickMemoFolder = {
+          id: quickMemoFolderId,
+          categoryId: inboxCategory.id,
+          name: '빠른메모',
+          order: 0,
+          isExpanded: true,
+          createdAt: new Date(),
+          updatedAt: new Date()
+        };
+      }
+
+      // 빠른메모 폴더로 바로 이동 (카테고리 생략하고 바로 문서 목록 표시)
+      selectCategory(inboxCategory.id);
+      selectFolder(quickMemoFolder.id);
+      selectDocument(null); // 문서는 선택하지 않고 폴더 내 문서 목록만 표시
+      
+    } catch (error) {
+      console.error('빠른메모 폴더 이동 실패:', error);
+      throw error;
+    }
+  };
+
   // 즐겨찾기 함수
   const toggleFavorite = async (documentId: string): Promise<void> => {
     try {
@@ -837,6 +883,7 @@ export const DocumentProvider: React.FC<DocumentProviderProps> = ({
     getSelectedDocument,
     searchDocuments,
     createQuickMemo,
+    navigateToQuickMemoFolder,
     toggleFavorite,
     getFavoriteDocuments
   };

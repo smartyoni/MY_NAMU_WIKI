@@ -6,12 +6,13 @@ import CategoryPanel from './components/CategoryPanel';
 import FolderPanel from './components/FolderPanel';
 import DocumentPanel from './components/DocumentPanel';
 import FloatingButton from './components/FloatingButton/FloatingButton';
+import QuickMemoFolderButton from './components/FloatingButton/QuickMemoFolderButton';
 import { DocumentProvider, useDocuments } from './context/DocumentContextFirebase';
 import './App.css';
 
 function AppContent() {
   const [isMobile, setIsMobile] = useState(false);
-  const { createQuickMemo } = useDocuments();
+  const { createQuickMemo, navigateToQuickMemoFolder } = useDocuments();
 
   useEffect(() => {
     const checkMobile = () => {
@@ -31,6 +32,14 @@ function AppContent() {
     }
   };
 
+  const handleQuickMemoFolder = async () => {
+    try {
+      await navigateToQuickMemoFolder();
+    } catch (error) {
+      console.error('빠른메모 폴더 이동 실패:', error);
+    }
+  };
+
   return (
     <div className="app">
       <BookmarkBar />
@@ -42,6 +51,7 @@ function AppContent() {
         isMobile={isMobile}
       />
       <FloatingButton onClick={handleQuickMemo} />
+      <QuickMemoFolderButton onClick={handleQuickMemoFolder} />
     </div>
   );
 }
