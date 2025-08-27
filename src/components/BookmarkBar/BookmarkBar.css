@@ -25,7 +25,6 @@
   justify-content: center;
   width: 65px;
   height: 32px;
-  background: #ffffff;
   border: 1px solid #dee2e6;
   border-radius: 4px;
   color: #ffffff;
@@ -174,57 +173,10 @@
   background: #0056b3;
 }
 
-/* 반응형 디자인 */
+/* 반응형 디자인 - 모바일에서는 북마크바 숨김 */
 @media (max-width: 768px) {
   .bookmark-bar {
-    padding: 6px 12px;
-    min-height: 44px;
-  }
-  
-  .bookmark-item {
-    width: 60px;
-    height: 30px;
-    font-size: 11px;
-  }
-  
-  .bookmark-add {
-    width: 30px;
-    height: 30px;
-    font-size: 14px;
-    margin-left: 6px;
-  }
-  
-  .bookmark-modal {
-    padding: 20px;
-    width: 350px;
+    display: none;
   }
 }
 
-@media (max-width: 480px) {
-  .bookmark-bar {
-    padding: 4px 8px;
-    min-height: 40px;
-  }
-  
-  .bookmark-item {
-    width: 55px;
-    height: 28px;
-    font-size: 10px;
-  }
-  
-  .bookmark-add {
-    width: 28px;
-    height: 28px;
-    font-size: 12px;
-    margin-left: 4px;
-  }
-  
-  .bookmark-modal {
-    padding: 16px;
-    width: 300px;
-  }
-  
-  .bookmark-modal h3 {
-    font-size: 16px;
-  }
-}

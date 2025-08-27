@@ -4,6 +4,13 @@
   overflow: hidden;
 }
 
+/* 모바일에서는 북마크바가 없으므로 헤더만 고려 */
+@media (max-width: 768px) {
+  .three-column-layout {
+    height: calc(100vh - 60px); /* 헤더(60px)만 고려 */
+  }
+}
+
 .three-column-layout.desktop {
   flex-direction: row;
 }
