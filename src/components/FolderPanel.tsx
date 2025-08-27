@@ -28,6 +28,8 @@ const FolderPanel: React.FC<FolderPanelProps> = ({ className = '' }) => {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editingName, setEditingName] = useState('');
   const [deleteModalState, setDeleteModalState] = useState<{isOpen: boolean, folderId: string | null}>({isOpen: false, folderId: null});
+  const [hoveredFolder, setHoveredFolder] = useState<string | null>(null);
+  const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
 
   const selectedFolders = uiState.selectedCategoryId 
     ? getFoldersByCategory(uiState.selectedCategoryId)
@@ -178,6 +180,14 @@ const FolderPanel: React.FC<FolderPanelProps> = ({ className = '' }) => {
                     <div 
                       className="folder-header"
                       onClick={() => handleFolderClick(folder)}
+                      onMouseEnter={(e) => {
+                        setHoveredFolder(folder.id);
+                        setMousePos({ x: e.clientX, y: e.clientY });
+                      }}
+                      onMouseMove={(e) => {
+                        setMousePos({ x: e.clientX, y: e.clientY });
+                      }}
+                      onMouseLeave={() => setHoveredFolder(null)}
                     >
                       <div className="folder-content">
                         <div className="folder-title-line">
@@ -252,6 +262,39 @@ const FolderPanel: React.FC<FolderPanelProps> = ({ className = '' }) => {
                             </div>
                           ))
                         )}
+                      </div>
+                    )}
+
+                    {/* 호버 미리보기 툴팁 */}
+                    {hoveredFolder === folder.id && !isExpanded && (
+                      <div 
+                        className="folder-preview-tooltip"
+                        style={{
+                          left: mousePos.x + 15,
+                          top: mousePos.y - 50
+                        }}
+                      >
+                        <div className="tooltip-header">
+                          📁 {folder.name} ({folderDocuments.length}개 문서)
+                        </div>
+                        <div className="tooltip-content">
+                          {folderDocuments.length === 0 ? (
+                            <div className="no-documents">문서가 없습니다</div>
+                          ) : (
+                            folderDocuments.slice(0, 5).map((document) => (
+                              <div key={document.id} className="tooltip-document">
+                                <span className="tooltip-doc-icon">📄</span>
+                                <span className="tooltip-doc-title">{document.title}</span>
+                                {document.isFavorite && <span className="tooltip-favorite">⭐</span>}
+                              </div>
+                            ))
+                          )}
+                          {folderDocuments.length > 5 && (
+                            <div className="more-documents">
+                              +{folderDocuments.length - 5}개 더...
+                            </div>
+                          )}
+                        </div>
                       </div>
                     )}
                   </>
