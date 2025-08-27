@@ -334,20 +334,39 @@ const BookmarkModal: React.FC<BookmarkModalProps> = ({ bookmark, onSave, onCance
         modalPosition 
       })}
       
-      {/* 임시 테스트 모달 */}
+      {/* 임시 테스트 모달 - 항상 표시 */}
+      <div style={{
+        position: 'fixed',
+        left: 100,
+        top: 100,
+        background: 'white',
+        border: '3px solid red',
+        padding: '20px',
+        zIndex: 9999,
+        borderRadius: '8px',
+        boxShadow: '0 4px 12px rgba(0,0,0,0.3)'
+      }}>
+        <div>항상 보이는 테스트 모달</div>
+        <div>showActionModal: {String(showActionModal)}</div>
+        <div>selectedBookmark: {selectedBookmark?.title || 'none'}</div>
+        <button style={{ margin: '5px', padding: '5px 10px' }}>테스트 버튼</button>
+      </div>
+      
+      {/* 조건부 테스트 모달 */}
+      {console.log('조건부 렌더링 체크:', { showActionModal, hasBookmark: !!selectedBookmark })}
       {showActionModal && selectedBookmark && (
         <div style={{
           position: 'fixed',
           left: modalPosition.x,
           top: modalPosition.y,
-          background: 'white',
-          border: '2px solid red',
-          padding: '20px',
-          zIndex: 9999,
+          background: 'yellow',
+          border: '2px solid blue',
+          padding: '15px',
+          zIndex: 9998,
           borderRadius: '8px',
           boxShadow: '0 4px 12px rgba(0,0,0,0.3)'
         }}>
-          <div>테스트 모달: {selectedBookmark.title}</div>
+          <div>조건부 모달: {selectedBookmark.title}</div>
           <button onClick={handleActionEdit} style={{ margin: '5px', padding: '5px 10px' }}>편집</button>
           <button onClick={handleActionDelete} style={{ margin: '5px', padding: '5px 10px' }}>삭제</button>
           <button onClick={handleActionCancel} style={{ margin: '5px', padding: '5px 10px' }}>취소</button>
