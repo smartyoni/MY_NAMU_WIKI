@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useDocuments } from '../../context/DocumentContextFirebase';
 import { Bookmark } from '../../types';
 import './BookmarkBar.css';
 
@@ -7,7 +8,14 @@ interface BookmarkBarProps {
 }
 
 const BookmarkBar: React.FC<BookmarkBarProps> = ({ className = '' }) => {
-  const [bookmarks, setBookmarks] = useState<Bookmark[]>([]);
+  const { 
+    bookmarks, 
+    createBookmark, 
+    updateBookmark, 
+    deleteBookmark, 
+    reorderBookmark 
+  } = useDocuments();
+  
   const [showAddModal, setShowAddModal] = useState(false);
   const [editingBookmark, setEditingBookmark] = useState<Bookmark | null>(null);
   const [draggedBookmark, setDraggedBookmark] = useState<string | null>(null);
@@ -26,56 +34,48 @@ const BookmarkBar: React.FC<BookmarkBarProps> = ({ className = '' }) => {
   };
 
   // 기본 북마크 데이터
-  const defaultBookmarks: Omit<Bookmark, 'id'>[] = [
-    { title: '구글', url: 'https://www.google.com', order: 1, isDefault: true, color: '#4285f4' },
-    { title: '네이버', url: 'https://www.naver.com', order: 2, isDefault: true, color: '#4285f4' },
-    { title: '유튜브', url: 'https://www.youtube.com', order: 3, isDefault: true, color: '#4285f4' },
-    { title: '깃허브', url: 'https://github.com', order: 4, isDefault: true, color: '#4285f4' },
-    { title: '스택오버', url: 'https://stackoverflow.com', order: 5, isDefault: true, color: '#4285f4' },
+  const defaultBookmarks = [
+    { title: '구글', url: 'https://www.google.com', color: '#4285f4' },
+    { title: '네이버', url: 'https://www.naver.com', color: '#00C73C' },
+    { title: '유튜브', url: 'https://www.youtube.com', color: '#FF0000' },
+    { title: '깃허브', url: 'https://github.com', color: '#181717' },
+    { title: '스택오버', url: 'https://stackoverflow.com', color: '#F58025' },
   ];
 
-  // 초기 북마크 로드
+  // Firebase에서 북마크가 로드되고 비어있을 때 기본 북마크 생성
   useEffect(() => {
-    loadBookmarks();
-  }, []);
-
-  const loadBookmarks = () => {
-    const savedBookmarks = localStorage.getItem('bookmarks');
-    if (savedBookmarks) {
-      setBookmarks(JSON.parse(savedBookmarks));
-    } else {
-      // 기본 북마크 설정
-      const initialBookmarks: Bookmark[] = defaultBookmarks.map((bookmark, index) => ({
-        ...bookmark,
-        id: `default-${index}`,
-      }));
-      setBookmarks(initialBookmarks);
-      saveBookmarks(initialBookmarks);
+    if (bookmarks.length === 0) {
+      initializeDefaultBookmarks();
     }
-  };
+  }, [bookmarks]);
 
-  const saveBookmarks = (bookmarksToSave: Bookmark[]) => {
-    localStorage.setItem('bookmarks', JSON.stringify(bookmarksToSave));
+  const initializeDefaultBookmarks = async () => {
+    try {
+      await Promise.all(
+        defaultBookmarks.map((bookmark) =>
+          createBookmark(bookmark.title, bookmark.url, bookmark.color)
+        )
+      );
+    } catch (error) {
+      console.error('기본 북마크 생성 실패:', error);
+    }
   };
 
   const handleBookmarkClick = (url: string) => {
     window.open(url, '_blank', 'noopener,noreferrer');
   };
 
-  const handleAddBookmark = (title: string, url: string) => {
-    const newBookmark: Bookmark = {
-      id: `bookmark-${Date.now()}`,
-      title: title.slice(0, 5), // 5글자 제한
-      url: url.startsWith('http') ? url : `https://${url}`,
-      order: bookmarks.length + 1,
-      isDefault: false,
-      color: getRandomColor(), // 랜덤 색상 적용
-    };
-
-    const updatedBookmarks = [...bookmarks, newBookmark];
-    setBookmarks(updatedBookmarks);
-    saveBookmarks(updatedBookmarks);
-    setShowAddModal(false);
+  const handleAddBookmark = async (title: string, url: string) => {
+    try {
+      const formattedTitle = title.slice(0, 5); // 5글자 제한
+      const formattedUrl = url.startsWith('http') ? url : `https://${url}`;
+      const randomColor = getRandomColor();
+      
+      await createBookmark(formattedTitle, formattedUrl, randomColor);
+      setShowAddModal(false);
+    } catch (error) {
+      console.error('북마크 추가 실패:', error);
+    }
   };
 
   const handleEditBookmark = (bookmark: Bookmark) => {
@@ -83,29 +83,29 @@ const BookmarkBar: React.FC<BookmarkBarProps> = ({ className = '' }) => {
     setShowAddModal(true);
   };
 
-  const handleUpdateBookmark = (title: string, url: string) => {
+  const handleUpdateBookmark = async (title: string, url: string) => {
     if (!editingBookmark) return;
 
-    const updatedBookmarks = bookmarks.map(bookmark =>
-      bookmark.id === editingBookmark.id
-        ? {
-            ...bookmark,
-            title: title.slice(0, 5),
-            url: url.startsWith('http') ? url : `https://${url}`,
-          }
-        : bookmark
-    );
-
-    setBookmarks(updatedBookmarks);
-    saveBookmarks(updatedBookmarks);
-    setShowAddModal(false);
-    setEditingBookmark(null);
+    try {
+      const updates = {
+        title: title.slice(0, 5),
+        url: url.startsWith('http') ? url : `https://${url}`,
+      };
+      
+      await updateBookmark(editingBookmark.id, updates);
+      setShowAddModal(false);
+      setEditingBookmark(null);
+    } catch (error) {
+      console.error('북마크 수정 실패:', error);
+    }
   };
 
-  const handleDeleteBookmark = (bookmarkId: string) => {
-    const updatedBookmarks = bookmarks.filter(bookmark => bookmark.id !== bookmarkId);
-    setBookmarks(updatedBookmarks);
-    saveBookmarks(updatedBookmarks);
+  const handleDeleteBookmark = async (bookmarkId: string) => {
+    try {
+      await deleteBookmark(bookmarkId);
+    } catch (error) {
+      console.error('북마크 삭제 실패:', error);
+    }
   };
 
   const handleRightClick = (e: React.MouseEvent, bookmark: Bookmark) => {
@@ -169,8 +169,8 @@ const BookmarkBar: React.FC<BookmarkBarProps> = ({ className = '' }) => {
       order: index + 1
     }));
     
-    setBookmarks(reorderedBookmarks);
-    saveBookmarks(reorderedBookmarks);
+    // TODO: Firebase 드래그앤드롭 순서 변경 구현 필요
+    // 현재는 단순히 상태만 업데이트 (새로고침하면 원래 순서로 돌아감)
     setDraggedBookmark(null);
     setDragOverIndex(null);
   };

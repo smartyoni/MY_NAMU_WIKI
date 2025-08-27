@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, type ReactNode } from 'react';
 import { collection, doc, setDoc, deleteDoc, onSnapshot, query, orderBy, where, deleteField } from 'firebase/firestore';
 import { db } from '../firebase';
-import { Category, Folder, WikiDocument, UIState } from '../types';
+import { Category, Folder, WikiDocument, UIState, Bookmark } from '../types';
 
 
 interface DocumentComment {
@@ -19,6 +19,7 @@ interface DocumentContextType {
   categories: Category[];
   folders: Folder[];
   documents: WikiDocument[];
+  bookmarks: Bookmark[];
   comments: DocumentComment[];
   uiState: UIState;
   loading: boolean;
@@ -60,6 +61,12 @@ interface DocumentContextType {
   getSelectedDocument: () => WikiDocument | null;
   searchDocuments: (searchTerm: string) => Promise<WikiDocument[]>;
   
+  // 북마크 관리
+  createBookmark: (title: string, url: string, color?: string) => Promise<string>;
+  updateBookmark: (id: string, updates: Partial<Bookmark>) => Promise<void>;
+  deleteBookmark: (id: string) => Promise<void>;
+  reorderBookmark: (id: string, direction: 'up' | 'down') => Promise<void>;
+  
   // 빠른메모
   createQuickMemo: (content: string) => Promise<string>;
   navigateToQuickMemoFolder: () => Promise<void>;
@@ -91,6 +98,7 @@ export const DocumentProvider: React.FC<DocumentProviderProps> = ({
   const [categories, setCategories] = useState<Category[]>([]);
   const [folders, setFolders] = useState<Folder[]>([]);
   const [documents, setDocuments] = useState<WikiDocument[]>([]);
+  const [bookmarks, setBookmarks] = useState<Bookmark[]>([]);
   const [comments, setComments] = useState<DocumentComment[]>([]);
   // localStorage에서 이전 상태 복원
   const getInitialUIState = (): UIState => {
@@ -302,6 +310,31 @@ export const DocumentProvider: React.FC<DocumentProviderProps> = ({
     return () => unsubscribe();
   }, [userId]);
 
+  // Firebase에서 북마크 목록 실시간 구독
+  useEffect(() => {
+    const bookmarksRef = collection(db, 'users', userId, 'bookmarks');
+    const q = query(bookmarksRef, orderBy('order', 'asc'));
+    
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const bks: Bookmark[] = [];
+      snapshot.forEach((doc) => {
+        const data = doc.data();
+        bks.push({
+          id: doc.id,
+          title: data.title,
+          url: data.url,
+          order: data.order,
+          isDefault: data.isDefault || false,
+          color: data.color || '#4285f4'
+        });
+      });
+      setBookmarks(bks);
+    }, (err) => {
+      console.error('Error fetching bookmarks:', err);
+    });
+
+    return () => unsubscribe();
+  }, [userId]);
 
   // 카테고리 관리 함수들
   const createCategory = async (name: string, color: string): Promise<string> => {
@@ -643,6 +676,96 @@ export const DocumentProvider: React.FC<DocumentProviderProps> = ({
     );
   };
 
+  // 북마크 관리 함수들
+  const createBookmark = async (title: string, url: string, color: string = '#4285f4'): Promise<string> => {
+    try {
+      const id = `bookmark-${Date.now()}`;
+      const order = bookmarks.length;
+      const now = new Date();
+      
+      await setDoc(doc(db, 'users', userId, 'bookmarks', id), {
+        title,
+        url,
+        color,
+        order,
+        isDefault: false,
+        createdAt: now,
+        updatedAt: now
+      });
+      
+      return id;
+    } catch (error) {
+      console.error('북마크 생성 실패:', error);
+      throw error;
+    }
+  };
+
+  const updateBookmark = async (id: string, updates: Partial<Bookmark>): Promise<void> => {
+    try {
+      const updateData = {
+        ...updates,
+        updatedAt: new Date()
+      };
+      
+      await setDoc(doc(db, 'users', userId, 'bookmarks', id), updateData, { merge: true });
+    } catch (error) {
+      console.error('북마크 수정 실패:', error);
+      throw error;
+    }
+  };
+
+  const deleteBookmark = async (id: string): Promise<void> => {
+    try {
+      await deleteDoc(doc(db, 'users', userId, 'bookmarks', id));
+      
+      // 삭제 후 순서 재정렬
+      const updatedBookmarks = bookmarks
+        .filter(b => b.id !== id)
+        .sort((a, b) => a.order - b.order);
+      
+      const updatePromises = updatedBookmarks.map((bookmark, index) =>
+        setDoc(doc(db, 'users', userId, 'bookmarks', bookmark.id), 
+          { order: index }, { merge: true })
+      );
+      
+      await Promise.all(updatePromises);
+    } catch (error) {
+      console.error('북마크 삭제 실패:', error);
+      throw error;
+    }
+  };
+
+  const reorderBookmark = async (id: string, direction: 'up' | 'down'): Promise<void> => {
+    try {
+      const bookmark = bookmarks.find(b => b.id === id);
+      if (!bookmark) return;
+
+      const sortedBookmarks = [...bookmarks].sort((a, b) => a.order - b.order);
+      const currentIndex = sortedBookmarks.findIndex(b => b.id === id);
+      
+      if (direction === 'up' && currentIndex > 0) {
+        const targetBookmark = sortedBookmarks[currentIndex - 1];
+        await Promise.all([
+          setDoc(doc(db, 'users', userId, 'bookmarks', bookmark.id), 
+            { order: targetBookmark.order }, { merge: true }),
+          setDoc(doc(db, 'users', userId, 'bookmarks', targetBookmark.id), 
+            { order: bookmark.order }, { merge: true })
+        ]);
+      } else if (direction === 'down' && currentIndex < sortedBookmarks.length - 1) {
+        const targetBookmark = sortedBookmarks[currentIndex + 1];
+        await Promise.all([
+          setDoc(doc(db, 'users', userId, 'bookmarks', bookmark.id), 
+            { order: targetBookmark.order }, { merge: true }),
+          setDoc(doc(db, 'users', userId, 'bookmarks', targetBookmark.id), 
+            { order: bookmark.order }, { merge: true })
+        ]);
+      }
+    } catch (error) {
+      console.error('북마크 순서 변경 실패:', error);
+      throw error;
+    }
+  };
+
   // 빠른메모 함수
   const createQuickMemo = async (content: string): Promise<string> => {
     try {
@@ -854,6 +977,7 @@ export const DocumentProvider: React.FC<DocumentProviderProps> = ({
     categories,
     folders,
     documents,
+    bookmarks,
     comments,
     uiState,
     loading,
@@ -882,6 +1006,10 @@ export const DocumentProvider: React.FC<DocumentProviderProps> = ({
     getDocumentsByFolder,
     getSelectedDocument,
     searchDocuments,
+    createBookmark,
+    updateBookmark,
+    deleteBookmark,
+    reorderBookmark,
     createQuickMemo,
     navigateToQuickMemoFolder,
     toggleFavorite,

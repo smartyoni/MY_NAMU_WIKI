@@ -504,7 +504,7 @@
   }
   
   .back-button {
-    padding: 4px 6px;
+    display: none;
   }
   
   .edit-button,
