@@ -64,6 +64,11 @@ const BookmarkBar: React.FC<BookmarkBarProps> = ({ className = '' }) => {
     }
   }, [bookmarks]);
 
+  // 모달 상태 변화 추적
+  useEffect(() => {
+    console.log('모달 상태 변화:', { showActionModal, selectedBookmark: selectedBookmark?.title });
+  }, [showActionModal, selectedBookmark]);
+
   const initializeDefaultBookmarks = async () => {
     try {
       console.log('기본 북마크 생성 시작:', defaultBookmarks.length, '개');
@@ -137,11 +142,15 @@ const BookmarkBar: React.FC<BookmarkBarProps> = ({ className = '' }) => {
     
     console.log('모달 위치:', { x, y });
     
+    // 상태를 한 번에 업데이트
     setModalPosition({ x, y });
     setSelectedBookmark(bookmark);
-    setShowActionModal(true);
     
-    console.log('액션 모달 상태 변경 후:', { showActionModal: true, bookmark: bookmark.title });
+    // 상태 업데이트를 다음 렌더 사이클로 지연
+    setTimeout(() => {
+      console.log('모달 열기 시도');
+      setShowActionModal(true);
+    }, 0);
   };
 
   const handleActionEdit = () => {
