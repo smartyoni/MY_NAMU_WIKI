@@ -36,7 +36,9 @@ const BookmarkActionModal: React.FC<BookmarkActionModalProps> = ({
         className="bookmark-action-modal"
         style={{
           left: position.x,
-          top: position.y
+          top: position.y,
+          display: 'block',
+          visibility: 'visible'
         }}
       >
         <div className="bookmark-action-header">

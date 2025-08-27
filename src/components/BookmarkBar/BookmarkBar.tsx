@@ -141,7 +141,7 @@ const BookmarkBar: React.FC<BookmarkBarProps> = ({ className = '' }) => {
     setSelectedBookmark(bookmark);
     setShowActionModal(true);
     
-    console.log('액션 모달 열림:', showActionModal);
+    console.log('액션 모달 상태 변경 후:', { showActionModal: true, bookmark: bookmark.title });
   };
 
   const handleActionEdit = () => {
