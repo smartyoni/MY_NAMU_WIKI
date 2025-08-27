@@ -464,8 +464,8 @@
 /* 모바일 대응 */
 @media (max-width: 768px) {
   .document-header > div:first-child {
-    padding: 8px 12px;
-    min-height: 44px;
+    padding: 4px 12px;
+    min-height: 36px;
     flex-direction: row;
     align-items: center;
     gap: 8px;
@@ -480,8 +480,9 @@
   }
   
   .document-title {
-    font-size: 16px;
+    font-size: 15px;
     white-space: nowrap;
+    line-height: 1.2;
     overflow: hidden;
     text-overflow: ellipsis;
   }
