@@ -44,18 +44,30 @@ const BookmarkBar: React.FC<BookmarkBarProps> = ({ className = '' }) => {
 
   // Firebase에서 북마크가 로드되고 비어있을 때 기본 북마크 생성
   useEffect(() => {
+    // 첫 로드 후 북마크가 없을 때만 기본 북마크 생성
     if (bookmarks.length === 0) {
-      initializeDefaultBookmarks();
+      // 약간의 지연을 두어 Firebase 로딩 완료 후 확인
+      const timer = setTimeout(() => {
+        if (bookmarks.length === 0) {
+          console.log('기본 북마크 생성 중...');
+          initializeDefaultBookmarks();
+        }
+      }, 1000);
+      
+      return () => clearTimeout(timer);
     }
   }, [bookmarks]);
 
   const initializeDefaultBookmarks = async () => {
     try {
-      await Promise.all(
-        defaultBookmarks.map((bookmark) =>
-          createBookmark(bookmark.title, bookmark.url, bookmark.color)
-        )
-      );
+      console.log('기본 북마크 생성 시작:', defaultBookmarks.length, '개');
+      
+      for (const bookmark of defaultBookmarks) {
+        await createBookmark(bookmark.title, bookmark.url, bookmark.color);
+        console.log(`${bookmark.title} 북마크 생성 완료`);
+      }
+      
+      console.log('모든 기본 북마크 생성 완료');
     } catch (error) {
       console.error('기본 북마크 생성 실패:', error);
     }
@@ -111,15 +123,15 @@ const BookmarkBar: React.FC<BookmarkBarProps> = ({ className = '' }) => {
   const handleRightClick = (e: React.MouseEvent, bookmark: Bookmark) => {
     e.preventDefault();
     
-    if (bookmark.isDefault) {
-      // 기본 북마크는 편집만 가능
-      const shouldEdit = window.confirm(`"${bookmark.title}" 북마크를 편집하시겠습니까?`);
-      if (shouldEdit) {
-        handleEditBookmark(bookmark);
-      }
+    // 편집/삭제 선택 메뉴
+    const choice = window.confirm(`"${bookmark.title}" 북마크를 편집하시겠습니까?\n\n확인: 편집\n취소: 삭제`);
+    
+    if (choice) {
+      // 확인 선택 시 편집
+      handleEditBookmark(bookmark);
     } else {
-      // 사용자 북마크는 삭제 가능
-      const shouldDelete = window.confirm(`"${bookmark.title}" 북마크를 삭제하시겠습니까?`);
+      // 취소 선택 시 삭제 확인
+      const shouldDelete = window.confirm(`정말로 "${bookmark.title}" 북마크를 삭제하시겠습니까?`);
       if (shouldDelete) {
         handleDeleteBookmark(bookmark.id);
       }
