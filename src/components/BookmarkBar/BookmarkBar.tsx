@@ -55,7 +55,6 @@ const BookmarkBar: React.FC<BookmarkBarProps> = ({ className = '' }) => {
       // 약간의 지연을 두어 Firebase 로딩 완료 후 확인
       const timer = setTimeout(() => {
         if (bookmarks.length === 0) {
-          console.log('기본 북마크 생성 중...');
           initializeDefaultBookmarks();
         }
       }, 1000);
@@ -64,54 +63,161 @@ const BookmarkBar: React.FC<BookmarkBarProps> = ({ className = '' }) => {
     }
   }, [bookmarks]);
 
-  // 모달 상태 변화 추적
-  useEffect(() => {
-    console.log('모달 상태 변화:', { showActionModal, selectedBookmark: selectedBookmark?.title });
-  }, [showActionModal, selectedBookmark]);
 
-  // 강제 body 모달 테스트
+  // DOM 방식 북마크 액션 모달
   useEffect(() => {
     if (showActionModal && selectedBookmark) {
-      const testModal = document.createElement('div');
-      testModal.id = 'test-modal';
-      testModal.style.cssText = `
+      // 오버레이 생성
+      const overlay = document.createElement('div');
+      overlay.id = 'bookmark-modal-overlay';
+      overlay.style.cssText = `
         position: fixed;
-        top: 50px;
-        right: 50px;
-        width: 200px;
-        height: 100px;
-        background: red;
-        color: white;
-        z-index: 99999;
-        padding: 10px;
-        border: 3px solid yellow;
-      `;
-      testModal.innerHTML = `
-        <div>Body 테스트 모달</div>
-        <div>${selectedBookmark.title}</div>
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(0, 0, 0, 0.1);
+        z-index: 98999;
       `;
       
-      document.body.appendChild(testModal);
+      // 모달 생성
+      const modal = document.createElement('div');
+      modal.id = 'bookmark-action-modal';
+      modal.style.cssText = `
+        position: fixed;
+        left: ${modalPosition.x}px;
+        top: ${modalPosition.y}px;
+        background: white;
+        border: 1px solid #dee2e6;
+        border-radius: 8px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        z-index: 99999;
+        min-width: 160px;
+        font-family: inherit;
+      `;
+      
+      modal.innerHTML = `
+        <div style="
+          padding: 8px 12px;
+          background: #f8f9fa;
+          border-bottom: 1px solid #dee2e6;
+          border-radius: 8px 8px 0 0;
+        ">
+          <span style="
+            font-size: 12px;
+            font-weight: 500;
+            color: #495057;
+            display: block;
+            text-align: center;
+          ">"${selectedBookmark.title}"</span>
+        </div>
+        <div style="padding: 4px 0;">
+          <button id="edit-btn" style="
+            background: none;
+            border: none;
+            padding: 8px 16px;
+            text-align: left;
+            font-size: 13px;
+            color: #495057;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            width: 100%;
+            transition: background-color 0.15s ease;
+          ">✏️ 편집</button>
+          <button id="delete-btn" style="
+            background: none;
+            border: none;
+            padding: 8px 16px;
+            text-align: left;
+            font-size: 13px;
+            color: #495057;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            width: 100%;
+            transition: background-color 0.15s ease;
+          ">🗑️ 삭제</button>
+          <button id="cancel-btn" style="
+            background: none;
+            border: none;
+            padding: 8px 16px;
+            text-align: left;
+            font-size: 13px;
+            color: #495057;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            width: 100%;
+            transition: background-color 0.15s ease;
+          ">❌ 취소</button>
+        </div>
+      `;
+      
+      // 이벤트 리스너 추가
+      const editBtn = modal.querySelector('#edit-btn');
+      const deleteBtn = modal.querySelector('#delete-btn');
+      const cancelBtn = modal.querySelector('#cancel-btn');
+      
+      if (editBtn) {
+        editBtn.addEventListener('click', handleActionEdit);
+        editBtn.addEventListener('mouseenter', (e) => {
+          (e.target as HTMLElement).style.background = '#e3f2fd';
+          (e.target as HTMLElement).style.color = '#1976d2';
+        });
+        editBtn.addEventListener('mouseleave', (e) => {
+          (e.target as HTMLElement).style.background = 'none';
+          (e.target as HTMLElement).style.color = '#495057';
+        });
+      }
+      
+      if (deleteBtn) {
+        deleteBtn.addEventListener('click', handleActionDelete);
+        deleteBtn.addEventListener('mouseenter', (e) => {
+          (e.target as HTMLElement).style.background = '#ffebee';
+          (e.target as HTMLElement).style.color = '#d32f2f';
+        });
+        deleteBtn.addEventListener('mouseleave', (e) => {
+          (e.target as HTMLElement).style.background = 'none';
+          (e.target as HTMLElement).style.color = '#495057';
+        });
+      }
+      
+      if (cancelBtn) {
+        cancelBtn.addEventListener('click', handleActionCancel);
+        cancelBtn.addEventListener('mouseenter', (e) => {
+          (e.target as HTMLElement).style.background = '#f5f5f5';
+          (e.target as HTMLElement).style.color = '#666';
+        });
+        cancelBtn.addEventListener('mouseleave', (e) => {
+          (e.target as HTMLElement).style.background = 'none';
+          (e.target as HTMLElement).style.color = '#495057';
+        });
+      }
+      
+      // 오버레이 클릭으로 닫기
+      overlay.addEventListener('click', handleActionCancel);
+      
+      document.body.appendChild(overlay);
+      document.body.appendChild(modal);
       
       return () => {
-        const existingModal = document.getElementById('test-modal');
-        if (existingModal) {
-          document.body.removeChild(existingModal);
-        }
+        const existingOverlay = document.getElementById('bookmark-modal-overlay');
+        const existingModal = document.getElementById('bookmark-action-modal');
+        if (existingOverlay) document.body.removeChild(existingOverlay);
+        if (existingModal) document.body.removeChild(existingModal);
       };
     }
-  }, [showActionModal, selectedBookmark]);
+  }, [showActionModal, selectedBookmark, modalPosition]);
 
   const initializeDefaultBookmarks = async () => {
     try {
-      console.log('기본 북마크 생성 시작:', defaultBookmarks.length, '개');
-      
       for (const bookmark of defaultBookmarks) {
         await createBookmark(bookmark.title, bookmark.url, bookmark.color);
-        console.log(`${bookmark.title} 북마크 생성 완료`);
       }
-      
-      console.log('모든 기본 북마크 생성 완료');
     } catch (error) {
       console.error('기본 북마크 생성 실패:', error);
     }
@@ -165,23 +271,17 @@ const BookmarkBar: React.FC<BookmarkBarProps> = ({ className = '' }) => {
   };
 
   const handleRightClick = (e: React.MouseEvent, bookmark: Bookmark) => {
-    console.log('우클릭 이벤트 발생:', bookmark.title);
     e.preventDefault();
     e.stopPropagation();
     
     // 모달 위치 설정 (마우스 위치 기준)
-    const x = Math.min(e.clientX, window.innerWidth - 180); // 화면 밖으로 나가지 않도록
+    const x = Math.min(e.clientX, window.innerWidth - 180);
     const y = Math.min(e.clientY, window.innerHeight - 150);
     
-    console.log('모달 위치:', { x, y });
-    
-    // 상태를 한 번에 업데이트
     setModalPosition({ x, y });
     setSelectedBookmark(bookmark);
     
-    // 상태 업데이트를 다음 렌더 사이클로 지연
     setTimeout(() => {
-      console.log('모달 열기 시도');
       setShowActionModal(true);
     }, 0);
   };
@@ -360,60 +460,6 @@ const BookmarkModal: React.FC<BookmarkModalProps> = ({ bookmark, onSave, onCance
         </form>
       </div>
       
-      {/* 북마크 액션 모달 - 임시 인라인 테스트 */}
-      {console.log('BookmarkBar 렌더링 시 모달 상태:', { 
-        showActionModal, 
-        selectedBookmark: selectedBookmark?.title,
-        modalPosition 
-      })}
-      
-      {/* 임시 테스트 모달 - 항상 표시 */}
-      <div style={{
-        position: 'fixed',
-        left: 100,
-        top: 100,
-        background: 'white',
-        border: '3px solid red',
-        padding: '20px',
-        zIndex: 9999,
-        borderRadius: '8px',
-        boxShadow: '0 4px 12px rgba(0,0,0,0.3)'
-      }}>
-        <div>항상 보이는 테스트 모달</div>
-        <div>showActionModal: {String(showActionModal)}</div>
-        <div>selectedBookmark: {selectedBookmark?.title || 'none'}</div>
-        <button style={{ margin: '5px', padding: '5px 10px' }}>테스트 버튼</button>
-      </div>
-      
-      {/* 조건부 테스트 모달 */}
-      {console.log('조건부 렌더링 체크:', { showActionModal, hasBookmark: !!selectedBookmark })}
-      {showActionModal && selectedBookmark && (
-        <div style={{
-          position: 'fixed',
-          left: modalPosition.x,
-          top: modalPosition.y,
-          background: 'yellow',
-          border: '2px solid blue',
-          padding: '15px',
-          zIndex: 9998,
-          borderRadius: '8px',
-          boxShadow: '0 4px 12px rgba(0,0,0,0.3)'
-        }}>
-          <div>조건부 모달: {selectedBookmark.title}</div>
-          <button onClick={handleActionEdit} style={{ margin: '5px', padding: '5px 10px' }}>편집</button>
-          <button onClick={handleActionDelete} style={{ margin: '5px', padding: '5px 10px' }}>삭제</button>
-          <button onClick={handleActionCancel} style={{ margin: '5px', padding: '5px 10px' }}>취소</button>
-        </div>
-      )}
-      
-      <BookmarkActionModal
-        isOpen={showActionModal}
-        bookmark={selectedBookmark}
-        onEdit={handleActionEdit}
-        onDelete={handleActionDelete}
-        onCancel={handleActionCancel}
-        position={modalPosition}
-      />
     </div>
   );
 };
