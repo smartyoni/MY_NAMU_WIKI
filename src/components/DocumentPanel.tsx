@@ -654,6 +654,13 @@ const DocumentPanel: React.FC<DocumentPanelProps> = ({ className = '' }) => {
                 💾 저장
               </button>
               <button 
+                className="action-button delete-button"
+                onClick={handleDelete}
+                title="삭제"
+              >
+                🗑️ 삭제
+              </button>
+              <button 
                 className="action-button cancel-button"
                 onClick={handleCancel}
                 title="취소"
@@ -666,13 +673,6 @@ const DocumentPanel: React.FC<DocumentPanelProps> = ({ className = '' }) => {
                 title="수정 중인 내용 복사"
               >
                 📋 복사
-              </button>
-              <button 
-                className="action-button delete-button"
-                onClick={handleDelete}
-                title="삭제"
-              >
-                🗑️ 삭제
               </button>
               <div className="move-buttons">
                 <button 
