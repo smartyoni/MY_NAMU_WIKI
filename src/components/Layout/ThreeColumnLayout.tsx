@@ -1,5 +1,6 @@
 import React from 'react';
 import MobileTabLayout from './MobileTabLayout';
+import MobileSlideView from '../MobileSlideView/MobileSlideView';
 import './ThreeColumnLayout.css';
 
 interface ThreeColumnLayoutProps {
@@ -16,13 +17,7 @@ const ThreeColumnLayout: React.FC<ThreeColumnLayoutProps> = ({
   isMobile = false
 }) => {
   if (isMobile) {
-    return (
-      <MobileTabLayout 
-        categoryPanel={categoryPanel}
-        folderPanel={folderPanel}
-        documentPanel={documentPanel}
-      />
-    );
+    return <MobileSlideView />;
   }
 
   return (

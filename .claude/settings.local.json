@@ -19,9 +19,19 @@
       "Bash(git pull:*)",
       "Bash(npm install:*)",
       "Bash(git rm:*)",
-      "Bash(cat:*)"
+      "Bash(cat:*)",
+      "Bash(npx cap:*)",
+      "Read(/C:\\Users\\User\\Desktop\\my-namu-wiki-app/**)",
+      "Bash(.gradlew assembleDebug)",
+      "Bash(gradlew.bat assembleDebug:*)",
+      "Bash(./gradlew:*)",
+      "Bash(java:*)"
     ],
     "deny": [],
-    "ask": []
+    "ask": [],
+    "additionalDirectories": [
+      "C:\\Users\\User\\Desktop\\앱개발",
+      "C:\\c\\Users\\User"
+    ]
   }
 }

@@ -5,11 +5,13 @@ import ThreeColumnLayout from './components/Layout/ThreeColumnLayout';
 import CategoryPanel from './components/CategoryPanel';
 import FolderPanel from './components/FolderPanel';
 import DocumentPanel from './components/DocumentPanel';
-import { DocumentProvider } from './context/DocumentContextFirebase';
+import FloatingButton from './components/FloatingButton/FloatingButton';
+import { DocumentProvider, useDocuments } from './context/DocumentContextFirebase';
 import './App.css';
 
-function App() {
+function AppContent() {
   const [isMobile, setIsMobile] = useState(false);
+  const { createQuickMemo } = useDocuments();
 
   useEffect(() => {
     const checkMobile = () => {
@@ -21,19 +23,33 @@ function App() {
     return () => window.removeEventListener('resize', checkMobile);
   }, []);
 
+  const handleQuickMemo = async () => {
+    try {
+      await createQuickMemo('');
+    } catch (error) {
+      console.error('빠른메모 생성 실패:', error);
+    }
+  };
 
   return (
+    <div className="app">
+      <BookmarkBar />
+      <Header />
+      <ThreeColumnLayout
+        categoryPanel={<CategoryPanel />}
+        folderPanel={<FolderPanel />}
+        documentPanel={<DocumentPanel />}
+        isMobile={isMobile}
+      />
+      <FloatingButton onClick={handleQuickMemo} />
+    </div>
+  );
+}
+
+function App() {
+  return (
     <DocumentProvider userId="default-user">
-      <div className="app">
-        <BookmarkBar />
-        <Header />
-        <ThreeColumnLayout
-          categoryPanel={<CategoryPanel />}
-          folderPanel={<FolderPanel />}
-          documentPanel={<DocumentPanel />}
-          isMobile={isMobile}
-        />
-      </div>
+      <AppContent />
     </DocumentProvider>
   );
 }

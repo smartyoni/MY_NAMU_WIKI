@@ -1,0 +1,93 @@
+.breadcrumb {
+  display: flex;
+  align-items: center;
+  padding: 12px 16px;
+  background: #f8f9fa;
+  border-bottom: 1px solid #e9ecef;
+  overflow-x: auto;
+  white-space: nowrap;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.breadcrumb::-webkit-scrollbar {
+  display: none;
+}
+
+.breadcrumb-item {
+  background: none;
+  border: none;
+  color: #6c757d;
+  font-size: 14px;
+  padding: 6px 8px;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  flex-shrink: 0;
+  max-width: 120px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.breadcrumb-item:hover {
+  background: #e9ecef;
+  color: #495057;
+}
+
+.breadcrumb-home {
+  font-size: 16px;
+  padding: 6px;
+}
+
+.breadcrumb-category {
+  color: #007bff;
+  font-weight: 500;
+}
+
+.breadcrumb-folder {
+  color: #28a745;
+  font-weight: 500;
+}
+
+.breadcrumb-document {
+  color: #6c757d;
+  background: none;
+  border: none;
+  cursor: default;
+  font-weight: 500;
+  max-width: 150px;
+}
+
+.breadcrumb-separator {
+  color: #adb5bd;
+  margin: 0 4px;
+  font-size: 12px;
+  flex-shrink: 0;
+}
+
+/* 모바일 최적화 */
+@media (max-width: 768px) {
+  .breadcrumb {
+    padding: 10px 16px;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    background: rgba(248, 249, 250, 0.95);
+    backdrop-filter: blur(10px);
+  }
+  
+  .breadcrumb-item {
+    font-size: 13px;
+    padding: 5px 6px;
+    max-width: 100px;
+  }
+  
+  .breadcrumb-document {
+    max-width: 120px;
+  }
+  
+  .breadcrumb-home {
+    font-size: 15px;
+    padding: 5px;
+  }
+}
