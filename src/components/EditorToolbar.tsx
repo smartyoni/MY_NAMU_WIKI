@@ -71,6 +71,37 @@ const EditorToolbar: React.FC<EditorToolbarProps> = ({
     insertText(textarea, dateTimeString, '');
   };
 
+  const insertToggleTemplate = (textarea: HTMLTextAreaElement) => {
+    const start = textarea.selectionStart;
+    const end = textarea.selectionEnd;
+    const selectedText = textarea.value.substring(start, end);
+    
+    if (selectedText.trim()) {
+      // 선택된 텍스트가 있으면 토글로 감싸기
+      const beforeText = textarea.value.substring(0, start);
+      const afterText = textarea.value.substring(end);
+      
+      const template = `> [!NOTE]- 클릭하여 펼치기/접기
+> ${selectedText.split('\n').join('\n> ')}`;
+      
+      const newText = beforeText + template + afterText;
+      onTextChange(newText);
+      
+      setTimeout(() => {
+        const scrollTop = textarea.scrollTop;
+        textarea.focus({ preventScroll: true });
+        const newCursorPos = start + template.length;
+        textarea.setSelectionRange(newCursorPos, newCursorPos);
+        textarea.scrollTop = scrollTop;
+      }, 50);
+    } else {
+      // 선택된 텍스트가 없으면 기본 템플릿
+      const template = `> [!NOTE]- 클릭하여 펼치기/접기
+> 내용을 입력하세요`;
+      insertText(textarea, template, '');
+    }
+  };
+
   const insertDetailsTemplate = (textarea: HTMLTextAreaElement) => {
     const start = textarea.selectionStart;
     const end = textarea.selectionEnd;
@@ -167,6 +198,12 @@ ${contentText}
       action: (textarea) => insertAtLine(textarea, '### ')
     },
     {
+      label: '헤더4',
+      icon: 'H4',
+      title: '세부제목',
+      action: (textarea) => insertAtLine(textarea, '#### ')
+    },
+    {
       label: '구분선',
       icon: '─',
       title: '수평선',
@@ -177,6 +214,12 @@ ${contentText}
       icon: '📅',
       title: '현재 날짜와 시간 삽입',
       action: insertCurrentDateTime
+    },
+    {
+      label: '토글',
+      icon: '🔽',
+      title: '토글 블록 삽입',
+      action: insertToggleTemplate
     },
     {
       label: '접기',
