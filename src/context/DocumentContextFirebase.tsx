@@ -786,7 +786,7 @@ export const DocumentProvider: React.FC<DocumentProviderProps> = ({
   const getDocumentsByFolder = (folderId: string): WikiDocument[] => {
     return documents
       .filter(doc => doc.folderId === folderId)
-      .sort((a, b) => a.order - b.order);
+      .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()); // 최신순
   };
 
   const getSelectedDocument = (): WikiDocument | null => {
