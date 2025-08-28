@@ -799,7 +799,13 @@ const DocumentPanel: React.FC<DocumentPanelProps> = ({ className = '' }) => {
             autoFocus
           />
         ) : (
-          <div ref={contentViewerRef} className="content-viewer">
+          <div 
+            ref={contentViewerRef} 
+            className="content-viewer"
+            onDoubleClick={() => setIsEditMode(true)}
+            style={{ cursor: 'pointer' }}
+            title="더블클릭하여 편집"
+          >
             {renderMarkdown(content)}
           </div>
         )}
