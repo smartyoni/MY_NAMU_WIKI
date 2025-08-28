@@ -27,6 +27,7 @@ const CategoryPanel: React.FC<CategoryPanelProps> = ({ className = '' }) => {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editingName, setEditingName] = useState('');
   const [deleteModalState, setDeleteModalState] = useState<{isOpen: boolean, categoryId: string | null}>({isOpen: false, categoryId: null});
+  const [draggedCategory, setDraggedCategory] = useState<Category | null>(null);
 
   const handleCreateCategory = async () => {
     if (!newCategoryName.trim()) return;
@@ -100,6 +101,65 @@ const CategoryPanel: React.FC<CategoryPanelProps> = ({ className = '' }) => {
     }
   };
 
+  // 드래그앤드롭 핸들러들
+  const handleDragStart = (e: React.DragEvent, category: Category) => {
+    setDraggedCategory(category);
+    e.dataTransfer.effectAllowed = 'move';
+    e.dataTransfer.setData('text/html', category.id);
+    
+    // 드래그 시작할 때 반투명 효과
+    const target = e.currentTarget as HTMLElement;
+    target.style.opacity = '0.5';
+  };
+
+  const handleDragEnd = (e: React.DragEvent) => {
+    setDraggedCategory(null);
+    const target = e.currentTarget as HTMLElement;
+    target.style.opacity = '1';
+  };
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+  };
+
+  const handleDrop = async (e: React.DragEvent, targetCategory: Category) => {
+    e.preventDefault();
+    
+    if (!draggedCategory || draggedCategory.id === targetCategory.id) {
+      return;
+    }
+
+    try {
+      // 드래그된 카테고리를 타겟 위치로 재정렬
+      await reorderCategoriesToPosition(draggedCategory, targetCategory);
+    } catch (error) {
+      console.error('카테고리 재정렬 실패:', error);
+    }
+    
+    setDraggedCategory(null);
+  };
+
+  const reorderCategoriesToPosition = async (draggedCategory: Category, targetCategory: Category) => {
+    const sortedCategories = [...categories].sort((a, b) => a.order - b.order);
+    const draggedIndex = sortedCategories.findIndex(cat => cat.id === draggedCategory.id);
+    const targetIndex = sortedCategories.findIndex(cat => cat.id === targetCategory.id);
+    
+    if (draggedIndex === -1 || targetIndex === -1) return;
+    
+    // 새로운 순서 배열 생성
+    const newOrder = [...sortedCategories];
+    const [removed] = newOrder.splice(draggedIndex, 1);
+    newOrder.splice(targetIndex, 0, removed);
+    
+    // 모든 카테고리의 order 값 업데이트
+    for (let i = 0; i < newOrder.length; i++) {
+      if (newOrder[i].order !== i) {
+        await updateCategory(newOrder[i].id, { order: i });
+      }
+    }
+  };
+
   const getMenuItems = (category: Category) => [
     {
       label: '폴더 추가',
@@ -110,16 +170,6 @@ const CategoryPanel: React.FC<CategoryPanelProps> = ({ className = '' }) => {
       label: '이름 변경',
       icon: '✏️',
       onClick: () => handleEditStart(category)
-    },
-    {
-      label: '위로 이동',
-      icon: '↑',
-      onClick: () => reorderCategory(category.id, 'up')
-    },
-    {
-      label: '아래로 이동',
-      icon: '↓',
-      onClick: () => reorderCategory(category.id, 'down')
     },
     {
       label: '삭제',
@@ -150,8 +200,13 @@ const CategoryPanel: React.FC<CategoryPanelProps> = ({ className = '' }) => {
         {[...categories].sort((a, b) => a.order - b.order).map((category) => (
           <div
             key={category.id}
-            className={`category-item ${uiState.selectedCategoryId === category.id ? 'selected' : ''}`}
+            className={`category-item ${uiState.selectedCategoryId === category.id ? 'selected' : ''} ${draggedCategory?.id === category.id ? 'dragging' : ''}`}
             onClick={async () => await selectCategory(category.id)}
+            draggable={editingId !== category.id}
+            onDragStart={(e) => handleDragStart(e, category)}
+            onDragEnd={handleDragEnd}
+            onDragOver={handleDragOver}
+            onDrop={(e) => handleDrop(e, category)}
           >
             {editingId === category.id ? (
               <div className="edit-form">

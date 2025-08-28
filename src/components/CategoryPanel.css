@@ -62,11 +62,27 @@
   justify-content: space-between;
   align-items: center;
   position: relative;
+  user-select: none;
 }
 
-.category-item:hover {
+.category-item[draggable="true"] {
+  cursor: grab;
+}
+
+.category-item.dragging {
+  opacity: 0.5;
+  transform: scale(0.95);
+  cursor: grabbing;
+}
+
+.category-item:hover:not(.dragging) {
   border-color: #007bff;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  transform: translateY(-1px);
+}
+
+.category-item:active:not(.dragging) {
+  transform: translateY(0px);
 }
 
 .category-item.selected {
