@@ -66,12 +66,12 @@ const Header: React.FC<HeaderProps> = () => {
     setShowFavorites(false);
   };
 
-  const handleDocumentSelect = (document: any) => {
+  const handleDocumentSelect = async (document: any) => {
     const folder = folders.find(f => f.id === document.folderId);
     const category = folder ? categories.find(c => c.id === folder.categoryId) : null;
     
     if (category && folder) {
-      selectCategory(category.id);
+      await selectCategory(category.id);
       selectFolder(folder.id);
       selectDocument(document.id);
     }

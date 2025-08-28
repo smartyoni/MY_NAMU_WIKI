@@ -11,12 +11,12 @@ const MobileFavoritesBar: React.FC = () => {
     .sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()) // 생성 시간 순
     .slice(0, 5); // 최대 5개
 
-  const handleDocumentSelect = (document: any) => {
+  const handleDocumentSelect = async (document: any) => {
     const folder = folders.find(f => f.id === document.folderId);
     const category = folder ? categories.find(c => c.id === folder.categoryId) : null;
     
     if (category && folder) {
-      selectCategory(category.id);
+      await selectCategory(category.id);
       selectFolder(folder.id);
       selectDocument(document.id);
     }

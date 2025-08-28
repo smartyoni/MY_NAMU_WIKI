@@ -17,8 +17,8 @@ const Breadcrumb: React.FC = () => {
   const selectedFolder = folders.find(folder => folder.id === uiState.selectedFolderId);
   const selectedDocument = documents.find(doc => doc.id === uiState.selectedDocumentId);
 
-  const handleCategoryClick = () => {
-    selectCategory(selectedCategory?.id || null);
+  const handleCategoryClick = async () => {
+    await selectCategory(selectedCategory?.id || null);
     selectFolder(null);
     selectDocument(null);
   };
@@ -30,8 +30,8 @@ const Breadcrumb: React.FC = () => {
     }
   };
 
-  const handleHomeClick = () => {
-    selectCategory(null);
+  const handleHomeClick = async () => {
+    await selectCategory(null);
     selectFolder(null);
     selectDocument(null);
   };

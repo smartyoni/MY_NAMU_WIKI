@@ -37,7 +37,7 @@ const CategoryPanel: React.FC<CategoryPanelProps> = ({ className = '' }) => {
       setNewCategoryColor('#007bff');
       setIsCreating(false);
       // 새로 생성한 카테고리를 자동으로 선택
-      selectCategory(categoryId);
+      await selectCategory(categoryId);
     } catch (error) {
       console.error('카테고리 생성 실패:', error);
     }
@@ -151,7 +151,7 @@ const CategoryPanel: React.FC<CategoryPanelProps> = ({ className = '' }) => {
           <div
             key={category.id}
             className={`category-item ${uiState.selectedCategoryId === category.id ? 'selected' : ''}`}
-            onClick={() => selectCategory(category.id)}
+            onClick={async () => await selectCategory(category.id)}
           >
             {editingId === category.id ? (
               <div className="edit-form">

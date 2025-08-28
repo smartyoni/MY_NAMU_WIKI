@@ -67,13 +67,13 @@ const MobileSlideView: React.FC = () => {
     }
   };
 
-  const handleBackNavigation = () => {
+  const handleBackNavigation = async () => {
     if (currentView === 'document') {
       selectDocument(null);
     } else if (currentView === 'documents') {
       selectFolder(null);
     } else if (currentView === 'folders') {
-      selectCategory(null);
+      await selectCategory(null);
     }
   };
 
@@ -87,7 +87,7 @@ const MobileSlideView: React.FC = () => {
           <div 
             key={category.id} 
             className="mobile-slide-item category-item"
-            onClick={() => selectCategory(category.id)}
+            onClick={async () => await selectCategory(category.id)}
           >
             <div className="item-icon" style={{ backgroundColor: category.color }}>
               {category.name.charAt(0)}
@@ -112,7 +112,7 @@ const MobileSlideView: React.FC = () => {
     return (
       <div className="mobile-slide-content">
         <div className="mobile-slide-header">
-          <button className="back-button" onClick={() => selectCategory(null)}>
+          <button className="back-button" onClick={async () => await selectCategory(null)}>
             ‹ 뒤로
           </button>
           <h2>{selectedCategory?.name}</h2>

@@ -47,7 +47,7 @@ interface DocumentContextType {
   reorderDocument: (documentId: string, direction: 'up' | 'down') => Promise<void>;
   
   // 선택 관리
-  selectCategory: (categoryId: string | null) => void;
+  selectCategory: (categoryId: string | null) => Promise<void>;
   selectFolder: (folderId: string | null) => void;
   selectDocument: (documentId: string | null) => void;
   
@@ -733,13 +733,32 @@ export const DocumentProvider: React.FC<DocumentProviderProps> = ({
   };
 
   // 선택 관리 함수들
-  const selectCategory = (categoryId: string | null) => {
+  const selectCategory = async (categoryId: string | null) => {
     setUiState(prev => ({
       ...prev,
       selectedCategoryId: categoryId,
       selectedFolderId: null,
       selectedDocumentId: null
     }));
+
+    // 카테고리가 선택된 경우 게시판 문서가 있는지 확인하고 없으면 생성
+    if (categoryId) {
+      const boardDocumentId = `board-${categoryId}`;
+      const existingBoardDocument = documents.find(doc => doc.id === boardDocumentId);
+      
+      if (!existingBoardDocument) {
+        const category = categories.find(cat => cat.id === categoryId);
+        if (category) {
+          console.log('Board document not found for category:', categoryId, 'Creating new one...');
+          try {
+            await createBoardDocument(categoryId, category.name);
+            console.log('Board document created successfully for existing category:', categoryId);
+          } catch (error) {
+            console.error('Failed to create board document for existing category:', error);
+          }
+        }
+      }
+    }
   };
 
   const selectFolder = (folderId: string | null) => {
@@ -996,7 +1015,7 @@ export const DocumentProvider: React.FC<DocumentProviderProps> = ({
       const documentId = await createDocument(quickMemoFolder.id, autoTitle, defaultContent);
       
       // 자동으로 해당 문서 선택
-      selectCategory(inboxCategory.id);
+      await selectCategory(inboxCategory.id);
       selectFolder(quickMemoFolder.id);
       selectDocument(documentId);
       
@@ -1042,7 +1061,7 @@ export const DocumentProvider: React.FC<DocumentProviderProps> = ({
       }
 
       // 빠른메모 폴더로 바로 이동 (카테고리 생략하고 바로 문서 목록 표시)
-      selectCategory(inboxCategory.id);
+      await selectCategory(inboxCategory.id);
       selectFolder(quickMemoFolder.id);
       selectDocument(null); // 문서는 선택하지 않고 폴더 내 문서 목록만 표시
       
