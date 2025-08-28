@@ -67,6 +67,17 @@ const Header: React.FC<HeaderProps> = () => {
   };
 
   const handleDocumentSelect = async (document: any) => {
+    // 게시판 문서인 경우 (폴더에 속하지 않음)
+    if (document.isBoardDocument && document.categoryId) {
+      await selectCategory(document.categoryId);
+      selectFolder(null);
+      selectDocument(document.id);
+      clearSearch();
+      closeFavorites();
+      return;
+    }
+
+    // 일반 문서인 경우 (폴더에 속함)
     const folder = folders.find(f => f.id === document.folderId);
     const category = folder ? categories.find(c => c.id === folder.categoryId) : null;
     
