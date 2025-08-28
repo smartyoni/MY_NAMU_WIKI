@@ -32,10 +32,12 @@ const CategoryPanel: React.FC<CategoryPanelProps> = ({ className = '' }) => {
     if (!newCategoryName.trim()) return;
     
     try {
-      await createCategory(newCategoryName, newCategoryColor);
+      const categoryId = await createCategory(newCategoryName, newCategoryColor);
       setNewCategoryName('');
       setNewCategoryColor('#007bff');
       setIsCreating(false);
+      // 새로 생성한 카테고리를 자동으로 선택
+      selectCategory(categoryId);
     } catch (error) {
       console.error('카테고리 생성 실패:', error);
     }

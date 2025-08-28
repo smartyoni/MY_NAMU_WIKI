@@ -714,13 +714,15 @@ const DocumentPanel: React.FC<DocumentPanelProps> = ({ className = '' }) => {
               >
                 {selectedDocument.isFavorite === true ? '⭐' : '☆'}
               </button>
-              <button 
-                className="action-button delete-button"
-                onClick={handleDelete}
-                title="삭제"
-              >
-                🗑️ 삭제
-              </button>
+              {!selectedDocument.isBoardDocument && (
+                <button 
+                  className="action-button delete-button"
+                  onClick={handleDelete}
+                  title="삭제"
+                >
+                  🗑️ 삭제
+                </button>
+              )}
               {headers.length > 0 && (
                 <button 
                   className={`action-button toc-button ${showTOC ? 'active' : ''}`}

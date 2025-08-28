@@ -25,7 +25,8 @@
       "Bash(.gradlew assembleDebug)",
       "Bash(gradlew.bat assembleDebug:*)",
       "Bash(./gradlew:*)",
-      "Bash(java:*)"
+      "Bash(java:*)",
+      "Bash(git log:*)"
     ],
     "deny": [],
     "ask": [],

@@ -30,6 +30,8 @@ export interface WikiDocument {
   tags?: string[];
   isFavorite?: boolean;
   favoriteOrder?: number;
+  isBoardDocument?: boolean;
+  categoryId?: string;
 }
 
 export interface UIState {

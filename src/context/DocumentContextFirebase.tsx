@@ -41,6 +41,7 @@ interface DocumentContextType {
   
   // 문서 관리
   createDocument: (folderId: string, title: string, content: string) => Promise<string>;
+  createBoardDocument: (categoryId: string, categoryName: string) => Promise<string>;
   updateDocument: (id: string, updates: Partial<WikiDocument>) => Promise<void>;
   deleteDocument: (id: string) => Promise<void>;
   reorderDocument: (documentId: string, direction: 'up' | 'down') => Promise<void>;
@@ -253,7 +254,9 @@ export const DocumentProvider: React.FC<DocumentProviderProps> = ({
           userId: data.userId,
           tags: data.tags || [],
           isFavorite: data.isFavorite || false,
-          favoriteOrder: data.favoriteOrder
+          favoriteOrder: data.favoriteOrder,
+          isBoardDocument: data.isBoardDocument || false,
+          categoryId: data.categoryId
         });
       });
       setDocuments(docs);
@@ -388,6 +391,11 @@ export const DocumentProvider: React.FC<DocumentProviderProps> = ({
         createdAt: now,
         updatedAt: now
       });
+
+      // 게시판 문서 자동 생성
+      console.log('Creating board document for category:', id, name.trim());
+      await createBoardDocument(id, name.trim());
+      console.log('Board document created successfully for category:', id);
       
       return id;
     } catch (err) {
@@ -431,6 +439,16 @@ export const DocumentProvider: React.FC<DocumentProviderProps> = ({
       for (const folder of categoryFolders) {
         console.log('폴더 삭제 중:', folder.id);
         await deleteFolder(folder.id);
+      }
+
+      // 게시판 문서 삭제
+      const boardDocumentId = `board-${id}`;
+      console.log('게시판 문서 삭제 중:', boardDocumentId);
+      try {
+        const boardDocRef = doc(db, 'users', userId, 'documents', boardDocumentId);
+        await deleteDoc(boardDocRef);
+      } catch (boardErr) {
+        console.warn('게시판 문서 삭제 실패 (이미 없을 수 있음):', boardErr);
       }
       
       // 카테고리 자체 삭제
@@ -597,6 +615,57 @@ export const DocumentProvider: React.FC<DocumentProviderProps> = ({
     } catch (err) {
       console.error('Error creating document:', err);
       setError('문서 생성 중 오류가 발생했습니다.');
+      throw err;
+    }
+  };
+
+  const createBoardDocument = async (categoryId: string, categoryName: string): Promise<string> => {
+    try {
+      console.log('createBoardDocument called with:', categoryId, categoryName);
+      const id = `board-${categoryId}`;
+      const now = new Date();
+      
+      const defaultContent = `# ${categoryName} 게시판
+
+이곳은 **${categoryName}** 카테고리의 게시판입니다.
+
+## 📋 게시판 사용법
+- 이 문서는 카테고리의 기본 정보를 담고 있습니다
+- 폴더를 생성하여 관련 문서들을 체계적으로 관리하세요
+- 중요한 공지사항이나 가이드라인을 이곳에 작성할 수 있습니다
+
+## 📁 폴더 구조
+현재 생성된 폴더가 없습니다. 
+'+' 버튼을 클릭하여 새로운 폴더를 생성하세요.
+
+---
+*이 게시판 문서는 카테고리와 함께 자동 생성되었습니다.*`;
+      
+      const docRef = doc(db, 'users', userId, 'documents', id);
+      console.log('Setting document with data:', {
+        folderId: '',
+        categoryId,
+        title: '게시판',
+        isBoardDocument: true
+      });
+      await setDoc(docRef, {
+        folderId: '', // 폴더에 속하지 않음
+        categoryId,
+        title: '게시판',
+        content: defaultContent,
+        order: -1, // 항상 최상단에 표시
+        createdAt: now,
+        updatedAt: now,
+        lastModified: now,
+        userId,
+        tags: [],
+        isBoardDocument: true
+      });
+      
+      console.log('Board document saved successfully with id:', id);
+      return id;
+    } catch (err) {
+      console.error('Error creating board document:', err);
       throw err;
     }
   };
@@ -1107,6 +1176,7 @@ export const DocumentProvider: React.FC<DocumentProviderProps> = ({
     reorderFolder,
     toggleFolder,
     createDocument,
+    createBoardDocument,
     updateDocument,
     deleteDocument,
     reorderDocument,

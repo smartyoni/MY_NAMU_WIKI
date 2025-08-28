@@ -12,6 +12,7 @@ const FolderPanel: React.FC<FolderPanelProps> = ({ className = '' }) => {
   const { 
     folders,
     categories,
+    documents,
     uiState,
     selectFolder,
     selectDocument,
@@ -36,6 +37,16 @@ const FolderPanel: React.FC<FolderPanelProps> = ({ className = '' }) => {
     : [];
     
   const selectedCategory = categories.find(c => c.id === uiState.selectedCategoryId);
+  
+  // 게시판 문서 가져오기
+  const boardDocument = uiState.selectedCategoryId 
+    ? documents.find(doc => doc.isBoardDocument && doc.categoryId === uiState.selectedCategoryId)
+    : null;
+    
+  console.log('FolderPanel - selectedCategoryId:', uiState.selectedCategoryId);
+  console.log('FolderPanel - all documents:', documents.length);
+  console.log('FolderPanel - board documents:', documents.filter(doc => doc.isBoardDocument));
+  console.log('FolderPanel - boardDocument found:', boardDocument);
 
   const handleEditStart = (folder: Folder) => {
     setEditingId(folder.id);
@@ -141,6 +152,24 @@ const FolderPanel: React.FC<FolderPanelProps> = ({ className = '' }) => {
       </div>
 
       <div className="folder-list">
+        {/* 게시판 문서 표시 */}
+        {boardDocument && (
+          <div className="board-document-item">
+            <div 
+              className="board-document-header"
+              onClick={() => selectDocument(boardDocument.id)}
+            >
+              <div className="board-document-content">
+                <div className="board-document-title-line">
+                  <span className="board-document-icon">📋</span>
+                  <span className="board-document-name">{boardDocument.title}</span>
+                  <span className="board-document-badge">게시판</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
         {selectedFolders.length === 0 ? (
           <div className="empty-state">
             <p>폴더가 없습니다</p>
