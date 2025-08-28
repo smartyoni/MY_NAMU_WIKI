@@ -10,9 +10,10 @@ interface MenuItem {
 interface ThreeDotsMenuProps {
   menuItems: MenuItem[];
   className?: string;
+  onToggle?: (isOpen: boolean) => void;
 }
 
-const ThreeDotsMenu: React.FC<ThreeDotsMenuProps> = ({ menuItems, className = '' }) => {
+const ThreeDotsMenu: React.FC<ThreeDotsMenuProps> = ({ menuItems, className = '', onToggle }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [dropdownPosition, setDropdownPosition] = useState<'bottom' | 'top'>('bottom');
   const menuRef = useRef<HTMLDivElement>(null);
@@ -33,6 +34,10 @@ const ThreeDotsMenu: React.FC<ThreeDotsMenuProps> = ({ menuItems, className = ''
       document.removeEventListener('mousedown', handleClickOutside);
     };
   }, [isOpen]);
+
+  useEffect(() => {
+    onToggle?.(isOpen);
+  }, [isOpen, onToggle]);
 
   const calculatePosition = () => {
     if (menuRef.current) {

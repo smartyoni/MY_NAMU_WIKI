@@ -28,6 +28,7 @@ const CategoryPanel: React.FC<CategoryPanelProps> = ({ className = '' }) => {
   const [editingName, setEditingName] = useState('');
   const [deleteModalState, setDeleteModalState] = useState<{isOpen: boolean, categoryId: string | null}>({isOpen: false, categoryId: null});
   const [draggedCategory, setDraggedCategory] = useState<Category | null>(null);
+  const [openMenuId, setOpenMenuId] = useState<string | null>(null);
 
   const handleCreateCategory = async () => {
     if (!newCategoryName.trim()) return;
@@ -160,6 +161,10 @@ const CategoryPanel: React.FC<CategoryPanelProps> = ({ className = '' }) => {
     }
   };
 
+  const handleMenuToggle = (categoryId: string, isOpen: boolean) => {
+    setOpenMenuId(isOpen ? categoryId : null);
+  };
+
   const getMenuItems = (category: Category) => [
     {
       label: '폴더 추가',
@@ -200,7 +205,7 @@ const CategoryPanel: React.FC<CategoryPanelProps> = ({ className = '' }) => {
         {[...categories].sort((a, b) => a.order - b.order).map((category) => (
           <div
             key={category.id}
-            className={`category-item ${uiState.selectedCategoryId === category.id ? 'selected' : ''} ${draggedCategory?.id === category.id ? 'dragging' : ''}`}
+            className={`category-item ${uiState.selectedCategoryId === category.id ? 'selected' : ''} ${draggedCategory?.id === category.id ? 'dragging' : ''} ${openMenuId === category.id ? 'menu-open' : ''}`}
             onClick={async () => await selectCategory(category.id)}
             draggable={editingId !== category.id}
             onDragStart={(e) => handleDragStart(e, category)}
@@ -235,7 +240,10 @@ const CategoryPanel: React.FC<CategoryPanelProps> = ({ className = '' }) => {
                   ></div>
                   <span className="category-name">{category.name}</span>
                 </div>
-                <ThreeDotsMenu menuItems={getMenuItems(category)} />
+                <ThreeDotsMenu 
+                  menuItems={getMenuItems(category)} 
+                  onToggle={(isOpen) => handleMenuToggle(category.id, isOpen)}
+                />
               </>
             )}
           </div>

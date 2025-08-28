@@ -76,10 +76,15 @@
   cursor: grabbing;
 }
 
-.category-item:hover:not(.dragging) {
+.category-item:hover:not(.dragging):not(.menu-open) {
   border-color: #007bff;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
   transform: translateY(-1px);
+}
+
+.category-item.menu-open {
+  z-index: 10000;
+  position: relative;
 }
 
 .category-item:active:not(.dragging) {
