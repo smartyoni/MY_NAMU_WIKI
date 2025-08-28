@@ -5,15 +5,11 @@ import './MobileFavoritesBar.css';
 const MobileFavoritesBar: React.FC = () => {
   const { documents, folders, categories, selectDocument, selectFolder, selectCategory } = useDocuments();
 
-  // 즐겨찾기 문서들 가져오기
+  // 즐겨찾기 문서들 가져오기 (생성순으로 정렬, 5개만)
   const favoriteDocuments = documents
     .filter(doc => doc.isFavorite === true)
-    .sort((a, b) => {
-      const orderA = a.favoriteOrder || Number.MAX_SAFE_INTEGER;
-      const orderB = b.favoriteOrder || Number.MAX_SAFE_INTEGER;
-      return orderA - orderB;
-    })
-    .slice(0, 10); // 최대 10개
+    .sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()) // 생성 시간 순
+    .slice(0, 5); // 최대 5개
 
   const handleDocumentSelect = (document: any) => {
     const folder = folders.find(f => f.id === document.folderId);
