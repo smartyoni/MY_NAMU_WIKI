@@ -30,14 +30,15 @@
 }
 
 .three-dots-dropdown {
-  position: fixed;
-  z-index: 999999;
-  min-width: 140px;
-  background: white;
-  border: 1px solid #dee2e6;
-  border-radius: 6px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-  padding: 4px 0;
+  position: fixed !important;
+  z-index: 2147483647 !important;
+  min-width: 140px !important;
+  background: #ff0000 !important;
+  border: 1px solid #dee2e6 !important;
+  border-radius: 6px !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15) !important;
+  padding: 4px 0 !important;
+  pointer-events: auto !important;
 }
 
 .menu-item {

@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import './ThreeDotsMenu.css';
 
 interface MenuItem {
@@ -71,7 +72,8 @@ const ThreeDotsMenu: React.FC<ThreeDotsMenuProps> = ({ menuItems, className = ''
       
       setDropdownStyle({
         top: `${top}px`,
-        left: `${left}px`
+        left: `${left}px`,
+        display: 'block'
       });
     }
   };
@@ -102,7 +104,7 @@ const ThreeDotsMenu: React.FC<ThreeDotsMenuProps> = ({ menuItems, className = ''
         ⋮
       </button>
       
-      {isOpen && (
+      {isOpen && createPortal(
         <div 
           ref={dropdownRef}
           className={`three-dots-dropdown ${dropdownPosition === 'top' ? 'dropdown-top' : 'dropdown-bottom'}`}
@@ -118,7 +120,8 @@ const ThreeDotsMenu: React.FC<ThreeDotsMenuProps> = ({ menuItems, className = ''
               <span className="menu-label">{item.label}</span>
             </button>
           ))}
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   );
