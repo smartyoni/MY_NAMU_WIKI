@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, type ReactNode } from 'react';
 import { collection, doc, setDoc, deleteDoc, onSnapshot, query, orderBy, where, deleteField } from 'firebase/firestore';
 import { db } from '../firebase';
-import { Category, Folder, WikiDocument, UIState, Bookmark } from '../types';
+import { Category, Folder, WikiDocument, UIState, Bookmark, TextClip } from '../types';
 
 
 interface DocumentComment {
@@ -20,6 +20,7 @@ interface DocumentContextType {
   folders: Folder[];
   documents: WikiDocument[];
   bookmarks: Bookmark[];
+  textClips: TextClip[];
   comments: DocumentComment[];
   uiState: UIState;
   loading: boolean;
@@ -68,6 +69,12 @@ interface DocumentContextType {
   reorderBookmark: (id: string, direction: 'up' | 'down') => Promise<void>;
   reorderBookmarks: (reorderedBookmarks: Bookmark[]) => Promise<void>;
   
+  // 텍스트 클립 관리
+  createTextClip: (title: string, content: string, color?: string, type?: 'text' | 'template') => Promise<string>;
+  updateTextClip: (id: string, updates: Partial<TextClip>) => Promise<void>;
+  deleteTextClip: (id: string) => Promise<void>;
+  reorderTextClips: (reorderedTextClips: TextClip[]) => Promise<void>;
+  
   // 빠른메모
   createQuickMemo: (content: string) => Promise<string>;
   navigateToQuickMemoFolder: () => Promise<void>;
@@ -100,6 +107,7 @@ export const DocumentProvider: React.FC<DocumentProviderProps> = ({
   const [folders, setFolders] = useState<Folder[]>([]);
   const [documents, setDocuments] = useState<WikiDocument[]>([]);
   const [bookmarks, setBookmarks] = useState<Bookmark[]>([]);
+  const [textClips, setTextClips] = useState<TextClip[]>([]);
   const [comments, setComments] = useState<DocumentComment[]>([]);
   // localStorage에서 이전 상태 복원
   const getInitialUIState = (): UIState => {
@@ -332,6 +340,34 @@ export const DocumentProvider: React.FC<DocumentProviderProps> = ({
       setBookmarks(bks);
     }, (err) => {
       console.error('Error fetching bookmarks:', err);
+    });
+
+    return () => unsubscribe();
+  }, [userId]);
+
+  // Firebase에서 텍스트 클립 목록 실시간 구독
+  useEffect(() => {
+    const textClipsRef = collection(db, 'users', userId, 'textClips');
+    const q = query(textClipsRef, orderBy('order', 'asc'));
+    
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const clips: TextClip[] = [];
+      snapshot.forEach((doc) => {
+        const data = doc.data();
+        clips.push({
+          id: doc.id,
+          title: data.title,
+          content: data.content,
+          order: data.order,
+          color: data.color || '#4A90E2',
+          type: data.type || 'text',
+          createdAt: data.createdAt?.toDate() || new Date(),
+          updatedAt: data.updatedAt?.toDate() || new Date()
+        });
+      });
+      setTextClips(clips);
+    }, (err) => {
+      console.error('Error fetching text clips:', err);
     });
 
     return () => unsubscribe();
@@ -782,6 +818,68 @@ export const DocumentProvider: React.FC<DocumentProviderProps> = ({
     }
   };
 
+  // 텍스트 클립 관리 함수들
+  const createTextClip = async (title: string, content: string, color: string = '#4A90E2', type: 'text' | 'template' = 'text'): Promise<string> => {
+    try {
+      const id = `textclip-${Date.now()}`;
+      const order = textClips.length;
+      const now = new Date();
+      
+      await setDoc(doc(db, 'users', userId, 'textClips', id), {
+        title,
+        content,
+        color,
+        type,
+        order,
+        createdAt: now,
+        updatedAt: now
+      });
+      
+      return id;
+    } catch (error) {
+      console.error('텍스트 클립 생성 실패:', error);
+      throw error;
+    }
+  };
+
+  const updateTextClip = async (id: string, updates: Partial<TextClip>): Promise<void> => {
+    try {
+      const updateData = {
+        ...updates,
+        updatedAt: new Date()
+      };
+      
+      await setDoc(doc(db, 'users', userId, 'textClips', id), updateData, { merge: true });
+    } catch (error) {
+      console.error('텍스트 클립 수정 실패:', error);
+      throw error;
+    }
+  };
+
+  const deleteTextClip = async (id: string): Promise<void> => {
+    try {
+      await deleteDoc(doc(db, 'users', userId, 'textClips', id));
+    } catch (error) {
+      console.error('텍스트 클립 삭제 실패:', error);
+      throw error;
+    }
+  };
+
+  const reorderTextClips = async (reorderedTextClips: TextClip[]): Promise<void> => {
+    try {
+      // 모든 텍스트 클립의 order를 새로운 순서대로 업데이트
+      const updatePromises = reorderedTextClips.map((textClip, index) => 
+        setDoc(doc(db, 'users', userId, 'textClips', textClip.id), 
+          { order: index + 1 }, { merge: true })
+      );
+      
+      await Promise.all(updatePromises);
+    } catch (error) {
+      console.error('텍스트 클립 순서 일괄 변경 실패:', error);
+      throw error;
+    }
+  };
+
   // 빠른메모 함수
   const createQuickMemo = async (content: string): Promise<string> => {
     try {
@@ -994,6 +1092,7 @@ export const DocumentProvider: React.FC<DocumentProviderProps> = ({
     folders,
     documents,
     bookmarks,
+    textClips,
     comments,
     uiState,
     loading,
@@ -1027,6 +1126,10 @@ export const DocumentProvider: React.FC<DocumentProviderProps> = ({
     deleteBookmark,
     reorderBookmark,
     reorderBookmarks,
+    createTextClip,
+    updateTextClip,
+    deleteTextClip,
+    reorderTextClips,
     createQuickMemo,
     navigateToQuickMemoFolder,
     toggleFavorite,

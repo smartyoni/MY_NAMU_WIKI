@@ -49,6 +49,17 @@ export interface Bookmark {
   color?: string;
 }
 
+export interface TextClip {
+  id: string;
+  title: string;
+  content: string;
+  order: number;
+  color?: string;
+  type?: 'text' | 'template';
+  createdAt: Date;
+  updatedAt: Date;
+}
+
 export interface DocumentMoveRequest {
   documentId: string;
   direction: 'up' | 'down';

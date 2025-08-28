@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import Header from './components/Layout/Header';
 import BookmarkBar from './components/BookmarkBar/BookmarkBar';
+import TextClipBar from './components/TextClipBar/TextClipBar';
 import ThreeColumnLayout from './components/Layout/ThreeColumnLayout';
 import CategoryPanel from './components/CategoryPanel';
 import FolderPanel from './components/FolderPanel';
@@ -47,6 +48,7 @@ function AppContent() {
   return (
     <div className="app">
       <BookmarkBar />
+      <TextClipBar />
       <Header />
       <ThreeColumnLayout
         categoryPanel={<CategoryPanel />}
