@@ -46,6 +46,7 @@
 .category-list {
   flex: 1;
   overflow-y: auto;
+  overflow-x: visible;
   display: flex;
   flex-direction: column;
   gap: 8px;
@@ -90,6 +91,7 @@
   border-color: #007bff;
   color: white;
 }
+
 
 .category-content {
   display: flex;
