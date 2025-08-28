@@ -66,6 +66,7 @@ interface DocumentContextType {
   updateBookmark: (id: string, updates: Partial<Bookmark>) => Promise<void>;
   deleteBookmark: (id: string) => Promise<void>;
   reorderBookmark: (id: string, direction: 'up' | 'down') => Promise<void>;
+  reorderBookmarks: (reorderedBookmarks: Bookmark[]) => Promise<void>;
   
   // 빠른메모
   createQuickMemo: (content: string) => Promise<string>;
@@ -766,6 +767,21 @@ export const DocumentProvider: React.FC<DocumentProviderProps> = ({
     }
   };
 
+  const reorderBookmarks = async (reorderedBookmarks: Bookmark[]): Promise<void> => {
+    try {
+      // 모든 북마크의 order를 새로운 순서대로 업데이트
+      const updatePromises = reorderedBookmarks.map((bookmark, index) => 
+        setDoc(doc(db, 'users', userId, 'bookmarks', bookmark.id), 
+          { order: index + 1 }, { merge: true })
+      );
+      
+      await Promise.all(updatePromises);
+    } catch (error) {
+      console.error('북마크 순서 일괄 변경 실패:', error);
+      throw error;
+    }
+  };
+
   // 빠른메모 함수
   const createQuickMemo = async (content: string): Promise<string> => {
     try {
@@ -1010,6 +1026,7 @@ export const DocumentProvider: React.FC<DocumentProviderProps> = ({
     updateBookmark,
     deleteBookmark,
     reorderBookmark,
+    reorderBookmarks,
     createQuickMemo,
     navigateToQuickMemoFolder,
     toggleFavorite,

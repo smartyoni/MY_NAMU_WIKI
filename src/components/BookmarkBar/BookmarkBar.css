@@ -184,22 +184,28 @@
 }
 
 .bookmark-item.dragging {
-  opacity: 0.5;
-  transform: rotate(5deg);
+  opacity: 0.6;
+  transform: rotate(5deg) scale(1.1);
   cursor: grabbing;
+  z-index: 1000;
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.3);
 }
 
 .bookmark-item.drag-over {
-  border-left: 3px solid #007bff;
+  border-left: 4px solid #007bff;
   animation: pulse 0.5s infinite;
+  transform: translateX(8px);
+  background-color: rgba(0, 123, 255, 0.1) !important;
 }
 
 @keyframes pulse {
   0%, 100% {
     border-left-color: #007bff;
+    border-left-width: 4px;
   }
   50% {
     border-left-color: #0056b3;
+    border-left-width: 6px;
   }
 }
 

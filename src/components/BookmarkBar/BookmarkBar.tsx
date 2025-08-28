@@ -14,7 +14,8 @@ const BookmarkBar: React.FC<BookmarkBarProps> = ({ className = '' }) => {
     createBookmark, 
     updateBookmark, 
     deleteBookmark, 
-    reorderBookmark 
+    reorderBookmark,
+    reorderBookmarks
   } = useDocuments();
   
   const [showAddModal, setShowAddModal] = useState(false);
@@ -549,7 +550,7 @@ const BookmarkBar: React.FC<BookmarkBarProps> = ({ className = '' }) => {
     setDragOverIndex(null);
   };
 
-  const handleDrop = (e: React.DragEvent, targetIndex: number) => {
+  const handleDrop = async (e: React.DragEvent, targetIndex: number) => {
     e.preventDefault();
     
     if (!draggedBookmark) return;
@@ -571,8 +572,14 @@ const BookmarkBar: React.FC<BookmarkBarProps> = ({ className = '' }) => {
       order: index + 1
     }));
     
-    // TODO: Firebase 드래그앤드롭 순서 변경 구현 필요
-    // 현재는 단순히 상태만 업데이트 (새로고침하면 원래 순서로 돌아감)
+    try {
+      // Firebase에 새로운 순서 업데이트
+      await reorderBookmarks(reorderedBookmarks);
+      console.log('북마크 순서 변경 성공');
+    } catch (error) {
+      console.error('북마크 순서 변경 실패:', error);
+    }
+    
     setDraggedBookmark(null);
     setDragOverIndex(null);
   };
