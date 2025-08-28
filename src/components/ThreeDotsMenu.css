@@ -42,26 +42,28 @@
 }
 
 .menu-item {
-  width: 100%;
-  background: none;
-  border: none;
-  padding: 8px 12px;
-  text-align: left;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 14px;
-  color: #495057;
-  transition: background-color 0.15s ease;
+  width: 100% !important;
+  background: none !important;
+  border: none !important;
+  padding: 8px 12px !important;
+  text-align: left !important;
+  cursor: pointer !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+  font-size: 14px !important;
+  color: #495057 !important;
+  transition: background-color 0.15s ease !important;
+  pointer-events: auto !important;
+  z-index: inherit !important;
 }
 
 .menu-item:hover {
-  background-color: #f8f9fa;
+  background-color: #f8f9fa !important;
 }
 
 .menu-item:active {
-  background-color: #e9ecef;
+  background-color: #e9ecef !important;
 }
 
 .menu-icon {

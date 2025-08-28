@@ -23,7 +23,11 @@ const ThreeDotsMenu: React.FC<ThreeDotsMenuProps> = ({ menuItems, className = ''
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
+      const target = event.target as Node;
+      
+      // 메뉴 버튼이나 드롭다운 내부가 아닌 곳을 클릭했을 때만 닫기
+      if (menuRef.current && !menuRef.current.contains(target) &&
+          dropdownRef.current && !dropdownRef.current.contains(target)) {
         setIsOpen(false);
       }
     };
@@ -89,9 +93,18 @@ const ThreeDotsMenu: React.FC<ThreeDotsMenuProps> = ({ menuItems, className = ''
     setIsOpen(!isOpen);
   };
 
-  const handleItemClick = (item: MenuItem) => {
-    item.onClick();
-    setIsOpen(false);
+  const handleItemClick = (e: React.MouseEvent, item: MenuItem) => {
+    console.log('Menu item clicked:', item.label);
+    e.preventDefault();
+    e.stopPropagation();
+    
+    try {
+      item.onClick();
+      setIsOpen(false);
+      console.log('Menu item action completed');
+    } catch (error) {
+      console.error('Menu item click error:', error);
+    }
   };
 
   return (
@@ -114,7 +127,7 @@ const ThreeDotsMenu: React.FC<ThreeDotsMenuProps> = ({ menuItems, className = ''
             <button
               key={index}
               className="menu-item"
-              onClick={() => handleItemClick(item)}
+              onClick={(e) => handleItemClick(e, item)}
             >
               {item.icon && <span className="menu-icon">{item.icon}</span>}
               <span className="menu-label">{item.label}</span>
