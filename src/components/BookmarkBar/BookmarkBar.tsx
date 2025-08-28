@@ -50,7 +50,7 @@ const BookmarkBar: React.FC<BookmarkBarProps> = ({ className = '' }) => {
 
   // 랜덤 색상 선택
   const getRandomColor = () => {
-    return randomColors[Math.floor(Math.random() * randomColors.length)];
+    return rainbowColors[Math.floor(Math.random() * rainbowColors.length)].color;
   };
 
   // 기본 북마크 데이터
