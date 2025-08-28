@@ -94,14 +94,12 @@ const ThreeDotsMenu: React.FC<ThreeDotsMenuProps> = ({ menuItems, className = ''
   };
 
   const handleItemClick = (e: React.MouseEvent, item: MenuItem) => {
-    console.log('Menu item clicked:', item.label);
     e.preventDefault();
     e.stopPropagation();
     
     try {
       item.onClick();
       setIsOpen(false);
-      console.log('Menu item action completed');
     } catch (error) {
       console.error('Menu item click error:', error);
     }
