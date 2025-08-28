@@ -1,0 +1,73 @@
+/* 모바일 즐겨찾기 바 - 데스크톱에서는 숨김 */
+.mobile-favorites-bar {
+  display: none;
+}
+
+/* 모바일에서만 표시 */
+@media (max-width: 768px) {
+  .mobile-favorites-bar {
+    display: block;
+    position: fixed;
+    bottom: 160px; /* 플로팅 버튼들 위에 위치 */
+    left: 0;
+    right: 0;
+    z-index: 1000;
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(10px);
+    border-top: 1px solid rgba(0, 0, 0, 0.1);
+    padding: 8px 12px;
+    box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.1);
+  }
+  
+  .mobile-favorites-scroll {
+    display: flex;
+    overflow-x: auto;
+    overflow-y: hidden;
+    gap: 8px;
+    padding: 4px 0;
+    scrollbar-width: none; /* Firefox */
+    -ms-overflow-style: none; /* IE and Edge */
+  }
+  
+  .mobile-favorites-scroll::-webkit-scrollbar {
+    display: none; /* Chrome, Safari, Opera */
+  }
+  
+  .mobile-favorite-item {
+    flex-shrink: 0;
+    background: #ffc107;
+    color: white;
+    border: 1px solid #000;
+    border-radius: 6px;
+    padding: 8px 12px;
+    font-size: 12px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    min-width: 60px;
+    max-width: 80px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  }
+  
+  .mobile-favorite-item:hover,
+  .mobile-favorite-item:active {
+    background: #e0a800;
+    transform: translateY(-1px);
+    box-shadow: 0 3px 6px rgba(0, 0, 0, 0.15);
+  }
+}
+
+/* 플로팅 버튼들 위치 조정 - 즐겨찾기 바 공간 확보 */
+@media (max-width: 768px) {
+  /* 이미 App.css나 다른 곳에서 정의되어 있다면 우선순위를 위해 !important 사용 */
+  .floating-button {
+    bottom: 80px !important;
+  }
+  
+  .quick-memo-folder-button {
+    bottom: 140px !important;
+  }
+}

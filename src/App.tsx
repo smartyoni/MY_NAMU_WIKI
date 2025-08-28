@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import Header from './components/Layout/Header';
 import BookmarkBar from './components/BookmarkBar/BookmarkBar';
 import TextClipBar from './components/TextClipBar/TextClipBar';
+import MobileFavoritesBar from './components/MobileFavoritesBar/MobileFavoritesBar';
 import ThreeColumnLayout from './components/Layout/ThreeColumnLayout';
 import CategoryPanel from './components/CategoryPanel';
 import FolderPanel from './components/FolderPanel';
@@ -56,6 +57,9 @@ function AppContent() {
         documentPanel={<DocumentPanel />}
         isMobile={isMobile}
       />
+      {/* 모바일 즐겨찾기 바 */}
+      <MobileFavoritesBar />
+      
       {/* 번개와 폴더 버튼은 항상 표시 */}
       <FloatingButton onClick={handleQuickMemo} />
       <QuickMemoFolderButton onClick={handleQuickMemoFolder} />
