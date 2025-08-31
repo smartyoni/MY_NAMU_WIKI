@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useDocuments } from '../../context/DocumentContextFirebase';
 import Breadcrumb from '../Breadcrumb/Breadcrumb';
-import DocumentPanel from '../DocumentPanel';
+import OutlinerPanel from '../OutlinerPanel';
 import './MobileSlideView.css';
 
 const MobileSlideView: React.FC = () => {
@@ -183,7 +183,7 @@ const MobileSlideView: React.FC = () => {
         </button>
       </div>
       <div className="document-container">
-        <DocumentPanel />
+        <OutlinerPanel />
       </div>
     </div>
   );
