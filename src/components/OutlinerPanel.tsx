@@ -25,10 +25,19 @@ const OutlinerPanel: React.FC<OutlinerPanelProps> = ({ className = '' }) => {
 
   const [nodes, setNodes] = useState<OutlinerNode[]>([]);
   const [title, setTitle] = useState('');
-  const [isEditMode, setIsEditMode] = useState(true); // 편집/보기 모드
+  const [isEditMode, setIsEditMode] = useState(false); // 편집/보기 모드 (기본값: 보기 모드)
   const containerRef = useRef<HTMLDivElement>(null);
 
   const selectedDocument = getSelectedDocument();
+
+  // 모든 하위 노드를 접는 함수
+  const collapseAllChildren = (nodeList: OutlinerNode[]): OutlinerNode[] => {
+    return nodeList.map(node => ({
+      ...node,
+      isCollapsed: node.children.length > 0, // 자식이 있으면 접기
+      children: collapseAllChildren(node.children) // 재귀적으로 모든 하위 노드 처리
+    }));
+  };
 
   // 문서 선택 시 아웃라이너 노드로 변환
   useEffect(() => {
@@ -42,7 +51,7 @@ const OutlinerPanel: React.FC<OutlinerPanelProps> = ({ className = '' }) => {
     }
   }, [selectedDocument]);
 
-  // 마크다운을 아웃라이너 노드로 변환
+  // 마크다운을 아웃라이너 노드로 변환 (모든 노드 접힌 상태로)
   const convertMarkdownToOutliner = (markdown: string): OutlinerNode[] => {
     if (!markdown.trim()) {
       return [createNewNode('', 0)];
@@ -81,7 +90,8 @@ const OutlinerPanel: React.FC<OutlinerPanelProps> = ({ className = '' }) => {
       nodeStack.push(node);
     });
 
-    return rootNodes.length > 0 ? rootNodes : [createNewNode('', 0)];
+    // 모든 노드를 접힌 상태로 설정
+    return collapseAllChildren(rootNodes.length > 0 ? rootNodes : [createNewNode('', 0)]);
   };
 
   // 새 노드 생성
@@ -207,6 +217,8 @@ const OutlinerPanel: React.FC<OutlinerPanelProps> = ({ className = '' }) => {
 
   // 편집 모드로 전환
   const handleEdit = () => {
+    // 편집 모드 진입 시 모든 하위 노드 접기
+    setNodes(prevNodes => collapseAllChildren(prevNodes));
     setIsEditMode(true);
   };
 
