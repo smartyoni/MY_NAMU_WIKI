@@ -182,18 +182,18 @@
   font-size: 0.85rem;
 }
 
-/* 마크다운 스타일링 */
-.markdown-content {
+/* 텍스트 스타일링 */
+.text-content {
   display: block;
   width: 100%;
 }
 
-.markdown-line {
+.text-line {
   margin: 0.125rem 0;
   line-height: 1.5;
 }
 
-.markdown-link {
+.auto-link {
   color: #007bff;
   text-decoration: none;
   border-radius: 3px;
@@ -201,7 +201,7 @@
   transition: all 0.15s ease;
 }
 
-.markdown-link:hover {
+.auto-link:hover {
   background: rgba(0, 123, 255, 0.1);
   text-decoration: underline;
 }
@@ -547,7 +547,7 @@
   background: rgba(255, 255, 255, 0.8);
 }
 
-.note-markdown {
+.note-text {
   font-size: 0.9rem;
   line-height: 1.5;
   color: #495057;

@@ -234,18 +234,15 @@ const OutlinerNodeComponent: React.FC<OutlinerNodeProps> = ({
     setDragOver(null);
   };
 
-  // 개선된 마크다운 렌더링 (줄바꿈 및 URL 지원)
-  const renderMarkdown = (text: string): React.ReactNode => {
+  // 단순한 텍스트 렌더링 (하이퍼링크만 변환)
+  const renderText = (text: string): React.ReactNode => {
     if (!text) return null;
-
-    const parts: React.ReactNode[] = [];
-    let currentIndex = 0;
 
     // 줄바꿈으로 분할하여 처리
     const lines = text.split('\n');
     
     return (
-      <div className="markdown-content">
+      <div className="text-content">
         {lines.map((line, lineIndex) => {
           if (line.trim() === '') {
             return <br key={lineIndex} />;
@@ -261,7 +258,7 @@ const OutlinerNodeComponent: React.FC<OutlinerNodeProps> = ({
             // URL 이전 텍스트
             if (match.index > lastIndex) {
               const beforeText = line.slice(lastIndex, match.index);
-              parts.push(processTextFormatting(beforeText, parts.length));
+              parts.push(<span key={parts.length}>{beforeText}</span>);
             }
 
             // URL 링크
@@ -271,7 +268,7 @@ const OutlinerNodeComponent: React.FC<OutlinerNodeProps> = ({
                 href={match[0]}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="markdown-link"
+                className="auto-link"
               >
                 {match[0]}
               </a>
@@ -283,33 +280,17 @@ const OutlinerNodeComponent: React.FC<OutlinerNodeProps> = ({
           // 남은 텍스트
           if (lastIndex < line.length) {
             const remainingText = line.slice(lastIndex);
-            parts.push(processTextFormatting(remainingText, parts.length));
+            parts.push(<span key={parts.length}>{remainingText}</span>);
           }
 
           return (
-            <div key={lineIndex} className="markdown-line">
-              {parts.length > 0 ? parts : processTextFormatting(line, 0)}
+            <div key={lineIndex} className="text-line">
+              {parts.length > 0 ? parts : line}
             </div>
           );
         })}
       </div>
     );
-  };
-
-  // 텍스트 포맷팅 처리
-  const processTextFormatting = (text: string, startKey: number): React.ReactNode => {
-    if (!text) return null;
-
-    // 볼드 처리
-    let processed = text.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
-    // 이탤릭 처리  
-    processed = processed.replace(/\*([^*]+)\*/g, '<em>$1</em>');
-    // 인라인 코드 처리
-    processed = processed.replace(/`([^`]+)`/g, '<code>$1</code>');
-    // 취소선 처리
-    processed = processed.replace(/~~([^~]+)~~/g, '<del>$1</del>');
-
-    return <span key={startKey} dangerouslySetInnerHTML={{ __html: processed }} />;
   };
 
   const hasChildren = node.children.length > 0;
@@ -377,7 +358,7 @@ const OutlinerNodeComponent: React.FC<OutlinerNodeProps> = ({
             />
           ) : (
             <div className="node-display">
-              {node.content ? renderMarkdown(node.content) : (
+              {node.content ? renderText(node.content) : (
                 isEditMode ? (
                   <span className="placeholder">클릭하여 편집</span>
                 ) : (
@@ -443,7 +424,7 @@ const OutlinerNodeComponent: React.FC<OutlinerNodeProps> = ({
       </div>
 
       {/* 노트 섹션 */}
-      {((node.isNoteVisible && node.note) || (node.note && isEditingNote)) && (
+      {(node.isNoteVisible || isEditingNote) && (
         <div className="node-note-section">
           <div className="note-header">
             <span className="note-label">📝 노트</span>
@@ -488,8 +469,8 @@ const OutlinerNodeComponent: React.FC<OutlinerNodeProps> = ({
                 title={isEditMode ? "더블클릭하여 편집" : ""}
               >
                 {node.note ? (
-                  <div className="note-markdown">
-                    {renderMarkdown(node.note)}
+                  <div className="note-text">
+                    {renderText(node.note)}
                   </div>
                 ) : (
                   <span className="note-placeholder">

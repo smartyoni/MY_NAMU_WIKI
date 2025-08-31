@@ -43,7 +43,7 @@ const OutlinerPanel: React.FC<OutlinerPanelProps> = ({ className = '' }) => {
   useEffect(() => {
     if (selectedDocument) {
       setTitle(selectedDocument.title);
-      const convertedNodes = convertMarkdownToOutliner(selectedDocument.content);
+      const convertedNodes = convertTextToOutliner(selectedDocument.content);
       setNodes(convertedNodes);
     } else {
       setTitle('');
@@ -51,44 +51,63 @@ const OutlinerPanel: React.FC<OutlinerPanelProps> = ({ className = '' }) => {
     }
   }, [selectedDocument]);
 
-  // 마크다운을 아웃라이너 노드로 변환 (모든 노드 접힌 상태로)
-  const convertMarkdownToOutliner = (markdown: string): OutlinerNode[] => {
-    if (!markdown.trim()) {
+  // 텍스트를 아웃라이너 노드로 변환 (불릿 포인트 기반으로만)
+  const convertTextToOutliner = (text: string): OutlinerNode[] => {
+    if (!text.trim()) {
       return [createNewNode('', 0)];
     }
 
-    const lines = markdown.split('\n');
+    const lines = text.split('\n');
     const nodeStack: OutlinerNode[] = [];
     const rootNodes: OutlinerNode[] = [];
+    let currentContent: string[] = [];
 
     lines.forEach((line, index) => {
-      if (line.trim() === '') return;
+      // 불릿 포인트로 시작하는 줄인지 확인
+      const bulletMatch = line.match(/^(\s*)[•-]\s*(.*)$/);
+      
+      if (bulletMatch) {
+        // 이전 노드의 멀티라인 내용 처리
+        if (currentContent.length > 0 && nodeStack.length > 0) {
+          const lastNode = nodeStack[nodeStack.length - 1];
+          lastNode.content += '\n' + currentContent.join('\n');
+          currentContent = [];
+        }
 
-      // 들여쓰기 레벨 계산 (2칸씩)
-      const indentMatch = line.match(/^(\s*)/);
-      const indent = indentMatch ? indentMatch[1].length : 0;
-      const level = Math.floor(indent / 2);
-      const content = line.trim().replace(/^[•-]\s*/, ''); // 불릿 포인트 제거
+        // 새 노드 생성
+        const indent = bulletMatch[1].length;
+        const level = Math.floor(indent / 2);
+        const content = bulletMatch[2].trim();
+        
+        const node = createNewNode(content, level, `node-${index}`);
 
-      const node = createNewNode(content, level, `node-${index}`);
+        // 적절한 부모 찾기
+        while (nodeStack.length > 0 && nodeStack[nodeStack.length - 1].level >= level) {
+          nodeStack.pop();
+        }
 
-      // 적절한 부모 찾기
-      while (nodeStack.length > 0 && nodeStack[nodeStack.length - 1].level >= level) {
-        nodeStack.pop();
+        if (nodeStack.length === 0) {
+          // 루트 노드
+          rootNodes.push(node);
+        } else {
+          // 자식 노드
+          const parent = nodeStack[nodeStack.length - 1];
+          node.parentId = parent.id;
+          parent.children.push(node);
+        }
+
+        nodeStack.push(node);
+      } else if (line.trim() && nodeStack.length > 0) {
+        // 불릿 포인트가 없는 줄은 이전 노드의 추가 내용으로 처리
+        currentContent.push(line.trim());
       }
-
-      if (nodeStack.length === 0) {
-        // 루트 노드
-        rootNodes.push(node);
-      } else {
-        // 자식 노드
-        const parent = nodeStack[nodeStack.length - 1];
-        node.parentId = parent.id;
-        parent.children.push(node);
-      }
-
-      nodeStack.push(node);
     });
+
+    // 마지막 노드의 멀티라인 내용 처리
+    if (currentContent.length > 0 && nodeStack.length > 0) {
+      const lastNode = nodeStack[nodeStack.length - 1];
+      lastNode.content += '\n' + currentContent.join('\n');
+    }
 
     // 모든 노드를 접힌 상태로 설정
     return collapseAllChildren(rootNodes.length > 0 ? rootNodes : [createNewNode('', 0)]);
@@ -105,8 +124,8 @@ const OutlinerPanel: React.FC<OutlinerPanelProps> = ({ className = '' }) => {
     updatedAt: new Date()
   });
 
-  // 아웃라이너를 마크다운으로 변환
-  const convertOutlinerToMarkdown = (nodes: OutlinerNode[]): string => {
+  // 아웃라이너를 텍스트로 변환
+  const convertOutlinerToText = (nodes: OutlinerNode[]): string => {
     const convertNodes = (nodeList: OutlinerNode[], depth: number = 0): string[] => {
       const lines: string[] = [];
       
@@ -256,10 +275,10 @@ const OutlinerPanel: React.FC<OutlinerPanelProps> = ({ className = '' }) => {
     if (!selectedDocument) return;
 
     try {
-      const markdownContent = convertOutlinerToMarkdown(nodes);
+      const textContent = convertOutlinerToText(nodes);
       await updateDocument(selectedDocument.id, {
         title: title.trim(),
-        content: markdownContent
+        content: textContent
       });
       setIsEditMode(false); // 보기 모드로 전환
     } catch (error) {
