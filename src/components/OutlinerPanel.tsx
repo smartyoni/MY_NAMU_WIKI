@@ -2,6 +2,8 @@ import React, { useState, useEffect, useRef } from 'react';
 import { OutlinerNode, OutlinerState } from '../types/outliner';
 import { useDocuments } from '../context/DocumentContextFirebase';
 import OutlinerNodeComponent from './OutlinerNode';
+import { useNodeClipboard } from '../hooks/useNodeClipboard';
+import { useUndoRedo } from '../hooks/useUndoRedo';
 import './OutlinerPanel.css';
 
 interface OutlinerPanelProps {
@@ -25,8 +27,12 @@ const OutlinerPanel: React.FC<OutlinerPanelProps> = ({ className = '' }) => {
 
   const [nodes, setNodes] = useState<OutlinerNode[]>([]);
   const [title, setTitle] = useState('');
-  const [isEditMode, setIsEditMode] = useState(false); // 편집/보기 모드 (기본값: 보기 모드)
+  // 편집 모드 제거 - 항상 인라인 편집 가능
   const containerRef = useRef<HTMLDivElement>(null);
+
+  // 클립보드와 실행취소 기능
+  const { copyNode, cutNode, pasteNode, canPaste, clearClipboard } = useNodeClipboard();
+  const { currentValue: undoableNodes, pushState: pushNodesState, undo, redo, canUndo, canRedo, resetHistory } = useUndoRedo<OutlinerNode[]>([]);
 
   const selectedDocument = getSelectedDocument();
 
@@ -169,7 +175,7 @@ const OutlinerPanel: React.FC<OutlinerPanelProps> = ({ className = '' }) => {
     return convertNodes(nodes).join('\n');
   };
 
-  // 노드 업데이트
+  // 노드 업데이트 (실행취소 지원)
   const updateNode = (nodeId: string, updates: Partial<OutlinerNode>) => {
     const updateNodeInTree = (nodeList: OutlinerNode[]): OutlinerNode[] => {
       return nodeList.map(node => {
@@ -188,20 +194,27 @@ const OutlinerPanel: React.FC<OutlinerPanelProps> = ({ className = '' }) => {
       });
     };
 
-    setNodes(prevNodes => updateNodeInTree(prevNodes));
+    setNodes(prevNodes => {
+      const updatedNodes = updateNodeInTree(prevNodes);
+      pushNodesState(updatedNodes);
+      return updatedNodes;
+    });
   };
 
-  // 새 노드 추가
+  // 새 노드 추가 (실행취소 지원)
   const addNode = (parentId?: string, index?: number) => {
     const newNode = createNewNode('', 0);
 
+    let updatedNodes;
     if (!parentId) {
       // 루트 레벨에 추가
       setNodes(prevNodes => {
         const newNodes = [...prevNodes];
         const insertIndex = index !== undefined ? index : newNodes.length;
         newNodes.splice(insertIndex, 0, newNode);
-        return newNodes;
+        updatedNodes = newNodes;
+        pushNodesState(updatedNodes);
+        return updatedNodes;
       });
     } else {
       // 특정 부모의 자식으로 추가
@@ -221,26 +234,52 @@ const OutlinerPanel: React.FC<OutlinerPanelProps> = ({ className = '' }) => {
         });
       };
 
-      setNodes(prevNodes => addToParent(prevNodes));
+      setNodes(prevNodes => {
+        updatedNodes = addToParent(prevNodes);
+        pushNodesState(updatedNodes);
+        return updatedNodes;
+      });
     }
 
     // 새 노드에 포커스
     setOutlinerState(prev => ({ ...prev, focusedNodeId: newNode.id }));
   };
 
-  // 노드 삭제
-  const deleteNode = (nodeId: string) => {
-    const deleteFromTree = (nodeList: OutlinerNode[]): OutlinerNode[] => {
-      return nodeList.filter(node => {
+  // 노드 삭제 (하위 노드 처리 옵션 포함)
+  const deleteNode = (nodeId: string, options?: { deleteChildren?: boolean }) => {
+    const deleteFromTree = (nodeList: OutlinerNode[], parentLevel: number = 0): OutlinerNode[] => {
+      const result: OutlinerNode[] = [];
+      
+      nodeList.forEach(node => {
         if (node.id === nodeId) {
-          return false;
+          // 삭제될 노드를 찾음
+          if (options?.deleteChildren === false && node.children.length > 0) {
+            // 자식 노드들을 독립시켜서 상위 레벨로 이동
+            const independentChildren = node.children.map(child => ({
+              ...child,
+              level: Math.max(0, node.level), // 부모와 같은 레벨로 설정
+              parentId: node.parentId // 부모의 부모를 새로운 부모로 설정
+            }));
+            result.push(...independentChildren);
+          }
+          // 노드 자체는 삭제 (return하지 않음)
+        } else {
+          // 다른 노드는 유지하고 자식도 재귀적으로 처리
+          result.push({
+            ...node,
+            children: deleteFromTree(node.children, node.level + 1)
+          });
         }
-        node.children = deleteFromTree(node.children);
-        return true;
       });
+      
+      return result;
     };
 
-    setNodes(prevNodes => deleteFromTree(prevNodes));
+    setNodes(prevNodes => {
+      const updatedNodes = deleteFromTree(prevNodes);
+      pushNodesState(updatedNodes);
+      return updatedNodes;
+    });
   };
 
   // 노드 이동 (드래그 앤 드롭)
@@ -288,15 +327,19 @@ const OutlinerPanel: React.FC<OutlinerPanelProps> = ({ className = '' }) => {
 
     setNodes(prevNodes => {
       const nodesWithoutDragged = removeDraggedNode(prevNodes);
+      let updatedNodes;
       if (draggedNode) {
-        return insertNodeAtTarget(nodesWithoutDragged);
+        updatedNodes = insertNodeAtTarget(nodesWithoutDragged);
+      } else {
+        updatedNodes = nodesWithoutDragged;
       }
-      return nodesWithoutDragged;
+      pushNodesState(updatedNodes);
+      return updatedNodes;
     });
   };
 
-  // 문서 저장 및 보기 모드로 전환
-  const handleSave = async () => {
+  // 문서 자동 저장 (디바운스 적용)
+  const handleAutoSave = React.useCallback(async () => {
     if (!selectedDocument) return;
 
     try {
@@ -305,18 +348,21 @@ const OutlinerPanel: React.FC<OutlinerPanelProps> = ({ className = '' }) => {
         title: title.trim(),
         content: textContent
       });
-      setIsEditMode(false); // 보기 모드로 전환
     } catch (error) {
-      console.error('문서 저장 실패:', error);
+      console.error('문서 자동 저장 실패:', error);
     }
-  };
+  }, [selectedDocument, nodes, title, updateDocument, convertOutlinerToText]);
 
-  // 편집 모드로 전환
-  const handleEdit = () => {
-    // 편집 모드 진입 시 모든 하위 노드 접기
-    setNodes(prevNodes => collapseAllChildren(prevNodes));
-    setIsEditMode(true);
-  };
+  // 디바운스된 자동 저장 (변경 후 2초 후 저장)
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      if (nodes.length > 0) {
+        handleAutoSave();
+      }
+    }, 2000);
+
+    return () => clearTimeout(timer);
+  }, [nodes, title, handleAutoSave]);
 
   // 즐겨찾기 토글
   const handleFavoriteToggle = async (e: React.MouseEvent) => {
@@ -338,6 +384,72 @@ const OutlinerPanel: React.FC<OutlinerPanelProps> = ({ className = '' }) => {
       zoomedNodeId: prev.zoomedNodeId === nodeId ? undefined : nodeId
     }));
   };
+
+  // 클립보드 기능들
+  const handleCopyNode = (node: OutlinerNode) => {
+    copyNode(node);
+  };
+
+  const handleCutNode = (node: OutlinerNode) => {
+    cutNode(node);
+  };
+
+  const handlePasteNode = (targetNodeId: string) => {
+    const pastedNode = pasteNode(() => `node-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`);
+    if (pastedNode) {
+      // 타겟 노드의 자식으로 추가
+      const addPastedNode = (nodeList: OutlinerNode[]): OutlinerNode[] => {
+        return nodeList.map(node => {
+          if (node.id === targetNodeId) {
+            const newChild = { ...pastedNode, level: node.level + 1, parentId: targetNodeId };
+            return { ...node, children: [...node.children, newChild] };
+          }
+          return {
+            ...node,
+            children: addPastedNode(node.children)
+          };
+        });
+      };
+
+      setNodes(prevNodes => {
+        const updatedNodes = addPastedNode(prevNodes);
+        pushNodesState(updatedNodes);
+        return updatedNodes;
+      });
+    }
+  };
+
+  // 키보드 단축키 처리 (항상 활성)
+  useEffect(() => {
+    const handleKeyboard = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === 'z' && !e.shiftKey) {
+        e.preventDefault();
+        undo();
+        setNodes(undoableNodes);
+      } else if ((e.ctrlKey || e.metaKey) && (e.key === 'y' || (e.key === 'z' && e.shiftKey))) {
+        e.preventDefault();
+        redo();
+        setNodes(undoableNodes);
+      }
+    };
+
+    document.addEventListener('keydown', handleKeyboard);
+    return () => document.removeEventListener('keydown', handleKeyboard);
+  }, [undo, redo, undoableNodes]);
+
+  // 실행취소 상태와 nodes 동기화
+  useEffect(() => {
+    if (undoableNodes.length > 0 && undoableNodes !== nodes) {
+      setNodes(undoableNodes);
+    }
+  }, [undoableNodes]);
+
+  // 새 문서 로드 시 실행취소 히스토리 리셋
+  useEffect(() => {
+    if (selectedDocument) {
+      resetHistory(nodes);
+    }
+  }, [selectedDocument?.id]);
 
   if (!selectedDocument) {
     return (
@@ -379,23 +491,6 @@ const OutlinerPanel: React.FC<OutlinerPanelProps> = ({ className = '' }) => {
         </div>
         
         <div className="outliner-actions">
-          {isEditMode ? (
-            <button 
-              className="action-button save-button"
-              onClick={handleSave}
-              title="저장하고 보기 모드로 전환"
-            >
-              💾 저장
-            </button>
-          ) : (
-            <button 
-              className="action-button edit-button"
-              onClick={handleEdit}
-              title="편집 모드로 전환"
-            >
-              ✏️ 편집
-            </button>
-          )}
           <button 
             className={`action-button favorite-button ${selectedDocument.isFavorite === true ? 'active' : ''}`}
             onClick={handleFavoriteToggle}
@@ -403,6 +498,24 @@ const OutlinerPanel: React.FC<OutlinerPanelProps> = ({ className = '' }) => {
           >
             {selectedDocument.isFavorite === true ? '⭐' : '☆'}
           </button>
+          
+          <button 
+            className={`action-button undo-button ${!canUndo ? 'disabled' : ''}`}
+            onClick={undo}
+            disabled={!canUndo}
+            title="실행취소 (Ctrl+Z)"
+          >
+            ↶
+          </button>
+          <button 
+            className={`action-button redo-button ${!canRedo ? 'disabled' : ''}`}
+            onClick={redo}
+            disabled={!canRedo}
+            title="다시실행 (Ctrl+Y)"
+          >
+            ↷
+          </button>
+          
           {outlinerState.zoomedNodeId && (
             <button 
               className="action-button zoom-out-button"
@@ -412,6 +525,10 @@ const OutlinerPanel: React.FC<OutlinerPanelProps> = ({ className = '' }) => {
               🔍 줌 아웃
             </button>
           )}
+          
+          <span className="auto-save-indicator" title="변경사항이 자동으로 저장됩니다">
+            💾 자동저장
+          </span>
         </div>
       </div>
 
@@ -422,29 +539,31 @@ const OutlinerPanel: React.FC<OutlinerPanelProps> = ({ className = '' }) => {
             key={node.id}
             node={node}
             outlinerState={outlinerState}
-            isEditMode={isEditMode}
+            isEditMode={true}
             onUpdateNode={updateNode}
             onAddNode={addNode}
             onDeleteNode={deleteNode}
             onMoveNode={moveNode}
             onZoomToggle={handleZoomToggle}
             onStateChange={setOutlinerState}
-            onEnterEditMode={handleEdit}
+            onEnterEditMode={() => {}}
+            onCopyNode={handleCopyNode}
+            onCutNode={handleCutNode}
+            onPasteNode={handlePasteNode}
+            canPaste={canPaste}
           />
         ))}
         
-        {/* 새 노드 추가 버튼 (편집 모드에서만) */}
-        {isEditMode && (
-          <div className="add-node-section">
-            <button 
-              className="add-node-button"
-              onClick={() => addNode()}
-              title="새 항목 추가"
-            >
-              + 새 항목 추가
-            </button>
-          </div>
-        )}
+        {/* 새 노드 추가 버튼 */}
+        <div className="add-node-section">
+          <button 
+            className="add-node-button"
+            onClick={() => addNode()}
+            title="새 항목 추가"
+          >
+            + 새 항목 추가
+          </button>
+        </div>
       </div>
     </div>
   );

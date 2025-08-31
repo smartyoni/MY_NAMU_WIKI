@@ -1,5 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { OutlinerNode, OutlinerState } from '../types/outliner';
+import NodeContextMenu from './NodeContextMenu';
+import { useLongPress } from '../hooks/useLongPress';
 import './OutlinerNode.css';
 
 interface OutlinerNodeProps {
@@ -8,11 +10,15 @@ interface OutlinerNodeProps {
   isEditMode: boolean;
   onUpdateNode: (nodeId: string, updates: Partial<OutlinerNode>) => void;
   onAddNode: (parentId?: string, index?: number) => void;
-  onDeleteNode: (nodeId: string) => void;
+  onDeleteNode: (nodeId: string, options?: { deleteChildren?: boolean }) => void;
   onMoveNode: (draggedNodeId: string, targetNodeId: string, position: 'before' | 'after' | 'inside') => void;
   onZoomToggle: (nodeId?: string) => void;
   onStateChange: (updater: (prev: OutlinerState) => OutlinerState) => void;
   onEnterEditMode?: () => void;
+  onCopyNode?: (node: OutlinerNode) => void;
+  onCutNode?: (node: OutlinerNode) => void;
+  onPasteNode?: (targetNodeId: string) => void;
+  canPaste?: boolean;
 }
 
 const OutlinerNodeComponent: React.FC<OutlinerNodeProps> = ({
@@ -25,7 +31,11 @@ const OutlinerNodeComponent: React.FC<OutlinerNodeProps> = ({
   onMoveNode,
   onZoomToggle,
   onStateChange,
-  onEnterEditMode
+  onEnterEditMode,
+  onCopyNode,
+  onCutNode,
+  onPasteNode,
+  canPaste = false
 }) => {
   const [isEditing, setIsEditing] = useState(false);
   const [editContent, setEditContent] = useState(node.content);
@@ -34,6 +44,7 @@ const OutlinerNodeComponent: React.FC<OutlinerNodeProps> = ({
   const [isDragging, setIsDragging] = useState(false);
   const [dragOver, setDragOver] = useState<'before' | 'after' | 'inside' | null>(null);
   const [contextMenu, setContextMenu] = useState<{ x: number; y: number } | null>(null);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const noteTextareaRef = useRef<HTMLTextAreaElement>(null);
   const nodeRef = useRef<HTMLDivElement>(null);
@@ -46,21 +57,27 @@ const OutlinerNodeComponent: React.FC<OutlinerNodeProps> = ({
   }, [isFocused]);
 
   useEffect(() => {
-    if (isEditing && textareaRef.current && isEditMode) {
-      textareaRef.current.focus();
-      textareaRef.current.select();
+    if (isEditing && textareaRef.current) {
+      const textarea = textareaRef.current;
+      textarea.focus();
+      
+      // 약간의 지연 후 커서 위치 설정 (브라우저 기본 동작 후 실행)
+      setTimeout(() => {
+        if (textarea === textareaRef.current) { // 여전히 같은 textarea인지 확인
+          const length = textarea.value.length;
+          textarea.setSelectionRange(length, length);
+        }
+      }, 0);
     }
-  }, [isEditing, isEditMode]);
+  }, [isEditing]);
 
-  // 포커스 설정 (편집 모드에서만)
+  // 포커스 설정 (클릭으로는 편집 모드 진입 안 함 - 하이퍼링크 보호)
   const handleFocus = () => {
-    if (isEditMode) {
-      onStateChange(prev => ({ ...prev, focusedNodeId: node.id }));
-      setIsEditing(true);
-    }
+    // 일반 클릭으로는 편집 모드 진입하지 않음
+    // 오직 우클릭/롱프레스로만 편집 가능
   };
 
-  // 편집 완료
+  // 편집 완료 (blur 또는 외부 클릭)
   const handleBlur = () => {
     if (editContent !== node.content) {
       onUpdateNode(node.id, { content: editContent });
@@ -140,17 +157,15 @@ const OutlinerNodeComponent: React.FC<OutlinerNodeProps> = ({
     onZoomToggle(node.id);
   };
 
-  // 보기모드에서 더블클릭으로 편집모드 진입
+  // 더블클릭으로도 편집 모드 진입 안 함 (하이퍼링크 보호)
   const handleDoubleClickToEdit = () => {
-    if (!isEditMode && onEnterEditMode) {
-      onEnterEditMode();
-    }
+    // 더블클릭으로도 편집 모드 진입하지 않음
+    // 오직 우클릭/롱프레스로만 편집 가능
   };
 
   // 컨텍스트 메뉴 핸들러
   const handleContextMenu = (e: React.MouseEvent) => {
-    if (!isEditMode) return; // 편집모드에서만 컨텍스트 메뉴 표시
-    
+    // 항상 컨텍스트 메뉴 허용 (편집 중에도 사용 가능)
     e.preventDefault();
     setContextMenu({
       x: e.clientX,
@@ -158,28 +173,113 @@ const OutlinerNodeComponent: React.FC<OutlinerNodeProps> = ({
     });
   };
 
+  // 롱프레스 핸들러 (모바일용)
+  const handleLongPress = (e: React.TouchEvent | React.MouseEvent) => {
+    // 항상 롱프레스 메뉴 허용 (편집 중에도 사용 가능)
+    const clientX = 'touches' in e ? e.touches[0]?.clientX || 0 : e.clientX;
+    const clientY = 'touches' in e ? e.touches[0]?.clientY || 0 : e.clientY;
+    
+    setContextMenu({
+      x: clientX,
+      y: clientY
+    });
+  };
+
+  const longPressHandlers = useLongPress({
+    onLongPress: handleLongPress,
+    delay: 600,
+    shouldPreventDefault: false // 좌클릭 기본 동작 방해하지 않음
+  });
+
   // 컨텍스트 메뉴 닫기
   const closeContextMenu = () => {
     setContextMenu(null);
   };
 
-  // 전역 클릭 이벤트로 컨텍스트 메뉴 닫기
-  useEffect(() => {
-    if (contextMenu) {
-      const handleClick = () => closeContextMenu();
-      document.addEventListener('click', handleClick);
-      return () => document.removeEventListener('click', handleClick);
+  // 컨텍스트 메뉴 액션들
+  const handleEdit = () => {
+    // 우클릭/롱프레스로 편집 모드 진입
+    setIsEditing(true);
+    onStateChange(prev => ({ ...prev, focusedNodeId: node.id }));
+  };
+
+  const handleAddNote = () => {
+    // 노트 추가/편집은 컨텍스트 메뉴를 통해서만 가능
+    if (!node.note || node.note.trim() === '') {
+      // 노트가 없으면 편집 모드로 바로 진입하고 표시
+      setIsEditingNote(true);
+      onUpdateNode(node.id, { isNoteVisible: true, note: '' });
+    } else {
+      // 노트가 있으면 편집 모드로 진입
+      setIsEditingNote(true);
+      setEditNote(node.note);
     }
-  }, [contextMenu]);
+  };
+
+  const handleAddChild = () => {
+    onAddNode(node.id);
+  };
+
+  const handleDelete = () => {
+    if (node.children.length > 0) {
+      setShowDeleteConfirm(true);
+    } else {
+      onDeleteNode(node.id);
+    }
+  };
+
+  const handleMove = () => {
+    if (onCutNode) {
+      onCutNode(node);
+    }
+  };
+
+  const handleCopy = () => {
+    if (onCopyNode) {
+      onCopyNode(node);
+    }
+  };
+
+  const handlePaste = () => {
+    if (onPasteNode) {
+      onPasteNode(node.id);
+    }
+  };
+
+  // 전역 클릭 이벤트로 컨텍스트 메뉴 닫기 및 편집 종료
+  useEffect(() => {
+    const handleGlobalClick = (event: MouseEvent) => {
+      // 컨텍스트 메뉴 닫기
+      if (contextMenu) {
+        closeContextMenu();
+      }
+      
+      // 편집 중이고 노드 외부 클릭 시 편집 종료
+      if ((isEditing || isEditingNote) && nodeRef.current) {
+        const target = event.target as Node;
+        if (!nodeRef.current.contains(target)) {
+          if (isEditing) {
+            handleBlur();
+          }
+          if (isEditingNote) {
+            handleNoteBlur();
+          }
+        }
+      }
+    };
+
+    if (contextMenu || isEditing || isEditingNote) {
+      document.addEventListener('click', handleGlobalClick);
+      return () => document.removeEventListener('click', handleGlobalClick);
+    }
+  }, [contextMenu, isEditing, isEditingNote]);
 
   // 노트 토글
   const handleNoteToggle = () => {
     if (!node.note || node.note.trim() === '') {
       // 노트가 없으면 편집 모드로 바로 진입하고 표시
-      if (isEditMode) {
-        setIsEditingNote(true);
-        onUpdateNode(node.id, { isNoteVisible: true, note: '' });
-      }
+      setIsEditingNote(true);
+      onUpdateNode(node.id, { isNoteVisible: true, note: '' });
     } else {
       // 노트가 있으면 표시/숨김 토글
       onUpdateNode(node.id, { isNoteVisible: !node.isNoteVisible });
@@ -190,6 +290,22 @@ const OutlinerNodeComponent: React.FC<OutlinerNodeProps> = ({
   const handleNoteEdit = () => {
     setIsEditingNote(true);
   };
+
+  // 노트 편집 시 포커스 및 커서 위치 설정
+  useEffect(() => {
+    if (isEditingNote && noteTextareaRef.current) {
+      const textarea = noteTextareaRef.current;
+      textarea.focus();
+      
+      // 약간의 지연 후 커서 위치 설정 (브라우저 기본 동작 후 실행)
+      setTimeout(() => {
+        if (textarea === noteTextareaRef.current) { // 여전히 같은 textarea인지 확인
+          const length = textarea.value.length;
+          textarea.setSelectionRange(length, length);
+        }
+      }, 0);
+    }
+  }, [isEditingNote]);
 
   // 노트 편집 완료
   const handleNoteBlur = () => {
@@ -342,13 +458,14 @@ const OutlinerNodeComponent: React.FC<OutlinerNodeProps> = ({
     <div 
       ref={nodeRef}
       className={`outliner-node level-${indentLevel} ${isDragging ? 'dragging' : ''} ${dragOver ? `drag-over-${dragOver}` : ''}`}
-      draggable={isEditMode && !isEditing}
+      draggable={!isEditing}
       onDragStart={handleDragStart}
       onDragEnd={handleDragEnd}
       onDragOver={handleDragOver}
       onDragLeave={handleDragLeave}
       onDrop={handleDrop}
       onContextMenu={handleContextMenu}
+      {...(!(isEditing || isEditingNote) ? longPressHandlers : {})}
     >
       {/* 노드 헤더 */}
       <div className="node-header">
@@ -385,14 +502,18 @@ const OutlinerNodeComponent: React.FC<OutlinerNodeProps> = ({
         </button>
 
         {/* 콘텐츠 영역 */}
-        <div className="node-content" onClick={handleFocus}>
-          {isEditMode && isEditing ? (
+        <div className="node-content">
+          {isEditing ? (
             <textarea
               ref={textareaRef}
               value={editContent}
               onChange={(e) => setEditContent(e.target.value)}
               onBlur={handleBlur}
               onKeyDown={handleKeyDown}
+              onClick={(e) => {
+                // textarea 클릭 시 기본 커서 위치 이동 동작 보장
+                e.stopPropagation();
+              }}
               className="node-textarea"
               placeholder="내용을 입력하세요... (Enter로 줄바꿈, Ctrl+Enter로 완료)"
               rows={editContent.split('\n').length || 1}
@@ -400,16 +521,10 @@ const OutlinerNodeComponent: React.FC<OutlinerNodeProps> = ({
           ) : (
             <div 
               className="node-display"
-              onDoubleClick={handleDoubleClickToEdit}
-              style={{ cursor: !isEditMode ? 'pointer' : 'default' }}
-              title={!isEditMode ? "더블클릭하여 편집" : ""}
+              style={{ cursor: 'default' }}
             >
               {node.content ? renderText(node.content) : (
-                isEditMode ? (
-                  <span className="placeholder">클릭하여 편집</span>
-                ) : (
-                  <span className="empty">내용 없음</span>
-                )
+                <span className="empty">내용 없음</span>
               )}
             </div>
           )}
@@ -417,23 +532,21 @@ const OutlinerNodeComponent: React.FC<OutlinerNodeProps> = ({
 
         {/* 액션 버튼들 */}
         <div className="node-actions">
-          {/* 보기 모드에서는 노트 버튼 항상 표시 */}
-          {!isEditMode && (
+          {/* 노트 보기/숨기기 버튼 (편집 아니고 오직 표시 토글만) */}
+          {node.note && (
             <button
-              className={`action-btn note-btn view-mode ${node.isNoteVisible ? 'active' : ''} ${node.note ? 'has-note' : ''}`}
-              onClick={handleNoteToggle}
-              title={node.note ? (node.isNoteVisible ? "노트 숨기기" : "노트 보기") : "노트 추가"}
+              className={`action-btn note-btn ${node.isNoteVisible ? 'active' : ''}`}
+              onClick={() => onUpdateNode(node.id, { isNoteVisible: !node.isNoteVisible })}
+              title={node.isNoteVisible ? "노트 숨기기" : "노트 보기"}
             >
               📝
             </button>
           )}
           
-          {/* 편집 모드에서는 우클릭 힌트만 표시 */}
-          {isEditMode && (
-            <div className="context-menu-hint" title="우클릭하여 메뉴 열기">
-              ⋮
-            </div>
-          )}
+          {/* 우클릭 힌트 (편집 안내) */}
+          <div className="context-menu-hint" title="우클릭하여 편집 메뉴 열기">
+            ✏️
+          </div>
         </div>
       </div>
 
@@ -442,17 +555,9 @@ const OutlinerNodeComponent: React.FC<OutlinerNodeProps> = ({
         <div className="node-note-section">
           <div className="note-header">
             <span className="note-label">📝 노트</span>
-            {isEditMode && (
+            {/* 노트 편집 중에만 액션 버튼 표시 */}
+            {isEditingNote && (
               <div className="note-actions">
-                {!isEditingNote && (
-                  <button
-                    className="note-action-btn edit-note-btn"
-                    onClick={handleNoteEdit}
-                    title="노트 편집"
-                  >
-                    ✏️
-                  </button>
-                )}
                 <button
                   className="note-action-btn delete-note-btn"
                   onClick={handleNoteDelete}
@@ -465,22 +570,24 @@ const OutlinerNodeComponent: React.FC<OutlinerNodeProps> = ({
           </div>
           
           <div className="note-content">
-            {isEditMode && isEditingNote ? (
+            {isEditingNote ? (
               <textarea
                 ref={noteTextareaRef}
                 value={editNote}
                 onChange={(e) => setEditNote(e.target.value)}
                 onBlur={handleNoteBlur}
+                onClick={(e) => {
+                  // textarea 클릭 시 기본 커서 위치 이동 동작 보장
+                  e.stopPropagation();
+                }}
                 className="note-textarea"
                 placeholder="여러 줄 노트를 작성하세요..."
-                autoFocus
                 rows={Math.max(3, editNote.split('\n').length)}
               />
             ) : (
               <div 
                 className="note-display"
-                onDoubleClick={isEditMode ? handleNoteEdit : undefined}
-                title={isEditMode ? "더블클릭하여 편집" : ""}
+                style={{ cursor: 'default' }}
               >
                 {node.note ? (
                   <div className="note-text">
@@ -488,7 +595,7 @@ const OutlinerNodeComponent: React.FC<OutlinerNodeProps> = ({
                   </div>
                 ) : (
                   <span className="note-placeholder">
-                    {isEditMode ? "클릭하여 노트를 추가하세요" : "노트 없음"}
+                    "노트 없음"
                   </span>
                 )}
               </div>
@@ -509,6 +616,10 @@ const OutlinerNodeComponent: React.FC<OutlinerNodeProps> = ({
               onUpdateNode={onUpdateNode}
               onAddNode={onAddNode}
               onDeleteNode={onDeleteNode}
+              onCopyNode={onCopyNode}
+              onCutNode={onCutNode}
+              onPasteNode={onPasteNode}
+              canPaste={canPaste}
               onMoveNode={onMoveNode}
               onZoomToggle={onZoomToggle}
               onStateChange={onStateChange}
@@ -518,59 +629,58 @@ const OutlinerNodeComponent: React.FC<OutlinerNodeProps> = ({
         </div>
       )}
 
-      {/* 컨텍스트 메뉴 */}
+      {/* 새로운 컨텍스트 메뉴 */}
       {contextMenu && (
-        <div 
-          className="context-menu"
-          style={{
-            position: 'fixed',
-            left: contextMenu.x,
-            top: contextMenu.y,
-            zIndex: 1000
-          }}
-          onClick={e => e.stopPropagation()}
-        >
-          {hasChildren && (
-            <button
-              className="context-menu-item"
-              onClick={() => {
-                handleZoom();
-                closeContextMenu();
-              }}
-            >
-              🔍 이 노드에 집중
-            </button>
-          )}
-          
-          <button
-            className="context-menu-item"
-            onClick={() => {
-              handleNoteToggle();
-              closeContextMenu();
-            }}
-          >
-            📝 {node.note ? (node.isNoteVisible ? '노트 숨기기' : '노트 보기') : '노트 추가'}
-          </button>
-          
-          <button
-            className="context-menu-item"
-            onClick={() => {
-              onAddNode(node.id);
-              closeContextMenu();
-            }}
-          >
-            ➕ 하위 항목 추가
-          </button>
-          
-          <button
-            className="context-menu-item delete"
-            onClick={() => {
-              onDeleteNode(node.id);
-              closeContextMenu();
-            }}
-          >
-            🗑️ 삭제
-          </button>
+        <NodeContextMenu
+          node={node}
+          position={contextMenu}
+          onClose={closeContextMenu}
+          onEdit={handleEdit}
+          onAddNote={handleAddNote}
+          onAddChild={handleAddChild}
+          onDelete={handleDelete}
+          onMove={handleMove}
+          onCopy={handleCopy}
+          onPaste={handlePaste}
+          onZoom={hasChildren ? handleZoom : undefined}
+          canPaste={canPaste}
+        />
+      )}
+
+      {/* 삭제 확인 모달 */}
+      {showDeleteConfirm && (
+        <div className="delete-confirm-modal">
+          <div className="modal-backdrop" onClick={() => setShowDeleteConfirm(false)} />
+          <div className="modal-content">
+            <h3>노드 삭제</h3>
+            <p>이 노드에 {node.children.length}개의 하위 노드가 있습니다.</p>
+            <div className="modal-actions">
+              <button
+                className="btn-danger"
+                onClick={() => {
+                  onDeleteNode(node.id, { deleteChildren: true });
+                  setShowDeleteConfirm(false);
+                }}
+              >
+                하위 노드와 함께 삭제
+              </button>
+              <button
+                className="btn-warning"
+                onClick={() => {
+                  onDeleteNode(node.id, { deleteChildren: false });
+                  setShowDeleteConfirm(false);
+                }}
+              >
+                하위 노드는 독립시키고 삭제
+              </button>
+              <button
+                className="btn-cancel"
+                onClick={() => setShowDeleteConfirm(false)}
+              >
+                취소
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </div>
