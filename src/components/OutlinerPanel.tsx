@@ -63,10 +63,22 @@ const OutlinerPanel: React.FC<OutlinerPanelProps> = ({ className = '' }) => {
     let currentContent: string[] = [];
 
     lines.forEach((line, index) => {
+      // 노트 라인인지 확인
+      const noteMatch = line.match(/^(\s*)\[NOTE\]\s*(.*)$/);
       // 불릿 포인트로 시작하는 줄인지 확인
       const bulletMatch = line.match(/^(\s*)[•-]\s*(.*)$/);
       
-      if (bulletMatch) {
+      if (noteMatch && nodeStack.length > 0) {
+        // 노트 라인은 마지막 노드에 노트로 추가
+        const lastNode = nodeStack[nodeStack.length - 1];
+        const noteContent = noteMatch[2];
+        if (!lastNode.note) {
+          lastNode.note = noteContent;
+          lastNode.isNoteVisible = true;
+        } else {
+          lastNode.note += '\n' + noteContent;
+        }
+      } else if (bulletMatch) {
         // 이전 노드의 멀티라인 내용 처리
         if (currentContent.length > 0 && nodeStack.length > 0) {
           const lastNode = nodeStack[nodeStack.length - 1];
@@ -136,6 +148,14 @@ const OutlinerPanel: React.FC<OutlinerPanelProps> = ({ className = '' }) => {
         
         if (content.trim() || depth === 0) {
           lines.push(`${indent}${bullet} ${content}`);
+        }
+        
+        // 노트가 있으면 특별한 형식으로 추가
+        if (node.note && node.note.trim()) {
+          const noteLines = node.note.split('\n');
+          noteLines.forEach(noteLine => {
+            lines.push(`${indent}  [NOTE] ${noteLine}`);
+          });
         }
         
         if (!node.isCollapsed && node.children.length > 0) {
