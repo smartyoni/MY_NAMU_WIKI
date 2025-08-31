@@ -166,7 +166,10 @@ const OutlinerNodeComponent: React.FC<OutlinerNodeProps> = ({
   // 노트 편집 완료
   const handleNoteBlur = () => {
     if (editNote !== (node.note || '')) {
-      onUpdateNode(node.id, { note: editNote.trim() });
+      onUpdateNode(node.id, { 
+        note: editNote.trim(),
+        isNoteVisible: editNote.trim() !== '' // 노트가 있으면 표시
+      });
     }
     setIsEditingNote(false);
   };
