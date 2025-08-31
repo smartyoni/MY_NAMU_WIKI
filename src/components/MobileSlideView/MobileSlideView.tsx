@@ -177,11 +177,6 @@ const MobileSlideView: React.FC = () => {
 
   const renderDocumentView = () => (
     <div className="mobile-slide-content document-view">
-      <div className="mobile-slide-header">
-        <button className="back-button" onClick={() => selectDocument(null)}>
-          ‹ 뒤로
-        </button>
-      </div>
       <div className="document-container">
         <OutlinerPanel />
       </div>

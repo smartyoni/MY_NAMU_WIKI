@@ -8,7 +8,7 @@ interface OutlinerNodeProps {
   node: OutlinerNode;
   outlinerState: OutlinerState;
   isEditMode: boolean;
-  onUpdateNode: (nodeId: string, updates: Partial<OutlinerNode>) => void;
+  onUpdateNode: (nodeId: string, updates: Partial<OutlinerNode>, skipUndoHistory?: boolean) => void;
   onAddNode: (parentId?: string, index?: number) => void;
   onDeleteNode: (nodeId: string, options?: { deleteChildren?: boolean }) => void;
   onMoveNode: (draggedNodeId: string, targetNodeId: string, position: 'before' | 'after' | 'inside') => void;
@@ -50,6 +50,19 @@ const OutlinerNodeComponent: React.FC<OutlinerNodeProps> = ({
   const nodeRef = useRef<HTMLDivElement>(null);
   const isFocused = outlinerState.focusedNodeId === node.id;
 
+  // 노드 내용과 편집 상태 동기화 (편집 중이 아닐 때만)
+  useEffect(() => {
+    if (!isEditing) {
+      setEditContent(node.content);
+    }
+  }, [node.content, isEditing]);
+
+  useEffect(() => {
+    if (!isEditingNote) {
+      setEditNote(node.note || '');
+    }
+  }, [node.note, isEditingNote]);
+
   useEffect(() => {
     if (isFocused && !isEditing) {
       setIsEditing(true);
@@ -80,7 +93,7 @@ const OutlinerNodeComponent: React.FC<OutlinerNodeProps> = ({
   // 편집 완료 (blur 또는 외부 클릭)
   const handleBlur = () => {
     if (editContent !== node.content) {
-      onUpdateNode(node.id, { content: editContent });
+      onUpdateNode(node.id, { content: editContent }, false); // 편집 완료 시에는 히스토리에 추가
     }
     setIsEditing(false);
     onStateChange(prev => ({ ...prev, focusedNodeId: undefined }));
@@ -105,11 +118,11 @@ const OutlinerNodeComponent: React.FC<OutlinerNodeProps> = ({
         if (e.shiftKey) {
           // 레벨 감소 (왼쪽으로 이동)
           if (node.level > 0) {
-            onUpdateNode(node.id, { level: node.level - 1 });
+            onUpdateNode(node.id, { level: node.level - 1 }, true); // 중간 상태 - 히스토리 제외
           }
         } else {
           // 레벨 증가 (오른쪽으로 이동)
-          onUpdateNode(node.id, { level: node.level + 1 });
+          onUpdateNode(node.id, { level: node.level + 1 }, true); // 중간 상태 - 히스토리 제외
         }
         break;
         
@@ -144,12 +157,12 @@ const OutlinerNodeComponent: React.FC<OutlinerNodeProps> = ({
 
   // 접기/펼치기 토글 (자식 노드용)
   const handleToggleCollapse = () => {
-    onUpdateNode(node.id, { isCollapsed: !node.isCollapsed });
+    onUpdateNode(node.id, { isCollapsed: !node.isCollapsed }, true); // UI 상태 - 히스토리 제외
   };
 
   // 노트 접기/펼치기 토글
   const handleToggleNoteCollapse = () => {
-    onUpdateNode(node.id, { isNoteVisible: !node.isNoteVisible });
+    onUpdateNode(node.id, { isNoteVisible: !node.isNoteVisible }, true); // UI 상태 - 히스토리 제외
   };
 
   // 줌 토글
@@ -187,7 +200,7 @@ const OutlinerNodeComponent: React.FC<OutlinerNodeProps> = ({
 
   const longPressHandlers = useLongPress({
     onLongPress: handleLongPress,
-    delay: 600,
+    delay: 1200, // 1.2초
     shouldPreventDefault: false // 좌클릭 기본 동작 방해하지 않음
   });
 
@@ -207,12 +220,16 @@ const OutlinerNodeComponent: React.FC<OutlinerNodeProps> = ({
     // 노트 추가/편집은 컨텍스트 메뉴를 통해서만 가능
     if (!node.note || node.note.trim() === '') {
       // 노트가 없으면 편집 모드로 바로 진입하고 표시
+      setEditNote(''); // 빈 문자열로 시작
       setIsEditingNote(true);
-      onUpdateNode(node.id, { isNoteVisible: true, note: '' });
+      onUpdateNode(node.id, { isNoteVisible: true });
     } else {
-      // 노트가 있으면 편집 모드로 진입
-      setIsEditingNote(true);
-      setEditNote(node.note);
+      // 노트가 있으면 표시/숨김 토글 또는 편집 모드 진입
+      if (node.isNoteVisible) {
+        setIsEditingNote(true);
+      } else {
+        onUpdateNode(node.id, { isNoteVisible: true });
+      }
     }
   };
 
@@ -221,11 +238,7 @@ const OutlinerNodeComponent: React.FC<OutlinerNodeProps> = ({
   };
 
   const handleDelete = () => {
-    if (node.children.length > 0) {
-      setShowDeleteConfirm(true);
-    } else {
-      onDeleteNode(node.id);
-    }
+    setShowDeleteConfirm(true);
   };
 
   const handleMove = () => {
@@ -310,10 +323,14 @@ const OutlinerNodeComponent: React.FC<OutlinerNodeProps> = ({
   // 노트 편집 완료
   const handleNoteBlur = () => {
     if (editNote !== (node.note || '')) {
+      const trimmedNote = editNote.trim();
       onUpdateNode(node.id, { 
-        note: editNote.trim(),
-        isNoteVisible: editNote.trim() !== '' // 노트가 있으면 표시
-      });
+        note: trimmedNote,
+        isNoteVisible: trimmedNote !== '' // 노트가 있으면 자동 표시
+      }, false); // 편집 완료 시에는 히스토리에 추가
+    } else if (node.note && node.note.trim() !== '') {
+      // 내용이 변경되지 않았지만 노트가 있다면 표시
+      onUpdateNode(node.id, { isNoteVisible: true }, true);
     }
     setIsEditingNote(false);
   };
@@ -532,21 +549,34 @@ const OutlinerNodeComponent: React.FC<OutlinerNodeProps> = ({
 
         {/* 액션 버튼들 */}
         <div className="node-actions">
-          {/* 노트 보기/숨기기 버튼 (편집 아니고 오직 표시 토글만) */}
+          {/* 복사 버튼 */}
+          <button
+            className="action-btn copy-btn"
+            onClick={(e) => {
+              e.stopPropagation();
+              handleCopy();
+            }}
+            title="노드 복사"
+          >
+            📋
+          </button>
+          
+          {/* 노트 통합 버튼 (노트가 있을 때만 표시) */}
           {node.note && (
             <button
-              className={`action-btn note-btn ${node.isNoteVisible ? 'active' : ''}`}
-              onClick={() => onUpdateNode(node.id, { isNoteVisible: !node.isNoteVisible })}
-              title={node.isNoteVisible ? "노트 숨기기" : "노트 보기"}
+              className={`action-btn note-edit-btn ${node.isNoteVisible ? 'active' : ''}`}
+              onClick={() => {
+                if (node.isNoteVisible) {
+                  setIsEditingNote(true); // 노트가 보이면 편집
+                } else {
+                  onUpdateNode(node.id, { isNoteVisible: true }, true); // 노트가 안 보이면 표시
+                }
+              }}
+              title={node.isNoteVisible ? "노트 편집" : "노트 보기"}
             >
-              📝
+              ✏️
             </button>
           )}
-          
-          {/* 우클릭 힌트 (편집 안내) */}
-          <div className="context-menu-hint" title="우클릭하여 편집 메뉴 열기">
-            ✏️
-          </div>
         </div>
       </div>
 
@@ -653,33 +683,58 @@ const OutlinerNodeComponent: React.FC<OutlinerNodeProps> = ({
           <div className="modal-backdrop" onClick={() => setShowDeleteConfirm(false)} />
           <div className="modal-content">
             <h3>노드 삭제</h3>
-            <p>이 노드에 {node.children.length}개의 하위 노드가 있습니다.</p>
-            <div className="modal-actions">
-              <button
-                className="btn-danger"
-                onClick={() => {
-                  onDeleteNode(node.id, { deleteChildren: true });
-                  setShowDeleteConfirm(false);
-                }}
-              >
-                하위 노드와 함께 삭제
-              </button>
-              <button
-                className="btn-warning"
-                onClick={() => {
-                  onDeleteNode(node.id, { deleteChildren: false });
-                  setShowDeleteConfirm(false);
-                }}
-              >
-                하위 노드는 독립시키고 삭제
-              </button>
-              <button
-                className="btn-cancel"
-                onClick={() => setShowDeleteConfirm(false)}
-              >
-                취소
-              </button>
-            </div>
+            {node.children.length > 0 ? (
+              <>
+                <p>이 노드에 {node.children.length}개의 하위 노드가 있습니다.</p>
+                <div className="modal-actions">
+                  <button
+                    className="btn-danger"
+                    onClick={() => {
+                      onDeleteNode(node.id, { deleteChildren: true });
+                      setShowDeleteConfirm(false);
+                    }}
+                  >
+                    하위 노드와 함께 삭제
+                  </button>
+                  <button
+                    className="btn-warning"
+                    onClick={() => {
+                      onDeleteNode(node.id, { deleteChildren: false });
+                      setShowDeleteConfirm(false);
+                    }}
+                  >
+                    하위 노드는 독립시키고 삭제
+                  </button>
+                  <button
+                    className="btn-cancel"
+                    onClick={() => setShowDeleteConfirm(false)}
+                  >
+                    취소
+                  </button>
+                </div>
+              </>
+            ) : (
+              <>
+                <p>이 노드를 삭제하시겠습니까?</p>
+                <div className="modal-actions">
+                  <button
+                    className="btn-danger"
+                    onClick={() => {
+                      onDeleteNode(node.id);
+                      setShowDeleteConfirm(false);
+                    }}
+                  >
+                    삭제
+                  </button>
+                  <button
+                    className="btn-cancel"
+                    onClick={() => setShowDeleteConfirm(false)}
+                  >
+                    취소
+                  </button>
+                </div>
+              </>
+            )}
           </div>
         </div>
       )}

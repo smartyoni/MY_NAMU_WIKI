@@ -126,6 +126,17 @@
   border-color: #218838;
 }
 
+.delete-button {
+  background: #dc3545;
+  color: white;
+  border-color: #dc3545;
+}
+
+.delete-button:hover {
+  background: #c82333;
+  border-color: #c82333;
+}
+
 .favorite-button.active {
   background: #ffc107;
   color: #212529;
@@ -171,8 +182,13 @@
 /* 새 노드 추가 섹션 */
 .add-node-section {
   margin-top: 1rem;
-  padding-top: 1rem;
+  padding: 1rem;
   border-top: 1px dashed #dee2e6;
+  position: sticky;
+  bottom: 0;
+  background: white;
+  border-radius: 8px 8px 0 0;
+  box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.1);
 }
 
 .add-node-button {
@@ -217,11 +233,35 @@
   
   .action-button {
     flex: 1;
-    padding: 0.75rem 0.5rem;
-    font-size: 0.8rem;
+    padding: 0.5rem 0.25rem;
+    font-size: 0.7rem;
+    min-width: 0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
   
   .outliner-content {
     padding: 0.5rem;
+    padding-bottom: 160px; /* sticky 버튼과 노트까지 고려한 충분한 여유 공간 */
+  }
+  
+  .add-node-section {
+    position: fixed;
+    bottom: 60px; /* 모바일 탭 바 위에 배치 */
+    left: 0;
+    right: 0;
+    margin: 0;
+    padding: 1rem;
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(10px);
+    border-top: 1px solid #dee2e6;
+    box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.15);
+  }
+  
+  .add-node-button {
+    padding: 1rem;
+    font-size: 1rem;
+    border-radius: 12px;
   }
 }

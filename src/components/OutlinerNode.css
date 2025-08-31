@@ -358,6 +358,25 @@
   transform: scale(1.1);
 }
 
+.note-edit-btn {
+  color: #007bff;
+}
+
+.note-edit-btn:hover {
+  background: #e7f3ff;
+  color: #0056b3;
+}
+
+.note-edit-btn.active {
+  background: #007bff;
+  color: white;
+}
+
+.note-edit-btn.active:hover {
+  background: #0056b3;
+  color: white;
+}
+
 .zoom-btn {
   color: #17a2b8;
 }

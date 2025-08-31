@@ -175,8 +175,8 @@ const OutlinerPanel: React.FC<OutlinerPanelProps> = ({ className = '' }) => {
     return convertNodes(nodes).join('\n');
   };
 
-  // 노드 업데이트 (실행취소 지원)
-  const updateNode = (nodeId: string, updates: Partial<OutlinerNode>) => {
+  // 노드 업데이트 (실행취소 지원 - 편집 완료 시에만)
+  const updateNode = (nodeId: string, updates: Partial<OutlinerNode>, skipUndoHistory: boolean = false) => {
     const updateNodeInTree = (nodeList: OutlinerNode[]): OutlinerNode[] => {
       return nodeList.map(node => {
         if (node.id === nodeId) {
@@ -196,7 +196,10 @@ const OutlinerPanel: React.FC<OutlinerPanelProps> = ({ className = '' }) => {
 
     setNodes(prevNodes => {
       const updatedNodes = updateNodeInTree(prevNodes);
-      pushNodesState(updatedNodes);
+      // 편집 중간 과정이 아닌 경우에만 실행취소 히스토리에 추가
+      if (!skipUndoHistory) {
+        pushNodesState(updatedNodes);
+      }
       return updatedNodes;
     });
   };
@@ -338,8 +341,8 @@ const OutlinerPanel: React.FC<OutlinerPanelProps> = ({ className = '' }) => {
     });
   };
 
-  // 문서 자동 저장 (디바운스 적용)
-  const handleAutoSave = React.useCallback(async () => {
+  // 수동 저장 함수
+  const handleSave = React.useCallback(async () => {
     if (!selectedDocument) return;
 
     try {
@@ -349,20 +352,9 @@ const OutlinerPanel: React.FC<OutlinerPanelProps> = ({ className = '' }) => {
         content: textContent
       });
     } catch (error) {
-      console.error('문서 자동 저장 실패:', error);
+      console.error('문서 저장 실패:', error);
     }
   }, [selectedDocument, nodes, title, updateDocument, convertOutlinerToText]);
-
-  // 디바운스된 자동 저장 (변경 후 2초 후 저장)
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      if (nodes.length > 0) {
-        handleAutoSave();
-      }
-    }, 2000);
-
-    return () => clearTimeout(timer);
-  }, [nodes, title, handleAutoSave]);
 
   // 즐겨찾기 토글
   const handleFavoriteToggle = async (e: React.MouseEvent) => {
@@ -422,7 +414,10 @@ const OutlinerPanel: React.FC<OutlinerPanelProps> = ({ className = '' }) => {
   // 키보드 단축키 처리 (항상 활성)
   useEffect(() => {
     const handleKeyboard = (e: KeyboardEvent) => {
-      if ((e.ctrlKey || e.metaKey) && e.key === 'z' && !e.shiftKey) {
+      if ((e.ctrlKey || e.metaKey) && e.key === 's') {
+        e.preventDefault();
+        handleSave();
+      } else if ((e.ctrlKey || e.metaKey) && e.key === 'z' && !e.shiftKey) {
         e.preventDefault();
         undo();
         setNodes(undoableNodes);
@@ -435,7 +430,7 @@ const OutlinerPanel: React.FC<OutlinerPanelProps> = ({ className = '' }) => {
 
     document.addEventListener('keydown', handleKeyboard);
     return () => document.removeEventListener('keydown', handleKeyboard);
-  }, [undo, redo, undoableNodes]);
+  }, [undo, redo, undoableNodes, handleSave]);
 
   // 실행취소 상태와 nodes 동기화
   useEffect(() => {
@@ -526,9 +521,25 @@ const OutlinerPanel: React.FC<OutlinerPanelProps> = ({ className = '' }) => {
             </button>
           )}
           
-          <span className="auto-save-indicator" title="변경사항이 자동으로 저장됩니다">
-            💾 자동저장
-          </span>
+          <button 
+            className="action-button save-button"
+            onClick={handleSave}
+            title="저장 (Ctrl+S)"
+          >
+            💾 저장
+          </button>
+          
+          <button 
+            className="action-button delete-button"
+            onClick={() => {
+              if (window.confirm('이 문서를 삭제하시겠습니까?')) {
+                deleteDocument(selectedDocument.id);
+              }
+            }}
+            title="문서 삭제"
+          >
+            🗑️ 삭제
+          </button>
         </div>
       </div>
 
