@@ -1,0 +1,309 @@
+.outliner-node {
+  margin: 0;
+  position: relative;
+}
+
+/* 노드 헤더 */
+.node-header {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.25rem;
+  padding: 0.25rem 0;
+  position: relative;
+  min-height: 2rem;
+}
+
+.node-header:hover {
+  background: rgba(0, 123, 255, 0.05);
+  border-radius: 4px;
+}
+
+/* 들여쓰기 가이드 */
+.indent-guide {
+  width: 24px;
+  height: 2rem;
+  position: relative;
+  flex-shrink: 0;
+}
+
+.indent-guide::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: 0;
+  bottom: 0;
+  width: 1px;
+  background: #e9ecef;
+  transform: translateX(-50%);
+}
+
+/* 접기/펼치기 버튼 */
+.collapse-button {
+  width: 20px;
+  height: 20px;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 3px;
+  font-size: 0.7rem;
+  color: #6c757d;
+  flex-shrink: 0;
+  margin-top: 0.125rem;
+  transition: all 0.15s ease;
+}
+
+.collapse-button:hover {
+  background: #f8f9fa;
+  color: #495057;
+}
+
+.collapse-button:disabled {
+  cursor: default;
+}
+
+.collapse-button.has-children {
+  color: #007bff;
+}
+
+.collapse-button.collapsed {
+  transform: rotate(-90deg);
+}
+
+/* 콘텐츠 영역 */
+.node-content {
+  flex: 1;
+  min-width: 0;
+  cursor: text;
+  padding: 0.125rem 0;
+}
+
+.node-textarea {
+  width: 100%;
+  border: none;
+  background: transparent;
+  font-size: 0.95rem;
+  line-height: 1.5;
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+  font-family: inherit;
+  outline: none;
+  background: rgba(255, 255, 255, 0.9);
+  border: 1px solid #e9ecef;
+  resize: vertical;
+  min-height: 2rem;
+  max-height: 200px;
+}
+
+.node-textarea:focus {
+  background: white;
+  border-color: #007bff;
+  box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.1);
+}
+
+.node-display {
+  padding: 0.25rem 0.5rem;
+  min-height: 1.5rem;
+  line-height: 1.5;
+  font-size: 0.95rem;
+  border-radius: 4px;
+  transition: background-color 0.15s ease;
+}
+
+.node-display:hover {
+  background: rgba(248, 249, 250, 0.8);
+}
+
+.placeholder {
+  color: #adb5bd;
+  font-style: italic;
+}
+
+.empty {
+  color: #ced4da;
+  font-style: italic;
+  font-size: 0.85rem;
+}
+
+/* 마크다운 스타일링 */
+.markdown-content {
+  display: block;
+  width: 100%;
+}
+
+.markdown-line {
+  margin: 0.125rem 0;
+  line-height: 1.5;
+}
+
+.markdown-link {
+  color: #007bff;
+  text-decoration: none;
+  border-radius: 3px;
+  padding: 0.125rem 0.25rem;
+  transition: all 0.15s ease;
+}
+
+.markdown-link:hover {
+  background: rgba(0, 123, 255, 0.1);
+  text-decoration: underline;
+}
+
+.node-display strong {
+  font-weight: 600;
+  color: #2c3e50;
+}
+
+.node-display em {
+  font-style: italic;
+  color: #495057;
+}
+
+.node-display code {
+  background: #f8f9fa;
+  border: 1px solid #e9ecef;
+  border-radius: 3px;
+  padding: 0.125rem 0.25rem;
+  font-family: 'SF Mono', Monaco, 'Cascadia Code', 'Roboto Mono', Consolas, monospace;
+  font-size: 0.85em;
+  color: #e83e8c;
+}
+
+.node-display del {
+  text-decoration: line-through;
+  color: #6c757d;
+}
+
+/* 액션 버튼들 */
+.node-actions {
+  display: flex;
+  gap: 0.25rem;
+  opacity: 0;
+  transition: opacity 0.15s ease;
+  margin-left: 0.5rem;
+  flex-shrink: 0;
+}
+
+.node-header:hover .node-actions {
+  opacity: 1;
+}
+
+.action-btn {
+  width: 20px;
+  height: 20px;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 3px;
+  font-size: 0.7rem;
+  color: #6c757d;
+  transition: all 0.15s ease;
+}
+
+.action-btn:hover {
+  background: #f8f9fa;
+  transform: scale(1.1);
+}
+
+.zoom-btn {
+  color: #17a2b8;
+}
+
+.zoom-btn:hover {
+  background: rgba(23, 162, 184, 0.1);
+  color: #138496;
+}
+
+.add-btn {
+  color: #28a745;
+  font-weight: bold;
+}
+
+.add-btn:hover {
+  background: rgba(40, 167, 69, 0.1);
+  color: #1e7e34;
+}
+
+.delete-btn {
+  color: #dc3545;
+  font-weight: bold;
+}
+
+.delete-btn:hover {
+  background: rgba(220, 53, 69, 0.1);
+  color: #c82333;
+}
+
+/* 자식 노드들 */
+.node-children {
+  margin-left: 0;
+  position: relative;
+}
+
+/* 레벨별 스타일링 */
+.outliner-node.level-0 .node-header {
+  font-weight: 500;
+}
+
+.outliner-node.level-1 .node-display {
+  font-size: 0.9rem;
+}
+
+.outliner-node.level-2 .node-display {
+  font-size: 0.85rem;
+  color: #495057;
+}
+
+.outliner-node.level-3 .node-display {
+  font-size: 0.8rem;
+  color: #6c757d;
+}
+
+.outliner-node.level-4 .node-display,
+.outliner-node.level-5 .node-display,
+.outliner-node.level-6 .node-display,
+.outliner-node.level-7 .node-display,
+.outliner-node.level-8 .node-display,
+.outliner-node.level-9 .node-display,
+.outliner-node.level-10 .node-display {
+  font-size: 0.75rem;
+  color: #868e96;
+}
+
+/* 포커스된 노드 */
+.outliner-node.focused .node-header {
+  background: rgba(0, 123, 255, 0.1);
+  border-radius: 4px;
+}
+
+/* 반응형 디자인 */
+@media (max-width: 768px) {
+  .node-header {
+    gap: 0.125rem;
+  }
+  
+  .indent-guide {
+    width: 16px;
+  }
+  
+  .collapse-button,
+  .action-btn {
+    width: 28px;
+    height: 28px;
+    font-size: 0.8rem;
+  }
+  
+  .node-actions {
+    opacity: 1; /* 모바일에서는 항상 표시 */
+  }
+  
+  .node-input,
+  .node-display {
+    font-size: 1rem;
+  }
+}

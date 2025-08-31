@@ -1,0 +1,359 @@
+import React, { useState, useEffect, useRef } from 'react';
+import { OutlinerNode, OutlinerState } from '../types/outliner';
+import { useDocuments } from '../context/DocumentContextFirebase';
+import OutlinerNodeComponent from './OutlinerNode';
+import './OutlinerPanel.css';
+
+interface OutlinerPanelProps {
+  className?: string;
+}
+
+const OutlinerPanel: React.FC<OutlinerPanelProps> = ({ className = '' }) => {
+  const { 
+    uiState,
+    updateDocument,
+    deleteDocument,
+    getSelectedDocument,
+    toggleFavorite
+  } = useDocuments();
+
+  const [outlinerState, setOutlinerState] = useState<OutlinerState>({
+    focusedNodeId: undefined,
+    selectedNodeIds: [],
+    zoomedNodeId: undefined
+  });
+
+  const [nodes, setNodes] = useState<OutlinerNode[]>([]);
+  const [title, setTitle] = useState('');
+  const [isEditMode, setIsEditMode] = useState(true); // 편집/보기 모드
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  const selectedDocument = getSelectedDocument();
+
+  // 문서 선택 시 아웃라이너 노드로 변환
+  useEffect(() => {
+    if (selectedDocument) {
+      setTitle(selectedDocument.title);
+      const convertedNodes = convertMarkdownToOutliner(selectedDocument.content);
+      setNodes(convertedNodes);
+    } else {
+      setTitle('');
+      setNodes([]);
+    }
+  }, [selectedDocument]);
+
+  // 마크다운을 아웃라이너 노드로 변환
+  const convertMarkdownToOutliner = (markdown: string): OutlinerNode[] => {
+    if (!markdown.trim()) {
+      return [createNewNode('', 0)];
+    }
+
+    const lines = markdown.split('\n');
+    const nodeStack: OutlinerNode[] = [];
+    const rootNodes: OutlinerNode[] = [];
+
+    lines.forEach((line, index) => {
+      if (line.trim() === '') return;
+
+      // 들여쓰기 레벨 계산 (2칸씩)
+      const indentMatch = line.match(/^(\s*)/);
+      const indent = indentMatch ? indentMatch[1].length : 0;
+      const level = Math.floor(indent / 2);
+      const content = line.trim().replace(/^[•-]\s*/, ''); // 불릿 포인트 제거
+
+      const node = createNewNode(content, level, `node-${index}`);
+
+      // 적절한 부모 찾기
+      while (nodeStack.length > 0 && nodeStack[nodeStack.length - 1].level >= level) {
+        nodeStack.pop();
+      }
+
+      if (nodeStack.length === 0) {
+        // 루트 노드
+        rootNodes.push(node);
+      } else {
+        // 자식 노드
+        const parent = nodeStack[nodeStack.length - 1];
+        node.parentId = parent.id;
+        parent.children.push(node);
+      }
+
+      nodeStack.push(node);
+    });
+
+    return rootNodes.length > 0 ? rootNodes : [createNewNode('', 0)];
+  };
+
+  // 새 노드 생성
+  const createNewNode = (content: string, level: number, id?: string): OutlinerNode => ({
+    id: id || `node-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+    content,
+    children: [],
+    isCollapsed: false,
+    level,
+    createdAt: new Date(),
+    updatedAt: new Date()
+  });
+
+  // 아웃라이너를 마크다운으로 변환
+  const convertOutlinerToMarkdown = (nodes: OutlinerNode[]): string => {
+    const convertNodes = (nodeList: OutlinerNode[], depth: number = 0): string[] => {
+      const lines: string[] = [];
+      
+      nodeList.forEach(node => {
+        const indent = '  '.repeat(depth);
+        const bullet = depth === 0 ? '•' : '-';
+        const content = node.content || '';
+        
+        if (content.trim() || depth === 0) {
+          lines.push(`${indent}${bullet} ${content}`);
+        }
+        
+        if (!node.isCollapsed && node.children.length > 0) {
+          lines.push(...convertNodes(node.children, depth + 1));
+        }
+      });
+      
+      return lines;
+    };
+
+    return convertNodes(nodes).join('\n');
+  };
+
+  // 노드 업데이트
+  const updateNode = (nodeId: string, updates: Partial<OutlinerNode>) => {
+    const updateNodeInTree = (nodeList: OutlinerNode[]): OutlinerNode[] => {
+      return nodeList.map(node => {
+        if (node.id === nodeId) {
+          return { ...node, ...updates, updatedAt: new Date() };
+        }
+        return {
+          ...node,
+          children: updateNodeInTree(node.children)
+        };
+      });
+    };
+
+    setNodes(prevNodes => updateNodeInTree(prevNodes));
+  };
+
+  // 새 노드 추가
+  const addNode = (parentId?: string, index?: number) => {
+    const newNode = createNewNode('', 0);
+
+    if (!parentId) {
+      // 루트 레벨에 추가
+      setNodes(prevNodes => {
+        const newNodes = [...prevNodes];
+        const insertIndex = index !== undefined ? index : newNodes.length;
+        newNodes.splice(insertIndex, 0, newNode);
+        return newNodes;
+      });
+    } else {
+      // 특정 부모의 자식으로 추가
+      const addToParent = (nodeList: OutlinerNode[]): OutlinerNode[] => {
+        return nodeList.map(node => {
+          if (node.id === parentId) {
+            const newChild = { ...newNode, level: node.level + 1, parentId };
+            const children = [...node.children];
+            const insertIndex = index !== undefined ? index : children.length;
+            children.splice(insertIndex, 0, newChild);
+            return { ...node, children };
+          }
+          return {
+            ...node,
+            children: addToParent(node.children)
+          };
+        });
+      };
+
+      setNodes(prevNodes => addToParent(prevNodes));
+    }
+
+    // 새 노드에 포커스
+    setOutlinerState(prev => ({ ...prev, focusedNodeId: newNode.id }));
+  };
+
+  // 노드 삭제
+  const deleteNode = (nodeId: string) => {
+    const deleteFromTree = (nodeList: OutlinerNode[]): OutlinerNode[] => {
+      return nodeList.filter(node => {
+        if (node.id === nodeId) {
+          return false;
+        }
+        node.children = deleteFromTree(node.children);
+        return true;
+      });
+    };
+
+    setNodes(prevNodes => deleteFromTree(prevNodes));
+  };
+
+  // 문서 저장 및 보기 모드로 전환
+  const handleSave = async () => {
+    if (!selectedDocument) return;
+
+    try {
+      const markdownContent = convertOutlinerToMarkdown(nodes);
+      await updateDocument(selectedDocument.id, {
+        title: title.trim(),
+        content: markdownContent
+      });
+      setIsEditMode(false); // 보기 모드로 전환
+    } catch (error) {
+      console.error('문서 저장 실패:', error);
+    }
+  };
+
+  // 편집 모드로 전환
+  const handleEdit = () => {
+    setIsEditMode(true);
+  };
+
+  // 즐겨찾기 토글
+  const handleFavoriteToggle = async (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (!selectedDocument) return;
+    
+    try {
+      await toggleFavorite(selectedDocument.id);
+    } catch (error) {
+      console.error('즐겨찾기 토글 실패:', error);
+    }
+  };
+
+  // 줌 토글
+  const handleZoomToggle = (nodeId?: string) => {
+    setOutlinerState(prev => ({
+      ...prev,
+      zoomedNodeId: prev.zoomedNodeId === nodeId ? undefined : nodeId
+    }));
+  };
+
+  if (!selectedDocument) {
+    return (
+      <div className={`outliner-panel ${className}`}>
+        <div className="empty-state">
+          <div className="empty-content">
+            <h2>📝 아웃라이너 모드</h2>
+            <p>문서를 선택하여 아웃라이너로 편집하세요.</p>
+            <div className="help-text">
+              <small>
+                • 계층적 구조로 아이디어를 정리하세요<br />
+                • 각 항목에서 마크다운 문법을 사용할 수 있습니다<br />
+                • Tab/Shift+Tab으로 레벨을 조정하세요
+              </small>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // 줌된 노드가 있으면 해당 노드와 자식들만 표시
+  const displayNodes = outlinerState.zoomedNodeId 
+    ? nodes.flatMap(node => findNodeAndChildren(node, outlinerState.zoomedNodeId!))
+    : nodes;
+
+  return (
+    <div className={`outliner-panel ${className}`} ref={containerRef}>
+      {/* 헤더 */}
+      <div className="outliner-header">
+        <div className="outliner-title-section">
+          <input
+            type="text"
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+            className="outliner-title-input"
+            placeholder="문서 제목"
+          />
+        </div>
+        
+        <div className="outliner-actions">
+          {isEditMode ? (
+            <button 
+              className="action-button save-button"
+              onClick={handleSave}
+              title="저장하고 보기 모드로 전환"
+            >
+              💾 저장
+            </button>
+          ) : (
+            <button 
+              className="action-button edit-button"
+              onClick={handleEdit}
+              title="편집 모드로 전환"
+            >
+              ✏️ 편집
+            </button>
+          )}
+          <button 
+            className={`action-button favorite-button ${selectedDocument.isFavorite === true ? 'active' : ''}`}
+            onClick={handleFavoriteToggle}
+            title={selectedDocument.isFavorite === true ? "즐겨찾기 해제" : "즐겨찾기 추가"}
+          >
+            {selectedDocument.isFavorite === true ? '⭐' : '☆'}
+          </button>
+          {outlinerState.zoomedNodeId && (
+            <button 
+              className="action-button zoom-out-button"
+              onClick={() => handleZoomToggle()}
+              title="줌 아웃"
+            >
+              🔍 줌 아웃
+            </button>
+          )}
+        </div>
+      </div>
+
+      {/* 아웃라이너 콘텐츠 */}
+      <div className="outliner-content">
+        {displayNodes.map(node => (
+          <OutlinerNodeComponent
+            key={node.id}
+            node={node}
+            outlinerState={outlinerState}
+            isEditMode={isEditMode}
+            onUpdateNode={updateNode}
+            onAddNode={addNode}
+            onDeleteNode={deleteNode}
+            onZoomToggle={handleZoomToggle}
+            onStateChange={setOutlinerState}
+          />
+        ))}
+        
+        {/* 새 노드 추가 버튼 (편집 모드에서만) */}
+        {isEditMode && (
+          <div className="add-node-section">
+            <button 
+              className="add-node-button"
+              onClick={() => addNode()}
+              title="새 항목 추가"
+            >
+              + 새 항목 추가
+            </button>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
+
+// 특정 노드와 그 자식들을 찾는 헬퍼 함수
+const findNodeAndChildren = (node: OutlinerNode, targetId: string): OutlinerNode[] => {
+  if (node.id === targetId) {
+    return [node];
+  }
+  
+  for (const child of node.children) {
+    const found = findNodeAndChildren(child, targetId);
+    if (found.length > 0) {
+      return found;
+    }
+  }
+  
+  return [];
+};
+
+export default OutlinerPanel;
