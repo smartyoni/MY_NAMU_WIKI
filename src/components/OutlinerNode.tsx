@@ -148,10 +148,12 @@ const OutlinerNodeComponent: React.FC<OutlinerNodeProps> = ({
 
   // 노트 토글
   const handleNoteToggle = () => {
-    if (!node.note) {
+    if (!node.note || node.note.trim() === '') {
       // 노트가 없으면 편집 모드로 바로 진입하고 표시
-      setIsEditingNote(true);
-      onUpdateNode(node.id, { isNoteVisible: true, note: '' });
+      if (isEditMode) {
+        setIsEditingNote(true);
+        onUpdateNode(node.id, { isNoteVisible: true, note: '' });
+      }
     } else {
       // 노트가 있으면 표시/숨김 토글
       onUpdateNode(node.id, { isNoteVisible: !node.isNoteVisible });
@@ -441,7 +443,7 @@ const OutlinerNodeComponent: React.FC<OutlinerNodeProps> = ({
       </div>
 
       {/* 노트 섹션 */}
-      {(node.isNoteVisible || isEditingNote) && (
+      {((node.isNoteVisible && node.note) || isEditingNote) && (
         <div className="node-note-section">
           <div className="note-header">
             <span className="note-label">📝 노트</span>

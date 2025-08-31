@@ -154,7 +154,12 @@ const OutlinerPanel: React.FC<OutlinerPanelProps> = ({ className = '' }) => {
     const updateNodeInTree = (nodeList: OutlinerNode[]): OutlinerNode[] => {
       return nodeList.map(node => {
         if (node.id === nodeId) {
-          return { ...node, ...updates, updatedAt: new Date() };
+          // 노트가 업데이트되고 내용이 있으면 자동으로 표시
+          let finalUpdates = { ...updates, updatedAt: new Date() };
+          if (updates.note !== undefined && updates.note.trim() !== '') {
+            finalUpdates.isNoteVisible = true;
+          }
+          return { ...node, ...finalUpdates };
         }
         return {
           ...node,
