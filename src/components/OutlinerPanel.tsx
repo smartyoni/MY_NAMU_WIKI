@@ -199,6 +199,58 @@ const OutlinerPanel: React.FC<OutlinerPanelProps> = ({ className = '' }) => {
     setNodes(prevNodes => deleteFromTree(prevNodes));
   };
 
+  // 노드 이동 (드래그 앤 드롭)
+  const moveNode = (draggedNodeId: string, targetNodeId: string, position: 'before' | 'after' | 'inside') => {
+    let draggedNode: OutlinerNode | null = null;
+    
+    // 1. 드래그된 노드 찾기 및 제거
+    const removeDraggedNode = (nodeList: OutlinerNode[]): OutlinerNode[] => {
+      return nodeList.filter(node => {
+        if (node.id === draggedNodeId) {
+          draggedNode = { ...node };
+          return false;
+        }
+        node.children = removeDraggedNode(node.children);
+        return true;
+      });
+    };
+
+    // 2. 타겟 위치에 노드 삽입
+    const insertNodeAtTarget = (nodeList: OutlinerNode[], targetLevel: number = 0): OutlinerNode[] => {
+      return nodeList.flatMap((node, index, array) => {
+        if (node.id === targetNodeId && draggedNode) {
+          const updatedDraggedNode = { 
+            ...draggedNode, 
+            level: position === 'inside' ? node.level + 1 : node.level,
+            parentId: position === 'inside' ? node.id : node.parentId
+          };
+
+          if (position === 'before') {
+            return [updatedDraggedNode, { ...node, children: insertNodeAtTarget(node.children, node.level + 1) }];
+          } else if (position === 'after') {
+            return [{ ...node, children: insertNodeAtTarget(node.children, node.level + 1) }, updatedDraggedNode];
+          } else { // inside
+            return [{
+              ...node,
+              children: [...insertNodeAtTarget(node.children, node.level + 1), updatedDraggedNode]
+            }];
+          }
+        }
+        return [{ ...node, children: insertNodeAtTarget(node.children, node.level + 1) }];
+      });
+    };
+
+    if (draggedNodeId === targetNodeId) return; // 자기 자신에게는 이동 불가
+
+    setNodes(prevNodes => {
+      const nodesWithoutDragged = removeDraggedNode(prevNodes);
+      if (draggedNode) {
+        return insertNodeAtTarget(nodesWithoutDragged);
+      }
+      return nodesWithoutDragged;
+    });
+  };
+
   // 문서 저장 및 보기 모드로 전환
   const handleSave = async () => {
     if (!selectedDocument) return;
@@ -330,6 +382,7 @@ const OutlinerPanel: React.FC<OutlinerPanelProps> = ({ className = '' }) => {
             onUpdateNode={updateNode}
             onAddNode={addNode}
             onDeleteNode={deleteNode}
+            onMoveNode={moveNode}
             onZoomToggle={handleZoomToggle}
             onStateChange={setOutlinerState}
           />

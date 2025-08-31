@@ -1,6 +1,8 @@
 export interface OutlinerNode {
   id: string;
   content: string; // 마크다운 텍스트 내용
+  note?: string; // 추가 노트 (여러 줄 텍스트)
+  isNoteVisible?: boolean; // 노트 표시 여부
   children: OutlinerNode[];
   isCollapsed: boolean;
   level: number;

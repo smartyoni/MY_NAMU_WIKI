@@ -39,37 +39,92 @@
 
 /* 접기/펼치기 버튼 */
 .collapse-button {
-  width: 20px;
-  height: 20px;
-  border: none;
-  background: transparent;
+  width: 22px;
+  height: 22px;
+  border: 1px solid #dee2e6;
+  background: #ffffff;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  border-radius: 3px;
-  font-size: 0.7rem;
-  color: #6c757d;
+  border-radius: 4px;
+  font-size: 0.8rem;
+  color: #495057;
   flex-shrink: 0;
   margin-top: 0.125rem;
   transition: all 0.15s ease;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.05);
 }
 
 .collapse-button:hover {
   background: #f8f9fa;
-  color: #495057;
+  border-color: #adb5bd;
+  color: #343a40;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
 }
 
 .collapse-button:disabled {
   cursor: default;
+  border-color: #e9ecef;
+  color: #6c757d;
+  background: #f8f9fa;
 }
 
 .collapse-button.has-children {
   color: #007bff;
+  border-color: #007bff;
+  background: rgba(0, 123, 255, 0.05);
+}
+
+.collapse-button.has-children:hover {
+  background: rgba(0, 123, 255, 0.1);
+  border-color: #0056b3;
 }
 
 .collapse-button.collapsed {
   transform: rotate(-90deg);
+}
+
+/* 불릿 포인트 스타일 개선 - 레벨별 다양화 */
+.collapse-button:disabled::before {
+  font-size: 1.2rem;
+  font-weight: bold;
+}
+
+/* 레벨 0 - 큰 원형 불릿 */
+.outliner-node.level-0 .collapse-button:disabled::before {
+  content: '●';
+  color: #007bff;
+  font-size: 1.3rem;
+}
+
+/* 레벨 1 - 중간 원형 불릿 */
+.outliner-node.level-1 .collapse-button:disabled::before {
+  content: '●';
+  color: #28a745;
+  font-size: 1.1rem;
+}
+
+/* 레벨 2 - 작은 원형 불릿 */
+.outliner-node.level-2 .collapse-button:disabled::before {
+  content: '•';
+  color: #ffc107;
+  font-size: 1rem;
+}
+
+/* 레벨 3+ - 대시 */
+.outliner-node.level-3 .collapse-button:disabled::before,
+.outliner-node.level-4 .collapse-button:disabled::before,
+.outliner-node.level-5 .collapse-button:disabled::before,
+.outliner-node.level-6 .collapse-button:disabled::before,
+.outliner-node.level-7 .collapse-button:disabled::before,
+.outliner-node.level-8 .collapse-button:disabled::before,
+.outliner-node.level-9 .collapse-button:disabled::before,
+.outliner-node.level-10 .collapse-button:disabled::before {
+  content: '–';
+  color: #6c757d;
+  font-size: 1rem;
 }
 
 /* 콘텐츠 영역 */
@@ -190,6 +245,11 @@
   opacity: 1;
 }
 
+/* 보기 모드에서 노트가 있으면 항상 표시 */
+.node-actions:has(.note-btn.view-mode) {
+  opacity: 1;
+}
+
 .action-btn {
   width: 24px;
   height: 24px;
@@ -286,6 +346,232 @@
   border-radius: 4px;
 }
 
+/* 드래그 앤 드롭 스타일 */
+.outliner-node {
+  position: relative;
+  transition: all 0.2s ease;
+}
+
+.outliner-node.dragging {
+  opacity: 0.5;
+  transform: rotate(2deg);
+  z-index: 1000;
+}
+
+.outliner-node.drag-over-before::before {
+  content: '';
+  position: absolute;
+  top: -2px;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background: #007bff;
+  border-radius: 2px;
+  z-index: 10;
+  animation: pulse 0.5s ease-in-out infinite alternate;
+}
+
+.outliner-node.drag-over-after::after {
+  content: '';
+  position: absolute;
+  bottom: -2px;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background: #007bff;
+  border-radius: 2px;
+  z-index: 10;
+  animation: pulse 0.5s ease-in-out infinite alternate;
+}
+
+.outliner-node.drag-over-inside {
+  background: rgba(0, 123, 255, 0.1);
+  border: 2px dashed #007bff;
+  border-radius: 6px;
+  animation: pulse-bg 0.5s ease-in-out infinite alternate;
+}
+
+@keyframes pulse {
+  0% { opacity: 0.6; transform: scaleY(0.8); }
+  100% { opacity: 1; transform: scaleY(1); }
+}
+
+@keyframes pulse-bg {
+  0% { background: rgba(0, 123, 255, 0.05); }
+  100% { background: rgba(0, 123, 255, 0.15); }
+}
+
+/* 드래그 가능한 노드에 커서 표시 */
+.outliner-node[draggable="true"]:not(.dragging) .node-header {
+  cursor: grab;
+}
+
+.outliner-node[draggable="true"].dragging .node-header {
+  cursor: grabbing;
+}
+
+/* 드래그 중일 때 자식 노드들 숨기기 */
+.outliner-node.dragging .node-children {
+  display: none;
+}
+
+/* 노트 버튼 스타일 */
+.note-btn {
+  color: #6c757d;
+  font-size: 1rem;
+}
+
+.note-btn.has-note {
+  color: #17a2b8;
+}
+
+.note-btn.active {
+  background: rgba(23, 162, 184, 0.1);
+  color: #138496;
+  border: 1px solid #17a2b8;
+}
+
+.note-btn:hover {
+  background: rgba(23, 162, 184, 0.1);
+  color: #138496;
+}
+
+/* 보기 모드에서 노트 버튼 */
+.note-btn.view-mode {
+  opacity: 1;
+  position: relative;
+}
+
+.note-btn.view-mode::before {
+  content: '';
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  width: 4px;
+  height: 4px;
+  background: #17a2b8;
+  border-radius: 50%;
+  border: 1px solid white;
+}
+
+/* 노트 섹션 스타일 */
+.node-note-section {
+  margin-top: 0.5rem;
+  margin-left: calc(var(--indent-level, 0) * 24px + 24px); /* 불릿 버튼만큼 들여쓰기 */
+  background: #f8f9fa;
+  border: 1px solid #e9ecef;
+  border-radius: 6px;
+  padding: 0.75rem;
+  position: relative;
+}
+
+.note-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0.5rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid #e9ecef;
+}
+
+.note-label {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #495057;
+}
+
+.note-actions {
+  display: flex;
+  gap: 0.25rem;
+}
+
+.note-action-btn {
+  width: 20px;
+  height: 20px;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 3px;
+  font-size: 0.8rem;
+  transition: all 0.15s ease;
+}
+
+.note-action-btn:hover {
+  background: #e9ecef;
+  transform: scale(1.1);
+}
+
+.edit-note-btn {
+  color: #007bff;
+}
+
+.delete-note-btn {
+  color: #dc3545;
+}
+
+.note-content {
+  position: relative;
+}
+
+.note-textarea {
+  width: 100%;
+  border: 1px solid #ced4da;
+  border-radius: 4px;
+  padding: 0.5rem;
+  font-size: 0.9rem;
+  line-height: 1.5;
+  font-family: inherit;
+  resize: vertical;
+  min-height: 60px;
+  background: white;
+}
+
+.note-textarea:focus {
+  outline: none;
+  border-color: #007bff;
+  box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.1);
+}
+
+.note-display {
+  min-height: 2rem;
+  padding: 0.5rem;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+}
+
+.note-display:hover {
+  background: rgba(255, 255, 255, 0.8);
+}
+
+.note-markdown {
+  font-size: 0.9rem;
+  line-height: 1.5;
+  color: #495057;
+}
+
+.note-placeholder {
+  color: #adb5bd;
+  font-style: italic;
+  font-size: 0.85rem;
+}
+
+/* 노트가 있는 노드에 표시 */
+.outliner-node:has(.node-note-section) .collapse-button:disabled::after {
+  content: '';
+  position: absolute;
+  top: -2px;
+  right: -2px;
+  width: 6px;
+  height: 6px;
+  background: #17a2b8;
+  border-radius: 50%;
+  border: 1px solid white;
+}
+
 /* 반응형 디자인 */
 @media (max-width: 768px) {
   .node-header {
@@ -296,7 +582,16 @@
     width: 16px;
   }
   
-  .collapse-button,
+  .collapse-button {
+    width: 28px;
+    height: 28px;
+    font-size: 0.9rem;
+  }
+  
+  .collapse-button:disabled::before {
+    font-size: 1.4rem;
+  }
+  
   .action-btn {
     width: 32px;
     height: 32px;
@@ -316,5 +611,21 @@
   .node-input,
   .node-display {
     font-size: 1rem;
+  }
+  
+  /* 모바일에서 노트 섹션 */
+  .node-note-section {
+    margin-left: calc(var(--indent-level, 0) * 16px + 16px);
+    padding: 0.5rem;
+  }
+  
+  .note-textarea {
+    font-size: 1rem;
+  }
+  
+  .note-action-btn {
+    width: 24px;
+    height: 24px;
+    font-size: 0.9rem;
   }
 }

@@ -9,6 +9,7 @@ interface OutlinerNodeProps {
   onUpdateNode: (nodeId: string, updates: Partial<OutlinerNode>) => void;
   onAddNode: (parentId?: string, index?: number) => void;
   onDeleteNode: (nodeId: string) => void;
+  onMoveNode: (draggedNodeId: string, targetNodeId: string, position: 'before' | 'after' | 'inside') => void;
   onZoomToggle: (nodeId?: string) => void;
   onStateChange: (updater: (prev: OutlinerState) => OutlinerState) => void;
 }
@@ -20,12 +21,19 @@ const OutlinerNodeComponent: React.FC<OutlinerNodeProps> = ({
   onUpdateNode,
   onAddNode,
   onDeleteNode,
+  onMoveNode,
   onZoomToggle,
   onStateChange
 }) => {
   const [isEditing, setIsEditing] = useState(false);
   const [editContent, setEditContent] = useState(node.content);
+  const [isEditingNote, setIsEditingNote] = useState(false);
+  const [editNote, setEditNote] = useState(node.note || '');
+  const [isDragging, setIsDragging] = useState(false);
+  const [dragOver, setDragOver] = useState<'before' | 'after' | 'inside' | null>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const noteTextareaRef = useRef<HTMLTextAreaElement>(null);
+  const nodeRef = useRef<HTMLDivElement>(null);
   const isFocused = outlinerState.focusedNodeId === node.id;
 
   useEffect(() => {
@@ -114,9 +122,14 @@ const OutlinerNodeComponent: React.FC<OutlinerNodeProps> = ({
     }
   };
 
-  // 접기/펼치기 토글
+  // 접기/펼치기 토글 (자식 노드용)
   const handleToggleCollapse = () => {
     onUpdateNode(node.id, { isCollapsed: !node.isCollapsed });
+  };
+
+  // 노트 접기/펼치기 토글
+  const handleToggleNoteCollapse = () => {
+    onUpdateNode(node.id, { isNoteVisible: !node.isNoteVisible });
   };
 
   // 줌 토글
@@ -124,10 +137,101 @@ const OutlinerNodeComponent: React.FC<OutlinerNodeProps> = ({
     onZoomToggle(node.id);
   };
 
+  // 노트 토글
+  const handleNoteToggle = () => {
+    if (!node.note) {
+      // 노트가 없으면 편집 모드로 바로 진입하고 표시
+      setIsEditingNote(true);
+      onUpdateNode(node.id, { isNoteVisible: true, note: '' });
+    } else {
+      // 노트가 있으면 표시/숨김 토글
+      onUpdateNode(node.id, { isNoteVisible: !node.isNoteVisible });
+    }
+  };
+
+  // 노트 편집 시작
+  const handleNoteEdit = () => {
+    setIsEditingNote(true);
+  };
+
+  // 노트 편집 완료
+  const handleNoteBlur = () => {
+    if (editNote !== (node.note || '')) {
+      onUpdateNode(node.id, { note: editNote.trim() });
+    }
+    setIsEditingNote(false);
+  };
+
+  // 노트 삭제
+  const handleNoteDelete = () => {
+    onUpdateNode(node.id, { note: '', isNoteVisible: false });
+    setEditNote('');
+  };
+
   // 노드 인덱스 구하기 (형제 노드 중에서)
   const getNodeIndex = (): number => {
     // TODO: 부모의 children 배열에서 현재 노드의 인덱스 찾기
     return 0;
+  };
+
+  // 드래그 앤 드롭 핸들러들
+  const handleDragStart = (e: React.DragEvent) => {
+    if (!isEditMode) return; // 편집 모드에서만 드래그 가능
+    
+    setIsDragging(true);
+    e.dataTransfer.setData('text/plain', node.id);
+    e.dataTransfer.effectAllowed = 'move';
+    
+    // 드래그 이미지 설정 (선택사항)
+    if (nodeRef.current) {
+      const dragImage = nodeRef.current.cloneNode(true) as HTMLElement;
+      dragImage.style.opacity = '0.5';
+      e.dataTransfer.setDragImage(dragImage, 0, 0);
+    }
+  };
+
+  const handleDragEnd = () => {
+    setIsDragging(false);
+    setDragOver(null);
+  };
+
+  const handleDragOver = (e: React.DragEvent) => {
+    if (!isEditMode) return;
+    
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+
+    // 마우스 위치에 따라 드롭 위치 결정
+    const rect = e.currentTarget.getBoundingClientRect();
+    const y = e.clientY - rect.top;
+    const height = rect.height;
+
+    if (y < height * 0.25) {
+      setDragOver('before');
+    } else if (y > height * 0.75) {
+      setDragOver('after');
+    } else {
+      setDragOver('inside');
+    }
+  };
+
+  const handleDragLeave = (e: React.DragEvent) => {
+    // 자식 엘리먼트로 이동하는 경우는 무시
+    if (e.currentTarget.contains(e.relatedTarget as Node)) return;
+    setDragOver(null);
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    if (!isEditMode) return;
+    
+    e.preventDefault();
+    const draggedNodeId = e.dataTransfer.getData('text/plain');
+    
+    if (draggedNodeId !== node.id && dragOver) {
+      onMoveNode(draggedNodeId, node.id, dragOver);
+    }
+    
+    setDragOver(null);
   };
 
   // 개선된 마크다운 렌더링 (줄바꿈 및 URL 지원)
@@ -209,10 +313,21 @@ const OutlinerNodeComponent: React.FC<OutlinerNodeProps> = ({
   };
 
   const hasChildren = node.children.length > 0;
+  const hasNote = Boolean(node.note);
+  const hasCollapsibleContent = hasChildren || hasNote;
   const indentLevel = Math.min(node.level, 10); // 최대 10레벨
 
   return (
-    <div className={`outliner-node level-${indentLevel}`}>
+    <div 
+      ref={nodeRef}
+      className={`outliner-node level-${indentLevel} ${isDragging ? 'dragging' : ''} ${dragOver ? `drag-over-${dragOver}` : ''}`}
+      draggable={isEditMode && !isEditing}
+      onDragStart={handleDragStart}
+      onDragEnd={handleDragEnd}
+      onDragOver={handleDragOver}
+      onDragLeave={handleDragLeave}
+      onDrop={handleDrop}
+    >
       {/* 노드 헤더 */}
       <div className="node-header">
         {/* 들여쓰기 가이드 */}
@@ -220,13 +335,31 @@ const OutlinerNodeComponent: React.FC<OutlinerNodeProps> = ({
           <div key={i} className="indent-guide" />
         ))}
         
-        {/* 접기/펼치기 버튼 */}
+        {/* 접기/펼치기 버튼 - 자식 노드와 노트를 통합 관리 */}
         <button
-          className={`collapse-button ${hasChildren ? 'has-children' : ''} ${node.isCollapsed ? 'collapsed' : ''}`}
-          onClick={handleToggleCollapse}
-          disabled={!hasChildren}
+          className={`collapse-button ${hasCollapsibleContent ? 'has-children' : ''} ${(node.isCollapsed || !node.isNoteVisible) ? 'collapsed' : ''}`}
+          onClick={() => {
+            if (hasChildren && hasNote) {
+              // 자식과 노트 모두 있으면 둘 다 토글
+              const newCollapsedState = !((!node.isCollapsed) && node.isNoteVisible);
+              onUpdateNode(node.id, { 
+                isCollapsed: newCollapsedState,
+                isNoteVisible: !newCollapsedState 
+              });
+            } else if (hasChildren) {
+              // 자식만 있으면 자식만 토글
+              handleToggleCollapse();
+            } else if (hasNote) {
+              // 노트만 있으면 노트만 토글
+              handleToggleNoteCollapse();
+            }
+          }}
+          disabled={!hasCollapsibleContent}
         >
-          {hasChildren ? (node.isCollapsed ? '▶' : '▼') : '•'}
+          {hasCollapsibleContent ? 
+            ((node.isCollapsed || !node.isNoteVisible) ? '▶' : '▼') : 
+            '•'
+          }
         </button>
 
         {/* 콘텐츠 영역 */}
@@ -255,37 +388,119 @@ const OutlinerNodeComponent: React.FC<OutlinerNodeProps> = ({
           )}
         </div>
 
-        {/* 액션 버튼들 (편집 모드에서만) */}
-        {isEditMode && (
-          <div className="node-actions">
-            {hasChildren && (
+        {/* 액션 버튼들 */}
+        <div className="node-actions">
+          {/* 보기 모드에서는 노트 버튼만 표시 */}
+          {!isEditMode && node.note && (
+            <button
+              className={`action-btn note-btn view-mode ${node.isNoteVisible ? 'active' : ''} has-note`}
+              onClick={handleNoteToggle}
+              title={node.isNoteVisible ? "노트 숨기기" : "노트 보기"}
+            >
+              📝
+            </button>
+          )}
+          
+          {/* 편집 모드에서는 모든 버튼 표시 */}
+          {isEditMode && (
+            <>
+              {hasChildren && (
+                <button
+                  className="action-btn zoom-btn"
+                  onClick={handleZoom}
+                  title="이 노드에 집중"
+                >
+                  🔍
+                </button>
+              )}
+              
               <button
-                className="action-btn zoom-btn"
-                onClick={handleZoom}
-                title="이 노드에 집중"
+                className={`action-btn note-btn ${node.isNoteVisible ? 'active' : ''} ${node.note ? 'has-note' : ''}`}
+                onClick={handleNoteToggle}
+                title={node.isNoteVisible ? "노트 숨기기" : "노트 추가"}
               >
-                🔍
+                📝
               </button>
-            )}
-            
-            <button
-              className="action-btn add-btn"
-              onClick={() => onAddNode(node.id)}
-              title="하위 항목 추가"
-            >
-              +
-            </button>
-            
-            <button
-              className="action-btn delete-btn"
-              onClick={() => onDeleteNode(node.id)}
-              title="삭제"
-            >
-              ×
-            </button>
-          </div>
-        )}
+              
+              <button
+                className="action-btn add-btn"
+                onClick={() => onAddNode(node.id)}
+                title="하위 항목 추가"
+              >
+                +
+              </button>
+              
+              <button
+                className="action-btn delete-btn"
+                onClick={() => onDeleteNode(node.id)}
+                title="삭제"
+              >
+                ×
+              </button>
+            </>
+          )}
+        </div>
       </div>
+
+      {/* 노트 섹션 */}
+      {((node.isNoteVisible && node.note) || (node.note && isEditingNote)) && (
+        <div className="node-note-section">
+          <div className="note-header">
+            <span className="note-label">📝 노트</span>
+            {isEditMode && (
+              <div className="note-actions">
+                {!isEditingNote && (
+                  <button
+                    className="note-action-btn edit-note-btn"
+                    onClick={handleNoteEdit}
+                    title="노트 편집"
+                  >
+                    ✏️
+                  </button>
+                )}
+                <button
+                  className="note-action-btn delete-note-btn"
+                  onClick={handleNoteDelete}
+                  title="노트 삭제"
+                >
+                  🗑️
+                </button>
+              </div>
+            )}
+          </div>
+          
+          <div className="note-content">
+            {isEditMode && isEditingNote ? (
+              <textarea
+                ref={noteTextareaRef}
+                value={editNote}
+                onChange={(e) => setEditNote(e.target.value)}
+                onBlur={handleNoteBlur}
+                className="note-textarea"
+                placeholder="여러 줄 노트를 작성하세요..."
+                autoFocus
+                rows={Math.max(3, editNote.split('\n').length)}
+              />
+            ) : (
+              <div 
+                className="note-display"
+                onDoubleClick={isEditMode ? handleNoteEdit : undefined}
+                title={isEditMode ? "더블클릭하여 편집" : ""}
+              >
+                {node.note ? (
+                  <div className="note-markdown">
+                    {renderMarkdown(node.note)}
+                  </div>
+                ) : (
+                  <span className="note-placeholder">
+                    {isEditMode ? "클릭하여 노트를 추가하세요" : "노트 없음"}
+                  </span>
+                )}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* 자식 노드들 */}
       {!node.isCollapsed && hasChildren && (
@@ -299,6 +514,7 @@ const OutlinerNodeComponent: React.FC<OutlinerNodeProps> = ({
               onUpdateNode={onUpdateNode}
               onAddNode={onAddNode}
               onDeleteNode={onDeleteNode}
+              onMoveNode={onMoveNode}
               onZoomToggle={onZoomToggle}
               onStateChange={onStateChange}
             />
