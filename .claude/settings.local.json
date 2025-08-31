@@ -1,0 +1,46 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npx create-react-app:*)",
+      "Bash(npm create:*)",
+      "Bash(rd:*)",
+      "Bash(npm install)",
+      "Bash(npm install:*)",
+      "Bash(npm run dev:*)",
+      "WebFetch(domain:console.firebase.google.com)",
+      "Bash(npm run build:*)",
+      "Bash(firebase login:*)",
+      "Bash(git init:*)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(git config:*)",
+      "Bash(git branch:*)",
+      "Bash(git remote add:*)",
+      "Bash(git push:*)",
+      "WebFetch(domain:github.com)",
+      "Bash(git pull:*)",
+      "Bash(git stash:*)",
+      "Bash(git reset:*)",
+      "Bash(npm start)",
+      "Bash(grep:*)",
+      "Bash(npm test)",
+      "Bash(git fetch:*)",
+      "Bash(git restore:*)",
+      "Bash(npm run:*)",
+      "WebFetch(domain:raw.githubusercontent.com)",
+      "WebFetch(domain:beamish-cupcake-76e6d5.netlify.app)",
+      "WebFetch(domain:euphonious-babka-95b8b1.netlify.app)",
+      "WebFetch(domain:meetingbrif.netlify.app)",
+      "Bash(dir \"C:\\Users\\최국한\\Desktop\\앱개발\\위키문서로 자료백업\\my-wiki\\src\" /s /b)",
+      "Bash(firebase deploy:*)",
+      "Bash(npx cap:*)",
+      "WebFetch(domain:smartwikiyoni.netlify.app)",
+      "Bash(dir \"C:\\Users\\최국한\\Desktop\\앱개발\\위키문서로 자료백업\\my-wiki\" /b)"
+    ],
+    "deny": [],
+    "ask": [],
+    "additionalDirectories": [
+      "C:\\"
+    ]
+  }
+}
