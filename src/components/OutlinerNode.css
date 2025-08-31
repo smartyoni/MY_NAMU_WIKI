@@ -629,3 +629,80 @@
     font-size: 0.9rem;
   }
 }
+
+/* 컨텍스트 메뉴 힌트 */
+.context-menu-hint {
+  color: #6c757d;
+  font-size: 1.2rem;
+  font-weight: bold;
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 4px;
+  transition: all 0.2s ease;
+}
+
+.context-menu-hint:hover {
+  background: rgba(0, 0, 0, 0.1);
+  color: #495057;
+}
+
+/* 컨텍스트 메뉴 */
+.context-menu {
+  background: white;
+  border: 1px solid #dee2e6;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  padding: 4px 0;
+  min-width: 180px;
+  font-size: 14px;
+}
+
+.context-menu-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 8px 16px;
+  border: none;
+  background: none;
+  text-align: left;
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+  font-size: 14px;
+  color: #495057;
+}
+
+.context-menu-item:hover {
+  background: #f8f9fa;
+}
+
+.context-menu-item:active {
+  background: #e9ecef;
+}
+
+.context-menu-item.delete {
+  color: #dc3545;
+}
+
+.context-menu-item.delete:hover {
+  background: #f8d7da;
+  color: #721c24;
+}
+
+/* 모바일에서 컨텍스트 메뉴 조정 */
+@media (max-width: 768px) {
+  .context-menu {
+    min-width: 160px;
+    font-size: 16px;
+  }
+  
+  .context-menu-item {
+    padding: 12px 16px;
+    font-size: 16px;
+  }
+  
+  .context-menu-hint {
+    font-size: 1.4rem;
+    padding: 6px 12px;
+  }
+}

@@ -33,6 +33,7 @@ const OutlinerNodeComponent: React.FC<OutlinerNodeProps> = ({
   const [editNote, setEditNote] = useState(node.note || '');
   const [isDragging, setIsDragging] = useState(false);
   const [dragOver, setDragOver] = useState<'before' | 'after' | 'inside' | null>(null);
+  const [contextMenu, setContextMenu] = useState<{ x: number; y: number } | null>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const noteTextareaRef = useRef<HTMLTextAreaElement>(null);
   const nodeRef = useRef<HTMLDivElement>(null);
@@ -145,6 +146,31 @@ const OutlinerNodeComponent: React.FC<OutlinerNodeProps> = ({
       onEnterEditMode();
     }
   };
+
+  // 컨텍스트 메뉴 핸들러
+  const handleContextMenu = (e: React.MouseEvent) => {
+    if (!isEditMode) return; // 편집모드에서만 컨텍스트 메뉴 표시
+    
+    e.preventDefault();
+    setContextMenu({
+      x: e.clientX,
+      y: e.clientY
+    });
+  };
+
+  // 컨텍스트 메뉴 닫기
+  const closeContextMenu = () => {
+    setContextMenu(null);
+  };
+
+  // 전역 클릭 이벤트로 컨텍스트 메뉴 닫기
+  useEffect(() => {
+    if (contextMenu) {
+      const handleClick = () => closeContextMenu();
+      document.addEventListener('click', handleClick);
+      return () => document.removeEventListener('click', handleClick);
+    }
+  }, [contextMenu]);
 
   // 노트 토글
   const handleNoteToggle = () => {
@@ -322,6 +348,7 @@ const OutlinerNodeComponent: React.FC<OutlinerNodeProps> = ({
       onDragOver={handleDragOver}
       onDragLeave={handleDragLeave}
       onDrop={handleDrop}
+      onContextMenu={handleContextMenu}
     >
       {/* 노드 헤더 */}
       <div className="node-header">
@@ -401,43 +428,11 @@ const OutlinerNodeComponent: React.FC<OutlinerNodeProps> = ({
             </button>
           )}
           
-          {/* 편집 모드에서는 모든 버튼 표시 */}
+          {/* 편집 모드에서는 우클릭 힌트만 표시 */}
           {isEditMode && (
-            <>
-              {hasChildren && (
-                <button
-                  className="action-btn zoom-btn"
-                  onClick={handleZoom}
-                  title="이 노드에 집중"
-                >
-                  🔍
-                </button>
-              )}
-              
-              <button
-                className={`action-btn note-btn ${node.isNoteVisible ? 'active' : ''} ${node.note ? 'has-note' : ''}`}
-                onClick={handleNoteToggle}
-                title={node.isNoteVisible ? "노트 숨기기" : "노트 추가"}
-              >
-                📝
-              </button>
-              
-              <button
-                className="action-btn add-btn"
-                onClick={() => onAddNode(node.id)}
-                title="하위 항목 추가"
-              >
-                +
-              </button>
-              
-              <button
-                className="action-btn delete-btn"
-                onClick={() => onDeleteNode(node.id)}
-                title="삭제"
-              >
-                ×
-              </button>
-            </>
+            <div className="context-menu-hint" title="우클릭하여 메뉴 열기">
+              ⋮
+            </div>
           )}
         </div>
       </div>
@@ -520,6 +515,62 @@ const OutlinerNodeComponent: React.FC<OutlinerNodeProps> = ({
               onEnterEditMode={onEnterEditMode}
             />
           ))}
+        </div>
+      )}
+
+      {/* 컨텍스트 메뉴 */}
+      {contextMenu && (
+        <div 
+          className="context-menu"
+          style={{
+            position: 'fixed',
+            left: contextMenu.x,
+            top: contextMenu.y,
+            zIndex: 1000
+          }}
+          onClick={e => e.stopPropagation()}
+        >
+          {hasChildren && (
+            <button
+              className="context-menu-item"
+              onClick={() => {
+                handleZoom();
+                closeContextMenu();
+              }}
+            >
+              🔍 이 노드에 집중
+            </button>
+          )}
+          
+          <button
+            className="context-menu-item"
+            onClick={() => {
+              handleNoteToggle();
+              closeContextMenu();
+            }}
+          >
+            📝 {node.note ? (node.isNoteVisible ? '노트 숨기기' : '노트 보기') : '노트 추가'}
+          </button>
+          
+          <button
+            className="context-menu-item"
+            onClick={() => {
+              onAddNode(node.id);
+              closeContextMenu();
+            }}
+          >
+            ➕ 하위 항목 추가
+          </button>
+          
+          <button
+            className="context-menu-item delete"
+            onClick={() => {
+              onDeleteNode(node.id);
+              closeContextMenu();
+            }}
+          >
+            🗑️ 삭제
+          </button>
         </div>
       )}
     </div>
