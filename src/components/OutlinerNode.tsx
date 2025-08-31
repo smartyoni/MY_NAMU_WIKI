@@ -390,12 +390,12 @@ const OutlinerNodeComponent: React.FC<OutlinerNodeProps> = ({
 
         {/* 액션 버튼들 */}
         <div className="node-actions">
-          {/* 보기 모드에서는 노트 버튼만 표시 */}
-          {!isEditMode && node.note && (
+          {/* 보기 모드에서는 노트 버튼 항상 표시 */}
+          {!isEditMode && (
             <button
-              className={`action-btn note-btn view-mode ${node.isNoteVisible ? 'active' : ''} has-note`}
+              className={`action-btn note-btn view-mode ${node.isNoteVisible ? 'active' : ''} ${node.note ? 'has-note' : ''}`}
               onClick={handleNoteToggle}
-              title={node.isNoteVisible ? "노트 숨기기" : "노트 보기"}
+              title={node.note ? (node.isNoteVisible ? "노트 숨기기" : "노트 보기") : "노트 추가"}
             >
               📝
             </button>
