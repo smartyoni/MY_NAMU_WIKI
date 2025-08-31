@@ -12,6 +12,7 @@ interface OutlinerNodeProps {
   onMoveNode: (draggedNodeId: string, targetNodeId: string, position: 'before' | 'after' | 'inside') => void;
   onZoomToggle: (nodeId?: string) => void;
   onStateChange: (updater: (prev: OutlinerState) => OutlinerState) => void;
+  onEnterEditMode?: () => void;
 }
 
 const OutlinerNodeComponent: React.FC<OutlinerNodeProps> = ({
@@ -23,7 +24,8 @@ const OutlinerNodeComponent: React.FC<OutlinerNodeProps> = ({
   onDeleteNode,
   onMoveNode,
   onZoomToggle,
-  onStateChange
+  onStateChange,
+  onEnterEditMode
 }) => {
   const [isEditing, setIsEditing] = useState(false);
   const [editContent, setEditContent] = useState(node.content);
@@ -135,6 +137,13 @@ const OutlinerNodeComponent: React.FC<OutlinerNodeProps> = ({
   // 줌 토글
   const handleZoom = () => {
     onZoomToggle(node.id);
+  };
+
+  // 보기모드에서 더블클릭으로 편집모드 진입
+  const handleDoubleClickToEdit = () => {
+    if (!isEditMode && onEnterEditMode) {
+      onEnterEditMode();
+    }
   };
 
   // 노트 토글
@@ -357,7 +366,12 @@ const OutlinerNodeComponent: React.FC<OutlinerNodeProps> = ({
               rows={editContent.split('\n').length || 1}
             />
           ) : (
-            <div className="node-display">
+            <div 
+              className="node-display"
+              onDoubleClick={handleDoubleClickToEdit}
+              style={{ cursor: !isEditMode ? 'pointer' : 'default' }}
+              title={!isEditMode ? "더블클릭하여 편집" : ""}
+            >
               {node.content ? renderText(node.content) : (
                 isEditMode ? (
                   <span className="placeholder">클릭하여 편집</span>
@@ -498,6 +512,7 @@ const OutlinerNodeComponent: React.FC<OutlinerNodeProps> = ({
               onMoveNode={onMoveNode}
               onZoomToggle={onZoomToggle}
               onStateChange={onStateChange}
+              onEnterEditMode={onEnterEditMode}
             />
           ))}
         </div>

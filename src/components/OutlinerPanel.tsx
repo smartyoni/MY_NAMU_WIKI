@@ -404,6 +404,7 @@ const OutlinerPanel: React.FC<OutlinerPanelProps> = ({ className = '' }) => {
             onMoveNode={moveNode}
             onZoomToggle={handleZoomToggle}
             onStateChange={setOutlinerState}
+            onEnterEditMode={handleEdit}
           />
         ))}
         
