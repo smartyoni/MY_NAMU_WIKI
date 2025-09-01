@@ -12,7 +12,9 @@ const MobileSlideView: React.FC = () => {
     uiState, 
     selectCategory, 
     selectFolder, 
-    selectDocument 
+    selectDocument,
+    createFolder,
+    createDocument
   } = useDocuments();
 
   const [currentView, setCurrentView] = useState<'categories' | 'folders' | 'documents' | 'document'>('categories');
@@ -77,6 +79,31 @@ const MobileSlideView: React.FC = () => {
     }
   };
 
+  // 폴더 추가 함수
+  const handleAddFolder = async (categoryId: string) => {
+    const folderName = window.prompt('새 폴더 이름을 입력하세요:');
+    if (folderName && folderName.trim()) {
+      try {
+        await createFolder(categoryId, folderName.trim());
+      } catch (error) {
+        console.error('폴더 생성 실패:', error);
+      }
+    }
+  };
+
+  // 문서 추가 함수
+  const handleAddDocument = async (folderId: string) => {
+    const documentTitle = window.prompt('새 문서 제목을 입력하세요:');
+    if (documentTitle && documentTitle.trim()) {
+      try {
+        const documentId = await createDocument(folderId, documentTitle.trim(), '');
+        selectDocument(documentId);
+      } catch (error) {
+        console.error('문서 생성 실패:', error);
+      }
+    }
+  };
+
   const renderCategoriesView = () => (
     <div className="mobile-slide-content">
       <div className="mobile-slide-header">
@@ -98,6 +125,16 @@ const MobileSlideView: React.FC = () => {
                 {folders.filter(f => f.categoryId === category.id).length}개 폴더
               </div>
             </div>
+            <button 
+              className="mobile-add-folder-btn"
+              onClick={(e) => {
+                e.stopPropagation();
+                handleAddFolder(category.id);
+              }}
+              title="폴더 추가"
+            >
+              📁+
+            </button>
             <div className="item-arrow">›</div>
           </div>
         ))}
@@ -131,6 +168,16 @@ const MobileSlideView: React.FC = () => {
                   {documents.filter(d => d.folderId === folder.id).length}개 문서
                 </div>
               </div>
+              <button 
+                className="mobile-add-document-btn"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleAddDocument(folder.id);
+                }}
+                title="문서 추가"
+              >
+                📄+
+              </button>
               <div className="item-arrow">›</div>
             </div>
           ))}
