@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, type ReactNode } from 'react';
 import { collection, doc, setDoc, deleteDoc, onSnapshot, query, orderBy, where, deleteField } from 'firebase/firestore';
 import { db } from '../firebase';
-import { Category, Folder, WikiDocument, UIState, Bookmark, TextClip } from '../types';
+import { Category, Folder, WikiDocument, UIState, Bookmark, TextClip, SidebarBookmark } from '../types';
 
 
 interface DocumentComment {
@@ -21,6 +21,7 @@ interface DocumentContextType {
   documents: WikiDocument[];
   bookmarks: Bookmark[];
   textClips: TextClip[];
+  sidebarBookmarks: SidebarBookmark[];
   comments: DocumentComment[];
   uiState: UIState;
   loading: boolean;
@@ -76,6 +77,12 @@ interface DocumentContextType {
   deleteTextClip: (id: string) => Promise<void>;
   reorderTextClips: (reorderedTextClips: TextClip[]) => Promise<void>;
   
+  // 사이드바 북마크 관리
+  createSidebarBookmark: (title: string, url: string, color?: string) => Promise<string>;
+  updateSidebarBookmark: (id: string, updates: Partial<SidebarBookmark>) => Promise<void>;
+  deleteSidebarBookmark: (id: string) => Promise<void>;
+  reorderSidebarBookmarks: (reorderedBookmarks: SidebarBookmark[]) => Promise<void>;
+  
   // 빠른메모
   createQuickMemo: (content: string) => Promise<string>;
   navigateToQuickMemoFolder: () => Promise<void>;
@@ -109,6 +116,7 @@ export const DocumentProvider: React.FC<DocumentProviderProps> = ({
   const [documents, setDocuments] = useState<WikiDocument[]>([]);
   const [bookmarks, setBookmarks] = useState<Bookmark[]>([]);
   const [textClips, setTextClips] = useState<TextClip[]>([]);
+  const [sidebarBookmarks, setSidebarBookmarks] = useState<SidebarBookmark[]>([]);
   const [comments, setComments] = useState<DocumentComment[]>([]);
   // localStorage에서 이전 상태 복원
   const getInitialUIState = (): UIState => {
@@ -371,6 +379,33 @@ export const DocumentProvider: React.FC<DocumentProviderProps> = ({
       setTextClips(clips);
     }, (err) => {
       console.error('Error fetching text clips:', err);
+    });
+
+    return () => unsubscribe();
+  }, [userId]);
+
+  // Firebase에서 사이드바 북마크 목록 실시간 구독
+  useEffect(() => {
+    const sidebarBookmarksRef = collection(db, 'users', userId, 'sidebarBookmarks');
+    const q = query(sidebarBookmarksRef, orderBy('order', 'asc'));
+    
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const bookmarks: SidebarBookmark[] = [];
+      snapshot.forEach((doc) => {
+        const data = doc.data();
+        bookmarks.push({
+          id: doc.id,
+          title: data.title,
+          url: data.url,
+          order: data.order,
+          color: data.color,
+          createdAt: data.createdAt?.toDate() || new Date(),
+          updatedAt: data.updatedAt?.toDate() || new Date()
+        });
+      });
+      setSidebarBookmarks(bookmarks);
+    }, (err) => {
+      console.error('Error fetching sidebar bookmarks:', err);
     });
 
     return () => unsubscribe();
@@ -971,6 +1006,66 @@ export const DocumentProvider: React.FC<DocumentProviderProps> = ({
     }
   };
 
+  // 사이드바 북마크 관리 함수들
+  const createSidebarBookmark = async (title: string, url: string, color?: string): Promise<string> => {
+    try {
+      const id = `sidebar-bookmark-${Date.now()}`;
+      const order = sidebarBookmarks.length;
+      const now = new Date();
+      
+      await setDoc(doc(db, 'users', userId, 'sidebarBookmarks', id), {
+        title,
+        url,
+        color: color || '#4A90E2',
+        order,
+        createdAt: now,
+        updatedAt: now
+      });
+      
+      return id;
+    } catch (error) {
+      console.error('사이드바 북마크 생성 실패:', error);
+      throw error;
+    }
+  };
+
+  const updateSidebarBookmark = async (id: string, updates: Partial<SidebarBookmark>): Promise<void> => {
+    try {
+      const updateData = {
+        ...updates,
+        updatedAt: new Date()
+      };
+      
+      await setDoc(doc(db, 'users', userId, 'sidebarBookmarks', id), updateData, { merge: true });
+    } catch (error) {
+      console.error('사이드바 북마크 수정 실패:', error);
+      throw error;
+    }
+  };
+
+  const deleteSidebarBookmark = async (id: string): Promise<void> => {
+    try {
+      await deleteDoc(doc(db, 'users', userId, 'sidebarBookmarks', id));
+    } catch (error) {
+      console.error('사이드바 북마크 삭제 실패:', error);
+      throw error;
+    }
+  };
+
+  const reorderSidebarBookmarks = async (reorderedBookmarks: SidebarBookmark[]): Promise<void> => {
+    try {
+      const updatePromises = reorderedBookmarks.map((bookmark, index) => 
+        setDoc(doc(db, 'users', userId, 'sidebarBookmarks', bookmark.id), 
+          { order: index }, { merge: true })
+      );
+      
+      await Promise.all(updatePromises);
+    } catch (error) {
+      console.error('사이드바 북마크 순서 일괄 변경 실패:', error);
+      throw error;
+    }
+  };
+
   // 빠른메모 함수
   const createQuickMemo = async (content: string): Promise<string> => {
     try {
@@ -1184,6 +1279,7 @@ export const DocumentProvider: React.FC<DocumentProviderProps> = ({
     documents,
     bookmarks,
     textClips,
+    sidebarBookmarks,
     comments,
     uiState,
     loading,
@@ -1222,6 +1318,10 @@ export const DocumentProvider: React.FC<DocumentProviderProps> = ({
     updateTextClip,
     deleteTextClip,
     reorderTextClips,
+    createSidebarBookmark,
+    updateSidebarBookmark,
+    deleteSidebarBookmark,
+    reorderSidebarBookmarks,
     createQuickMemo,
     navigateToQuickMemoFolder,
     toggleFavorite,
