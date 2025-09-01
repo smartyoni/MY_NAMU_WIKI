@@ -6,6 +6,7 @@ export default defineConfig({
   plugins: [react({
     jsxRuntime: 'automatic',
   })],
+  base: '/MY_NAMU_WIKI/',
   build: {
     sourcemap: false,
     target: 'es2015',
