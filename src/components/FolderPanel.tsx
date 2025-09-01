@@ -40,11 +40,6 @@ const FolderPanel: React.FC<FolderPanelProps> = ({ className = '' }) => {
   const boardDocument = uiState.selectedCategoryId 
     ? documents.find(doc => doc.isBoardDocument && doc.categoryId === uiState.selectedCategoryId)
     : null;
-    
-  console.log('FolderPanel - selectedCategoryId:', uiState.selectedCategoryId);
-  console.log('FolderPanel - all documents:', documents.length);
-  console.log('FolderPanel - board documents:', documents.filter(doc => doc.isBoardDocument));
-  console.log('FolderPanel - boardDocument found:', boardDocument);
 
   const handleEditStart = (folder: Folder) => {
     setEditingId(folder.id);
