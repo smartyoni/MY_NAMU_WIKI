@@ -3,7 +3,6 @@ import { Category } from '../types';
 import { useDocuments } from '../context/DocumentContextFirebase';
 import ThreeDotsMenu from './ThreeDotsMenu';
 import ConfirmModal from './ConfirmModal';
-import { useLongPress } from '../hooks/useLongPress';
 import './CategoryPanel.css';
 
 interface CategoryPanelProps {
@@ -166,16 +165,7 @@ const CategoryPanel: React.FC<CategoryPanelProps> = ({ className = '' }) => {
     setOpenMenuId(isOpen ? categoryId : null);
   };
 
-  // 롱프레스로 폴더 추가 (모바일용)
-  const handleLongPress = (category: Category) => {
-    handleAddFolder(category.id);
-  };
-
-  const getLongPressHandlers = (category: Category) => useLongPress({
-    onLongPress: () => handleLongPress(category),
-    delay: 1200, // 1.2초
-    shouldPreventDefault: false
-  });
+  // 롱프레스로 폴더 추가 (모바일용) - 제거됨 (React 훅 규칙 위반으로 인한 에러 방지)
 
   const getMenuItems = (category: Category) => [
     {
@@ -224,7 +214,6 @@ const CategoryPanel: React.FC<CategoryPanelProps> = ({ className = '' }) => {
             onDragEnd={handleDragEnd}
             onDragOver={handleDragOver}
             onDrop={(e) => handleDrop(e, category)}
-            {...(editingId !== category.id ? getLongPressHandlers(category) : {})}
           >
             {editingId === category.id ? (
               <div className="edit-form">

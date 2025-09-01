@@ -4,7 +4,6 @@ import { useDocuments } from '../context/DocumentContextFirebase';
 import ConfirmModal from './ConfirmModal';
 import ContextMenu, { ContextMenuItem } from './ContextMenu';
 import { useContextMenu } from '../hooks/useContextMenu';
-import { useLongPress } from '../hooks/useLongPress';
 import './FolderPanel.css';
 
 interface FolderPanelProps {
@@ -259,16 +258,7 @@ const FolderPanel: React.FC<FolderPanelProps> = ({ className = '' }) => {
     ];
   };
 
-  // 롱프레스로 문서 추가 (모바일용)
-  const handleFolderLongPress = (folder: Folder) => {
-    handleAddDocument(folder.id);
-  };
-
-  const getFolderLongPressHandlers = (folder: Folder) => useLongPress({
-    onLongPress: () => handleFolderLongPress(folder),
-    delay: 1200, // 1.2초
-    shouldPreventDefault: false
-  });
+  // 롱프레스로 문서 추가 (모바일용) - 제거됨 (React 훅 규칙 위반으로 인한 에러 방지)
 
 
   if (!uiState.selectedCategoryId) {
@@ -361,7 +351,6 @@ const FolderPanel: React.FC<FolderPanelProps> = ({ className = '' }) => {
                       onDragEnd={handleFolderDragEnd}
                       onDragOver={handleFolderDragOver}
                       onDrop={(e) => handleFolderDrop(e, folder)}
-                      {...getFolderLongPressHandlers(folder)}
                     >
                       <div className="folder-content">
                         <div className="folder-title-line">
