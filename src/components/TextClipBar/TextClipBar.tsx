@@ -29,6 +29,10 @@ const TextClipBar: React.FC<TextClipBarProps> = ({ className = '' }) => {
   // 색상표 표시 상태
   const [showColorPicker, setShowColorPicker] = useState(false);
   const [colorPickerPosition, setColorPickerPosition] = useState({ x: 0, y: 0 });
+  
+  // 텍스트 클립 내용 팝업 상태
+  const [showContentModal, setShowContentModal] = useState(false);
+  const [selectedContentClip, setSelectedContentClip] = useState<TextClip | null>(null);
 
   // 무지개 색상표 (북마크와 동일)
   const rainbowColors = [
@@ -52,43 +56,58 @@ const TextClipBar: React.FC<TextClipBarProps> = ({ className = '' }) => {
   };
 
   // 클립보드에 복사 및 시각적 피드백
-  const handleTextClipClick = async (textClip: TextClip) => {
+  const handleTextClipClick = (textClip: TextClip) => {
+    setSelectedContentClip(textClip);
+    setShowContentModal(true);
+  };
+
+  const handleCopyFromModal = async (textClip: TextClip) => {
     try {
-      // 템플릿 변수 처리
-      let processedContent = textClip.content;
-      
-      // 간단한 템플릿 변수 처리
-      if (textClip.type === 'template') {
-        const today = new Date().toLocaleDateString('ko-KR');
-        processedContent = processedContent
-          .replace(/\{오늘날짜\}/g, today)
-          .replace(/\{날짜\}/g, today);
-      }
-      
-      await navigator.clipboard.writeText(processedContent);
-      
-      // 복사 성공 시각적 피드백
-      const element = document.querySelector(`[data-clip-id="${textClip.id}"]`) as HTMLElement;
-      if (element) {
-        element.classList.add('copied');
-        setTimeout(() => {
-          element.classList.remove('copied');
-        }, 600);
-      }
-      
+      await navigator.clipboard.writeText(textClip.content);
       console.log('텍스트 클립 복사 성공:', textClip.title);
+      
+      setShowContentModal(false);
+      setSelectedContentClip(null);
     } catch (error) {
       console.error('클립보드 복사 실패:', error);
       alert('클립보드 복사에 실패했습니다.');
     }
   };
 
-  const handleAddTextClip = async (title: string, content: string, type: 'text' | 'template' = 'text') => {
+  const handleEditFromModal = () => {
+    if (selectedContentClip) {
+      setEditingTextClip(selectedContentClip);
+      setShowAddModal(true);
+      setShowContentModal(false);
+    }
+  };
+
+  const handleDeleteFromModal = async () => {
+    if (selectedContentClip) {
+      const shouldDelete = window.confirm(`정말로 "${selectedContentClip.title}" 텍스트 클립을 삭제하시겠습니까?`);
+      if (shouldDelete) {
+        try {
+          await deleteTextClip(selectedContentClip.id);
+          setShowContentModal(false);
+          setSelectedContentClip(null);
+        } catch (error) {
+          console.error('텍스트 클립 삭제 실패:', error);
+        }
+      }
+    }
+  };
+
+  const handleCloseContentModal = () => {
+    setShowContentModal(false);
+    setSelectedContentClip(null);
+  };
+
+  const handleAddTextClip = async (title: string, content: string) => {
     try {
       const formattedTitle = title.slice(0, 10); // 10글자 제한
       const randomColor = getRandomColor();
       
-      await createTextClip(formattedTitle, content, randomColor, type);
+      await createTextClip(formattedTitle, content, randomColor, 'text');
       setShowAddModal(false);
     } catch (error) {
       console.error('텍스트 클립 추가 실패:', error);
@@ -100,14 +119,13 @@ const TextClipBar: React.FC<TextClipBarProps> = ({ className = '' }) => {
     setShowAddModal(true);
   };
 
-  const handleUpdateTextClip = async (title: string, content: string, type: 'text' | 'template' = 'text') => {
+  const handleUpdateTextClip = async (title: string, content: string) => {
     if (!editingTextClip) return;
 
     try {
       const updates = {
         title: title.slice(0, 10),
-        content,
-        type
+        content
       };
       
       await updateTextClip(editingTextClip.id, updates);
@@ -573,6 +591,198 @@ const TextClipBar: React.FC<TextClipBarProps> = ({ className = '' }) => {
     }
   }, [showActionModal, selectedTextClip, modalPosition]);
 
+  // 텍스트 클립 내용 표시 모달
+  useEffect(() => {
+    if (showContentModal && selectedContentClip) {
+      // 오버레이 생성
+      const overlay = document.createElement('div');
+      overlay.id = 'textclip-content-overlay';
+      overlay.style.cssText = `
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(0, 0, 0, 0.5);
+        z-index: 99998;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      `;
+      
+      // 모달 생성
+      const modal = document.createElement('div');
+      modal.id = 'textclip-content-modal';
+      modal.style.cssText = `
+        background: white;
+        border-radius: 12px;
+        box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+        z-index: 99999;
+        width: 500px;
+        max-width: 90vw;
+        max-height: 85vh;
+        display: flex;
+        flex-direction: column;
+        font-family: inherit;
+      `;
+      
+      const processedContent = selectedContentClip.content;
+      
+      modal.innerHTML = `
+        <div style="
+          padding: 20px;
+          border-bottom: 1px solid #e9ecef;
+          background: ${selectedContentClip.color || '#4A90E2'};
+          border-radius: 12px 12px 0 0;
+          color: white;
+        ">
+          <h3 style="
+            margin: 0;
+            font-size: 18px;
+            font-weight: 600;
+          ">${selectedContentClip.title}</h3>
+          <p style="
+            margin: 4px 0 0 0;
+            font-size: 12px;
+            opacity: 0.9;
+          ">텍스트 클립</p>
+        </div>
+        <div style="
+          padding: 20px;
+          flex: 1;
+          overflow-y: auto;
+        ">
+          <textarea readonly style="
+            width: 100%;
+            min-height: 300px;
+            border: 1px solid #dee2e6;
+            border-radius: 8px;
+            padding: 12px;
+            font-size: 14px;
+            font-family: inherit;
+            line-height: 1.5;
+            resize: vertical;
+            box-sizing: border-box;
+            background: #f8f9fa;
+          ">${processedContent}</textarea>
+        </div>
+        <div style="
+          padding: 16px 20px;
+          border-top: 1px solid #e9ecef;
+          display: flex;
+          gap: 8px;
+          justify-content: flex-end;
+          border-radius: 0 0 12px 12px;
+          background: #f8f9fa;
+        ">
+          <button id="copy-btn" style="
+            background: #28a745;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 6px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+          ">📋 복사</button>
+          <button id="edit-btn" style="
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 6px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+          ">✏️ 편집</button>
+          <button id="delete-btn" style="
+            background: #dc3545;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 6px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+          ">🗑️ 삭제</button>
+          <button id="close-btn" style="
+            background: #6c757d;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 6px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+          ">취소</button>
+        </div>
+      `;
+      
+      // 이벤트 리스너 추가
+      const copyBtn = modal.querySelector('#copy-btn');
+      const editBtn = modal.querySelector('#edit-btn');
+      const deleteBtn = modal.querySelector('#delete-btn');
+      const closeBtn = modal.querySelector('#close-btn');
+      
+      if (copyBtn) {
+        copyBtn.addEventListener('click', () => handleCopyFromModal(selectedContentClip));
+        copyBtn.addEventListener('mouseenter', (e) => {
+          (e.target as HTMLElement).style.background = '#218838';
+        });
+        copyBtn.addEventListener('mouseleave', (e) => {
+          (e.target as HTMLElement).style.background = '#28a745';
+        });
+      }
+      
+      if (editBtn) {
+        editBtn.addEventListener('click', handleEditFromModal);
+        editBtn.addEventListener('mouseenter', (e) => {
+          (e.target as HTMLElement).style.background = '#0056b3';
+        });
+        editBtn.addEventListener('mouseleave', (e) => {
+          (e.target as HTMLElement).style.background = '#007bff';
+        });
+      }
+      
+      if (deleteBtn) {
+        deleteBtn.addEventListener('click', handleDeleteFromModal);
+        deleteBtn.addEventListener('mouseenter', (e) => {
+          (e.target as HTMLElement).style.background = '#c82333';
+        });
+        deleteBtn.addEventListener('mouseleave', (e) => {
+          (e.target as HTMLElement).style.background = '#dc3545';
+        });
+      }
+      
+      if (closeBtn) {
+        closeBtn.addEventListener('click', handleCloseContentModal);
+        closeBtn.addEventListener('mouseenter', (e) => {
+          (e.target as HTMLElement).style.background = '#5a6268';
+        });
+        closeBtn.addEventListener('mouseleave', (e) => {
+          (e.target as HTMLElement).style.background = '#6c757d';
+        });
+      }
+      
+      // 오버레이 클릭 시 닫기
+      overlay.addEventListener('click', handleCloseContentModal);
+      modal.addEventListener('click', (e) => e.stopPropagation());
+      
+      // DOM에 추가
+      overlay.appendChild(modal);
+      document.body.appendChild(overlay);
+      
+      return () => {
+        const existingOverlay = document.getElementById('textclip-content-overlay');
+        if (existingOverlay) document.body.removeChild(existingOverlay);
+      };
+    }
+  }, [showContentModal, selectedContentClip]);
+
   return (
     <div className={`text-clip-bar ${className}`}>
       <div className="text-clip-list">
@@ -628,19 +838,18 @@ const TextClipBar: React.FC<TextClipBarProps> = ({ className = '' }) => {
 // 텍스트 클립 추가/편집 모달
 interface TextClipModalProps {
   textClip?: TextClip | null;
-  onSave: (title: string, content: string, type: 'text' | 'template') => void;
+  onSave: (title: string, content: string) => void;
   onCancel: () => void;
 }
 
 const TextClipModal: React.FC<TextClipModalProps> = ({ textClip, onSave, onCancel }) => {
   const [title, setTitle] = useState(textClip?.title || '');
   const [content, setContent] = useState(textClip?.content || '');
-  const [type, setType] = useState<'text' | 'template'>(textClip?.type || 'text');
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (title.trim() && content.trim()) {
-      onSave(title.trim(), content.trim(), type);
+      onSave(title.trim(), content.trim());
     }
   };
 
@@ -667,7 +876,7 @@ const TextClipModal: React.FC<TextClipModalProps> = ({ textClip, onSave, onCance
               value={content}
               onChange={(e) => setContent(e.target.value)}
               placeholder="안녕하세요.&#10;저는 홍길동입니다.&#10;&#10;감사합니다."
-              rows={8}
+              rows={12}
               required
               style={{
                 width: '100%',
@@ -680,17 +889,6 @@ const TextClipModal: React.FC<TextClipModalProps> = ({ textClip, onSave, onCance
                 boxSizing: 'border-box'
               }}
             />
-          </div>
-          <div className="form-group">
-            <label>
-              <input
-                type="checkbox"
-                checked={type === 'template'}
-                onChange={(e) => setType(e.target.checked ? 'template' : 'text')}
-                style={{ marginRight: '8px' }}
-              />
-              템플릿 (변수 지원: {'{오늘날짜}'}, {'{날짜}'})
-            </label>
           </div>
           <div className="modal-actions">
             <button type="button" onClick={onCancel}>취소</button>
