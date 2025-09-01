@@ -458,49 +458,6 @@ const DocumentPanel: React.FC<DocumentPanelProps> = ({ className = '' }) => {
           ) : (
             <div className="title-with-recent">
               <h1 className="document-title">📄 {selectedDocument.title}</h1>
-              
-              {/* 최근 문서 드롭다운 */}
-              <div className="recent-documents-dropdown">
-                <button 
-                  className="recent-documents-btn"
-                  onClick={() => setShowRecentDropdown(!showRecentDropdown)}
-                  title="최근 열어본 문서"
-                >
-                  📚 최근
-                </button>
-                
-                {showRecentDropdown && (
-                  <>
-                    <div 
-                      className="recent-dropdown-overlay" 
-                      onClick={() => setShowRecentDropdown(false)}
-                    />
-                    <div className="recent-dropdown-menu">
-                      <div className="recent-dropdown-header">최근 열어본 문서</div>
-                      {getRecentDocuments().length > 0 ? (
-                        getRecentDocuments().map((docHistory) => (
-                          <button
-                            key={docHistory.documentId}
-                            className={`recent-dropdown-item ${docHistory.documentId === selectedDocument.id ? 'current' : ''}`}
-                            onClick={() => handleRecentDocumentClick(docHistory)}
-                            disabled={docHistory.documentId === selectedDocument.id}
-                          >
-                            <div className="recent-doc-title">📄 {docHistory.title}</div>
-                            <div className="recent-doc-time">
-                              {docHistory.accessedAt.toLocaleTimeString('ko-KR', { 
-                                hour: '2-digit', 
-                                minute: '2-digit' 
-                              })}
-                            </div>
-                          </button>
-                        ))
-                      ) : (
-                        <div className="recent-dropdown-empty">최근 문서가 없습니다</div>
-                      )}
-                    </div>
-                  </>
-                )}
-              </div>
             </div>
           )}
         </div>
@@ -583,6 +540,49 @@ const DocumentPanel: React.FC<DocumentPanelProps> = ({ className = '' }) => {
                   🗑️ 삭제
                 </button>
               )}
+              
+              {/* 최근 문서 드롭다운 */}
+              <div className="recent-documents-dropdown">
+                <button 
+                  className="action-button recent-documents-btn"
+                  onClick={() => setShowRecentDropdown(!showRecentDropdown)}
+                  title="최근 열어본 문서"
+                >
+                  📚 최근
+                </button>
+                
+                {showRecentDropdown && (
+                  <>
+                    <div 
+                      className="recent-dropdown-overlay" 
+                      onClick={() => setShowRecentDropdown(false)}
+                    />
+                    <div className="recent-dropdown-menu">
+                      <div className="recent-dropdown-header">최근 열어본 문서</div>
+                      {getRecentDocuments().length > 0 ? (
+                        getRecentDocuments().map((docHistory) => (
+                          <button
+                            key={docHistory.documentId}
+                            className={`recent-dropdown-item ${docHistory.documentId === selectedDocument.id ? 'current' : ''}`}
+                            onClick={() => handleRecentDocumentClick(docHistory)}
+                            disabled={docHistory.documentId === selectedDocument.id}
+                          >
+                            <div className="recent-doc-title">📄 {docHistory.title}</div>
+                            <div className="recent-doc-time">
+                              {docHistory.accessedAt.toLocaleTimeString('ko-KR', { 
+                                hour: '2-digit', 
+                                minute: '2-digit' 
+                              })}
+                            </div>
+                          </button>
+                        ))
+                      ) : (
+                        <div className="recent-dropdown-empty">최근 문서가 없습니다</div>
+                      )}
+                    </div>
+                  </>
+                )}
+              </div>
             </>
           )}
         </div>
