@@ -166,21 +166,28 @@ const CategoryPanel: React.FC<CategoryPanelProps> = ({ className = '' }) => {
   };
 
   // 롱프레스로 폴더 추가 (모바일용)
-  const handleLongPressStart = (categoryId: string) => {
+  const [longPressTimer, setLongPressTimer] = useState<NodeJS.Timeout | null>(null);
+  
+  const handleLongPressStart = (e: React.TouchEvent | React.MouseEvent, categoryId: string) => {
+    // 기존 타이머가 있으면 정리
+    if (longPressTimer) {
+      clearTimeout(longPressTimer);
+    }
+    
+    // 새 타이머 시작
     const timer = setTimeout(() => {
       handleAddFolder(categoryId);
+      setLongPressTimer(null);
     }, 1200); // 1.2초
+    
+    setLongPressTimer(timer);
+  };
 
-    const cleanup = () => {
-      clearTimeout(timer);
-      document.removeEventListener('touchend', cleanup);
-      document.removeEventListener('touchcancel', cleanup);
-      document.removeEventListener('mouseup', cleanup);
-    };
-
-    document.addEventListener('touchend', cleanup);
-    document.addEventListener('touchcancel', cleanup);
-    document.addEventListener('mouseup', cleanup);
+  const handleLongPressEnd = () => {
+    if (longPressTimer) {
+      clearTimeout(longPressTimer);
+      setLongPressTimer(null);
+    }
   };
 
   const getMenuItems = (category: Category) => [
@@ -230,8 +237,12 @@ const CategoryPanel: React.FC<CategoryPanelProps> = ({ className = '' }) => {
             onDragEnd={handleDragEnd}
             onDragOver={handleDragOver}
             onDrop={(e) => handleDrop(e, category)}
-            onTouchStart={() => editingId !== category.id && handleLongPressStart(category.id)}
-            onMouseDown={() => editingId !== category.id && handleLongPressStart(category.id)}
+            onTouchStart={(e) => editingId !== category.id && handleLongPressStart(e, category.id)}
+            onTouchEnd={handleLongPressEnd}
+            onTouchCancel={handleLongPressEnd}
+            onMouseDown={(e) => editingId !== category.id && handleLongPressStart(e, category.id)}
+            onMouseUp={handleLongPressEnd}
+            onMouseLeave={handleLongPressEnd}
           >
             {editingId === category.id ? (
               <div className="edit-form">

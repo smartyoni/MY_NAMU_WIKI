@@ -259,21 +259,28 @@ const FolderPanel: React.FC<FolderPanelProps> = ({ className = '' }) => {
   };
 
   // 롱프레스로 문서 추가 (모바일용)
-  const handleFolderLongPressStart = (folderId: string) => {
+  const [folderLongPressTimer, setFolderLongPressTimer] = useState<NodeJS.Timeout | null>(null);
+  
+  const handleFolderLongPressStart = (e: React.TouchEvent | React.MouseEvent, folderId: string) => {
+    // 기존 타이머가 있으면 정리
+    if (folderLongPressTimer) {
+      clearTimeout(folderLongPressTimer);
+    }
+    
+    // 새 타이머 시작
     const timer = setTimeout(() => {
       handleAddDocument(folderId);
+      setFolderLongPressTimer(null);
     }, 1200); // 1.2초
+    
+    setFolderLongPressTimer(timer);
+  };
 
-    const cleanup = () => {
-      clearTimeout(timer);
-      document.removeEventListener('touchend', cleanup);
-      document.removeEventListener('touchcancel', cleanup);
-      document.removeEventListener('mouseup', cleanup);
-    };
-
-    document.addEventListener('touchend', cleanup);
-    document.addEventListener('touchcancel', cleanup);
-    document.addEventListener('mouseup', cleanup);
+  const handleFolderLongPressEnd = () => {
+    if (folderLongPressTimer) {
+      clearTimeout(folderLongPressTimer);
+      setFolderLongPressTimer(null);
+    }
   };
 
 
@@ -367,8 +374,12 @@ const FolderPanel: React.FC<FolderPanelProps> = ({ className = '' }) => {
                       onDragEnd={handleFolderDragEnd}
                       onDragOver={handleFolderDragOver}
                       onDrop={(e) => handleFolderDrop(e, folder)}
-                      onTouchStart={() => handleFolderLongPressStart(folder.id)}
-                      onMouseDown={() => handleFolderLongPressStart(folder.id)}
+                      onTouchStart={(e) => handleFolderLongPressStart(e, folder.id)}
+                      onTouchEnd={handleFolderLongPressEnd}
+                      onTouchCancel={handleFolderLongPressEnd}
+                      onMouseDown={(e) => handleFolderLongPressStart(e, folder.id)}
+                      onMouseUp={handleFolderLongPressEnd}
+                      onMouseLeave={handleFolderLongPressEnd}
                     >
                       <div className="folder-content">
                         <div className="folder-title-line">
