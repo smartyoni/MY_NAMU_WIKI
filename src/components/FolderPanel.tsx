@@ -258,7 +258,23 @@ const FolderPanel: React.FC<FolderPanelProps> = ({ className = '' }) => {
     ];
   };
 
-  // 롱프레스로 문서 추가 (모바일용) - 제거됨 (React 훅 규칙 위반으로 인한 에러 방지)
+  // 롱프레스로 문서 추가 (모바일용)
+  const handleFolderLongPressStart = (folderId: string) => {
+    const timer = setTimeout(() => {
+      handleAddDocument(folderId);
+    }, 1200); // 1.2초
+
+    const cleanup = () => {
+      clearTimeout(timer);
+      document.removeEventListener('touchend', cleanup);
+      document.removeEventListener('touchcancel', cleanup);
+      document.removeEventListener('mouseup', cleanup);
+    };
+
+    document.addEventListener('touchend', cleanup);
+    document.addEventListener('touchcancel', cleanup);
+    document.addEventListener('mouseup', cleanup);
+  };
 
 
   if (!uiState.selectedCategoryId) {
@@ -351,6 +367,8 @@ const FolderPanel: React.FC<FolderPanelProps> = ({ className = '' }) => {
                       onDragEnd={handleFolderDragEnd}
                       onDragOver={handleFolderDragOver}
                       onDrop={(e) => handleFolderDrop(e, folder)}
+                      onTouchStart={() => handleFolderLongPressStart(folder.id)}
+                      onMouseDown={() => handleFolderLongPressStart(folder.id)}
                     >
                       <div className="folder-content">
                         <div className="folder-title-line">

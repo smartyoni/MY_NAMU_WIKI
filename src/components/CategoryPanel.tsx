@@ -165,7 +165,23 @@ const CategoryPanel: React.FC<CategoryPanelProps> = ({ className = '' }) => {
     setOpenMenuId(isOpen ? categoryId : null);
   };
 
-  // 롱프레스로 폴더 추가 (모바일용) - 제거됨 (React 훅 규칙 위반으로 인한 에러 방지)
+  // 롱프레스로 폴더 추가 (모바일용)
+  const handleLongPressStart = (categoryId: string) => {
+    const timer = setTimeout(() => {
+      handleAddFolder(categoryId);
+    }, 1200); // 1.2초
+
+    const cleanup = () => {
+      clearTimeout(timer);
+      document.removeEventListener('touchend', cleanup);
+      document.removeEventListener('touchcancel', cleanup);
+      document.removeEventListener('mouseup', cleanup);
+    };
+
+    document.addEventListener('touchend', cleanup);
+    document.addEventListener('touchcancel', cleanup);
+    document.addEventListener('mouseup', cleanup);
+  };
 
   const getMenuItems = (category: Category) => [
     {
@@ -214,6 +230,8 @@ const CategoryPanel: React.FC<CategoryPanelProps> = ({ className = '' }) => {
             onDragEnd={handleDragEnd}
             onDragOver={handleDragOver}
             onDrop={(e) => handleDrop(e, category)}
+            onTouchStart={() => editingId !== category.id && handleLongPressStart(category.id)}
+            onMouseDown={() => editingId !== category.id && handleLongPressStart(category.id)}
           >
             {editingId === category.id ? (
               <div className="edit-form">
