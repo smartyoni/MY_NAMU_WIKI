@@ -55,7 +55,7 @@ function AppContent() {
       <ThreeColumnLayout
         categoryPanel={<CategoryPanel />}
         folderPanel={<FolderPanel />}
-        documentPanel={isMobile ? <DocumentPanel /> : <OutlinerPanel />}
+        documentPanel={<DocumentPanel />}
         isMobile={isMobile}
       />
       {/* 모바일 즐겨찾기 바 */}
