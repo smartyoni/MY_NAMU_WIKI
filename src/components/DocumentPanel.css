@@ -140,6 +140,24 @@
   background: #138496;
 }
 
+.section-button {
+  background: #6c757d;
+  color: white;
+}
+
+.section-button:hover {
+  background: #5a6268;
+}
+
+.divider-button {
+  background: #fd7e14;
+  color: white;
+}
+
+.divider-button:hover {
+  background: #e8590c;
+}
+
 .favorite-button {
   background: #f8f9fa;
   color: #495057;

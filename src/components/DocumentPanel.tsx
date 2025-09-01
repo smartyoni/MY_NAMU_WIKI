@@ -22,6 +22,7 @@ const DocumentPanel: React.FC<DocumentPanelProps> = ({ className = '' }) => {
   const [content, setContent] = useState('');
   const [title, setTitle] = useState('');
   const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [collapsedSections, setCollapsedSections] = useState<Set<string>>(new Set());
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   const selectedDocument = getSelectedDocument();
@@ -148,11 +149,115 @@ const DocumentPanel: React.FC<DocumentPanelProps> = ({ className = '' }) => {
   const renderPlainText = (text: string) => {
     if (!text) return '내용이 없습니다.';
     
-    return text.split('\n').map((line, index) => (
-      <div key={index} className="text-line">
-        {renderLineWithLinks(line)}
-      </div>
-    ));
+    const lines = text.split('\n');
+    const result: JSX.Element[] = [];
+    let currentSectionId: string | null = null;
+    let sectionContent: string[] = [];
+    let sectionTitle = '';
+    
+    const flushSection = (lineIndex: number) => {
+      if (currentSectionId && sectionTitle) {
+        const isCollapsed = collapsedSections.has(currentSectionId);
+        const sectionIdForCallback = currentSectionId; // 클로저 문제 방지
+        
+        result.push(
+          <div key={`section-${currentSectionId}`} className="collapsible-section">
+            <div 
+              className="section-header"
+              onClick={() => toggleSection(sectionIdForCallback)}
+              style={{ 
+                cursor: 'pointer', 
+                padding: '8px 12px', 
+                borderBottom: '1px solid #eee',
+                backgroundColor: '#f8f9fa',
+                borderRadius: '4px',
+                margin: '8px 0'
+              }}
+            >
+              <span style={{ marginRight: '8px', fontSize: '14px' }}>
+                {isCollapsed ? '📁' : '📂'}
+              </span>
+              <strong>{sectionTitle}</strong>
+            </div>
+            {!isCollapsed && sectionContent.length > 0 && (
+              <div className="section-content" style={{ marginLeft: '20px', marginBottom: '16px' }}>
+                {sectionContent.map((contentLine, idx) => (
+                  <div key={`content-${currentSectionId}-${idx}`} className="text-line">
+                    {renderLineWithLinks(contentLine)}
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        );
+      }
+      
+      currentSectionId = null;
+      sectionContent = [];
+      sectionTitle = '';
+    };
+    
+    lines.forEach((line, index) => {
+      // [📁 제목] 패턴 감지
+      const sectionMatch = line.match(/^\s*\[📁\s*(.+?)\]\s*$/);
+      
+      // 구분선 패턴 감지 (━, ▬, ◆◇, ═, ⋯ 등)
+      const dividerMatch = line.match(/^\s*(━+|▬+|[◆◇]+|═+|⋯+)\s*$/);
+      
+      if (sectionMatch) {
+        // 이전 섹션 마무리
+        flushSection(index);
+        
+        // 새 섹션 시작
+        currentSectionId = `section-${index}`;
+        sectionTitle = sectionMatch[1].trim();
+      } else if (dividerMatch && currentSectionId) {
+        // 구분선을 만나면 현재 섹션을 종료하고 구분선을 일반 텍스트로 처리
+        flushSection(index);
+        
+        // 구분선을 일반 텍스트로 추가
+        result.push(
+          <div key={index} className="text-line">
+            {renderLineWithLinks(line)}
+          </div>
+        );
+      } else if (currentSectionId) {
+        // 현재 섹션의 내용
+        if (line.trim() !== '') {
+          sectionContent.push(line);
+        }
+      } else {
+        // 일반 텍스트 라인
+        result.push(
+          <div key={index} className="text-line">
+            {renderLineWithLinks(line)}
+          </div>
+        );
+      }
+    });
+    
+    // 마지막 섹션 처리
+    flushSection(lines.length);
+    
+    return result;
+  };
+  
+  const toggleSection = (sectionId: string) => {
+    console.log('toggleSection 호출:', sectionId);
+    console.log('현재 collapsedSections:', collapsedSections);
+    
+    setCollapsedSections(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(sectionId)) {
+        console.log('섹션 펼치기:', sectionId);
+        newSet.delete(sectionId);
+      } else {
+        console.log('섹션 접기:', sectionId);
+        newSet.add(sectionId);
+      }
+      console.log('새로운 collapsedSections:', newSet);
+      return newSet;
+    });
   };
 
   const renderLineWithLinks = (line: string) => {
@@ -199,6 +304,73 @@ const DocumentPanel: React.FC<DocumentPanelProps> = ({ className = '' }) => {
     setContent(newContent);
     
     // 실시간 자동저장은 제거하고 사용자가 명시적으로 저장할 때만 저장
+  };
+  
+  const insertCollapsibleSection = () => {
+    if (!textareaRef.current) return;
+    
+    const textarea = textareaRef.current;
+    const startPos = textarea.selectionStart;
+    const endPos = textarea.selectionEnd;
+    
+    const template = '\n[📁 새 섹션]\n여기에 내용을 입력하세요...\n\n';
+    
+    const newContent = 
+      content.substring(0, startPos) + 
+      template + 
+      content.substring(endPos);
+    
+    setContent(newContent);
+    
+    // 커서를 "새 섹션" 텍스트로 이동하여 바로 수정할 수 있도록 함
+    setTimeout(() => {
+      const titleStart = startPos + template.indexOf('새 섹션');
+      textarea.focus();
+      textarea.setSelectionRange(titleStart, titleStart + '새 섹션'.length);
+      // 현재 커서 위치 근처로 스크롤 유지
+      const lineHeight = 20; // 대략적인 줄 높이
+      const cursorLine = newContent.substring(0, titleStart).split('\n').length;
+      const scrollTop = Math.max(0, (cursorLine - 10) * lineHeight);
+      textarea.scrollTop = scrollTop;
+    }, 0);
+  };
+
+  const insertDivider = () => {
+    if (!textareaRef.current) return;
+    
+    const textarea = textareaRef.current;
+    const startPos = textarea.selectionStart;
+    const endPos = textarea.selectionEnd;
+    
+    // 선명한 구분선 - 여러 스타일 중 랜덤 선택
+    const dividers = [
+      '\n\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n',
+      '\n\n▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬\n\n',
+      '\n\n◆◇◆◇◆◇◆◇◆◇◆◇◆◇◆◇◆◇◆◇◆◇◆◇◆◇◆◇◆◇◆◇◆◇◆◇◆◇◆◇◆◇◆◇\n\n',
+      '\n\n═══════════════════════════════════════════════════\n\n',
+      '\n\n⋯⋯⋯⋯⋯⋯⋯⋯⋯⋯⋯⋯⋯⋯⋯⋯⋯⋯⋯⋯⋯⋯⋯⋯⋯⋯⋯⋯⋯⋯⋯⋯⋯⋯⋯⋯⋯⋯⋯⋯⋯\n\n'
+    ];
+    
+    const divider = dividers[0]; // 기본적으로 첫 번째 스타일 사용
+    
+    const newContent = 
+      content.substring(0, startPos) + 
+      divider + 
+      content.substring(endPos);
+    
+    setContent(newContent);
+    
+    // 커서를 구분선 다음으로 이동하고 스크롤 위치 유지
+    setTimeout(() => {
+      const newPos = startPos + divider.length;
+      textarea.focus();
+      textarea.setSelectionRange(newPos, newPos);
+      // 현재 커서 위치 근처로 스크롤 유지
+      const lineHeight = 20; // 대략적인 줄 높이
+      const cursorLine = newContent.substring(0, newPos).split('\n').length;
+      const scrollTop = Math.max(0, (cursorLine - 10) * lineHeight);
+      textarea.scrollTop = scrollTop;
+    }, 0);
   };
 
 
@@ -275,6 +447,20 @@ const DocumentPanel: React.FC<DocumentPanelProps> = ({ className = '' }) => {
                 title="저장"
               >
                 💾 저장
+              </button>
+              <button 
+                className="action-button section-button"
+                onClick={insertCollapsibleSection}
+                title="접을 수 있는 영역 추가"
+              >
+                📁 섹션
+              </button>
+              <button 
+                className="action-button divider-button"
+                onClick={insertDivider}
+                title="구분선 추가"
+              >
+                ━━ 구분선
               </button>
               <div className="move-buttons">
                 <button 
