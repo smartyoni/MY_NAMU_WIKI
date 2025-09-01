@@ -7,6 +7,7 @@ import ThreeColumnLayout from './components/Layout/ThreeColumnLayout';
 import CategoryPanel from './components/CategoryPanel';
 import FolderPanel from './components/FolderPanel';
 import OutlinerPanel from './components/OutlinerPanel';
+import DocumentPanel from './components/DocumentPanel';
 import FloatingButton from './components/FloatingButton/FloatingButton';
 import QuickMemoFolderButton from './components/FloatingButton/QuickMemoFolderButton';
 import { DocumentProvider, useDocuments } from './context/DocumentContextFirebase';
@@ -54,7 +55,7 @@ function AppContent() {
       <ThreeColumnLayout
         categoryPanel={<CategoryPanel />}
         folderPanel={<FolderPanel />}
-        documentPanel={<OutlinerPanel />}
+        documentPanel={isMobile ? <DocumentPanel /> : <OutlinerPanel />}
         isMobile={isMobile}
       />
       {/* 모바일 즐겨찾기 바 */}

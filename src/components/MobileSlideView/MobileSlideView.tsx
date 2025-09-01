@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useDocuments } from '../../context/DocumentContextFirebase';
 import Breadcrumb from '../Breadcrumb/Breadcrumb';
-import OutlinerPanel from '../OutlinerPanel';
+import DocumentPanel from '../DocumentPanel';
 import './MobileSlideView.css';
 
 const MobileSlideView: React.FC = () => {
@@ -175,13 +175,34 @@ const MobileSlideView: React.FC = () => {
     );
   };
 
-  const renderDocumentView = () => (
-    <div className="mobile-slide-content document-view">
-      <div className="document-container">
-        <OutlinerPanel />
+  const renderDocumentView = () => {
+    const selectedDocument = documents.find(doc => doc.id === uiState.selectedDocumentId);
+    
+    if (!selectedDocument) {
+      return (
+        <div className="mobile-slide-content document-view">
+          <div className="empty-document-state">
+            <h3>문서를 찾을 수 없습니다</h3>
+            <p>다시 선택해주세요.</p>
+          </div>
+        </div>
+      );
+    }
+
+    return (
+      <div className="mobile-slide-content document-view">
+        <div className="mobile-slide-header">
+          <button className="back-button" onClick={() => selectDocument(null)}>
+            ‹ 뒤로
+          </button>
+          <h2>{selectedDocument.title}</h2>
+        </div>
+        <div className="document-container">
+          <DocumentPanel />
+        </div>
       </div>
-    </div>
-  );
+    );
+  };
 
   const renderCurrentView = () => {
     switch (currentView) {
