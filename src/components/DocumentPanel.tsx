@@ -32,6 +32,25 @@ const DocumentPanel: React.FC<DocumentPanelProps> = ({ className = '' }) => {
       setContent(selectedDocument.content);
       setTitle(selectedDocument.title);
       
+      // 문서에 섹션이 있으면 모든 섹션을 접힌 상태로 초기화
+      const sectionMatches = selectedDocument.content.match(/^\s*\[📁\s*(.+?)\]\s*$/gm);
+      if (sectionMatches && sectionMatches.length > 0) {
+        // 모든 섹션을 접힌 상태로 설정
+        const allSections = new Set<string>();
+        sectionMatches.forEach((_, index) => {
+          const lines = selectedDocument.content.split('\n');
+          lines.forEach((line, lineIndex) => {
+            if (line.match(/^\s*\[📁\s*(.+?)\]\s*$/)) {
+              allSections.add(`section-${lineIndex}`);
+            }
+          });
+        });
+        setCollapsedSections(allSections);
+      } else {
+        // 섹션이 없으면 빈 Set으로 초기화
+        setCollapsedSections(new Set());
+      }
+      
       // 빠른메모이고 내용이 비어있으면 편집모드로 시작
       const isQuickMemo = selectedDocument.title.startsWith('메모 ');
       const isEmpty = !selectedDocument.content || selectedDocument.content.trim() === '';
@@ -45,6 +64,7 @@ const DocumentPanel: React.FC<DocumentPanelProps> = ({ className = '' }) => {
       setContent('');
       setTitle('');
       setIsEditMode(false);
+      setCollapsedSections(new Set());
     }
   }, [selectedDocument]);
 
@@ -215,9 +235,9 @@ const DocumentPanel: React.FC<DocumentPanelProps> = ({ className = '' }) => {
         // 구분선을 만나면 현재 섹션을 종료하고 구분선을 일반 텍스트로 처리
         flushSection(index);
         
-        // 구분선을 일반 텍스트로 추가
+        // 구분선을 일반 텍스트로 추가 (볼드 처리)
         result.push(
-          <div key={index} className="text-line">
+          <div key={index} className="text-line" style={{ fontWeight: 'bold' }}>
             {renderLineWithLinks(line)}
           </div>
         );
@@ -227,9 +247,9 @@ const DocumentPanel: React.FC<DocumentPanelProps> = ({ className = '' }) => {
           sectionContent.push(line);
         }
       } else {
-        // 일반 텍스트 라인
+        // 일반 텍스트 라인 (볼드 처리)
         result.push(
-          <div key={index} className="text-line">
+          <div key={index} className="text-line" style={{ fontWeight: 'bold' }}>
             {renderLineWithLinks(line)}
           </div>
         );
@@ -462,29 +482,13 @@ const DocumentPanel: React.FC<DocumentPanelProps> = ({ className = '' }) => {
               >
                 ━━ 구분선
               </button>
-              <div className="move-buttons">
-                <button 
-                  className="action-button move-button"
-                  onClick={() => selectedDocument && reorderDocument(selectedDocument.id, 'up')}
-                  title="위로 이동"
-                >
-                  ↑
-                </button>
-                <button 
-                  className="action-button move-button"
-                  onClick={() => selectedDocument && reorderDocument(selectedDocument.id, 'down')}
-                  title="아래로 이동"
-                >
-                  ↓
-                </button>
-                <button 
-                  className="action-button move-button"
-                  onClick={handleGoToBottom}
-                  title="문서 맨 아래로 이동"
-                >
-                  ⬇️
-                </button>
-              </div>
+              <button 
+                className="action-button move-button"
+                onClick={handleGoToBottom}
+                title="문서 맨 아래로 이동"
+              >
+                ⬇️ 맨 아래로
+              </button>
             </>
           ) : (
             <>
@@ -518,22 +522,6 @@ const DocumentPanel: React.FC<DocumentPanelProps> = ({ className = '' }) => {
                   🗑️ 삭제
                 </button>
               )}
-              <div className="move-buttons">
-                <button 
-                  className="action-button move-button"
-                  onClick={() => selectedDocument && reorderDocument(selectedDocument.id, 'up')}
-                  title="위로 이동"
-                >
-                  ↑
-                </button>
-                <button 
-                  className="action-button move-button"
-                  onClick={() => selectedDocument && reorderDocument(selectedDocument.id, 'down')}
-                  title="아래로 이동"
-                >
-                  ↓
-                </button>
-              </div>
             </>
           )}
         </div>

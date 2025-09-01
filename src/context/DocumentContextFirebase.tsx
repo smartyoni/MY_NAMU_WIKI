@@ -718,7 +718,10 @@ export const DocumentProvider: React.FC<DocumentProviderProps> = ({
       const targetIndex = direction === 'up' ? currentIndex - 1 : currentIndex + 1;
       
       // 경계 검사
-      if (targetIndex < 0 || targetIndex >= folderDocuments.length) return;
+      if (targetIndex < 0 || targetIndex >= folderDocuments.length) {
+        const message = targetIndex < 0 ? '이미 맨 위에 있습니다.' : '이미 맨 아래에 있습니다.';
+        throw new Error(message);
+      }
       
       // 두 문서의 order 값을 교환
       const currentDoc = folderDocuments[currentIndex];
