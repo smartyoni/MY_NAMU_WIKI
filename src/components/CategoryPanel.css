@@ -105,6 +105,23 @@
   flex: 1;
 }
 
+.quick-add-folder-btn {
+  background: none;
+  border: none;
+  font-size: 0.8rem;
+  cursor: pointer;
+  padding: 0.2rem;
+  border-radius: 4px;
+  opacity: 0.7;
+  transition: all 0.2s ease;
+  margin-left: auto;
+}
+
+.quick-add-folder-btn:hover {
+  opacity: 1;
+  background: rgba(0, 123, 255, 0.1);
+}
+
 .category-color {
   width: 16px;
   height: 16px;

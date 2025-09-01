@@ -270,6 +270,16 @@ const CategoryPanel: React.FC<CategoryPanelProps> = ({ className = '' }) => {
                     style={{ backgroundColor: category.color }}
                   ></div>
                   <span className="category-name">{category.name}</span>
+                  <button 
+                    className="quick-add-folder-btn"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleAddFolder(category.id);
+                    }}
+                    title="폴더 추가"
+                  >
+                    📁+
+                  </button>
                 </div>
                 <ThreeDotsMenu 
                   menuItems={getMenuItems(category)} 

@@ -387,6 +387,16 @@ const FolderPanel: React.FC<FolderPanelProps> = ({ className = '' }) => {
                             {isExpanded ? '📂' : '📁'}
                           </span>
                           <span className="folder-name">{folder.name}</span>
+                          <button 
+                            className="quick-add-document-btn"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleAddDocument(folder.id);
+                            }}
+                            title="문서 추가"
+                          >
+                            📄+
+                          </button>
                         </div>
                       </div>
                     </div>
