@@ -94,6 +94,151 @@
   box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.1);
 }
 
+/* 최근 문서 드롭다운 스타일 */
+.title-with-recent {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  width: 100%;
+}
+
+.recent-documents-dropdown {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.recent-documents-btn {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 12px;
+  border: 1px solid #dee2e6;
+  border-radius: 6px;
+  background: white;
+  color: #495057;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.recent-documents-btn:hover {
+  background: #f8f9fa;
+  border-color: #007bff;
+  color: #007bff;
+}
+
+.recent-dropdown-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 999;
+}
+
+.recent-dropdown-menu {
+  position: absolute;
+  top: calc(100% + 4px);
+  right: 0;
+  min-width: 300px;
+  max-width: 350px;
+  background: white;
+  border: 1px solid #dee2e6;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  z-index: 1000;
+  overflow: hidden;
+}
+
+.recent-dropdown-header {
+  padding: 12px 16px;
+  background: #f8f9fa;
+  border-bottom: 1px solid #dee2e6;
+  font-size: 13px;
+  font-weight: 600;
+  color: #495057;
+}
+
+.recent-dropdown-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding: 12px 16px;
+  border: none;
+  background: white;
+  color: #495057;
+  text-align: left;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+  border-bottom: 1px solid #f8f9fa;
+}
+
+.recent-dropdown-item:last-child {
+  border-bottom: none;
+}
+
+.recent-dropdown-item:hover:not(:disabled) {
+  background: #f8f9fa;
+}
+
+.recent-dropdown-item.current {
+  background: #e3f2fd;
+  color: #1976d2;
+  cursor: not-allowed;
+}
+
+.recent-dropdown-item:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.recent-doc-title {
+  font-size: 14px;
+  font-weight: 500;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  flex: 1;
+  margin-right: 8px;
+}
+
+.recent-doc-time {
+  font-size: 12px;
+  color: #6c757d;
+  flex-shrink: 0;
+}
+
+.recent-dropdown-empty {
+  padding: 20px 16px;
+  text-align: center;
+  color: #6c757d;
+  font-size: 13px;
+}
+
+/* 모바일 반응형 */
+@media (max-width: 768px) {
+  .title-with-recent {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
+  
+  .recent-documents-btn {
+    font-size: 12px;
+    padding: 4px 8px;
+  }
+  
+  .recent-dropdown-menu {
+    right: auto;
+    left: 0;
+    min-width: 280px;
+  }
+}
+
 .document-actions {
   display: flex;
   align-items: center;
@@ -138,6 +283,24 @@
 
 .copy-button:hover {
   background: #138496;
+}
+
+.section-button {
+  background: #6c757d;
+  color: white;
+}
+
+.section-button:hover {
+  background: #5a6268;
+}
+
+.divider-button {
+  background: #fd7e14;
+  color: white;
+}
+
+.divider-button:hover {
+  background: #e8590c;
 }
 
 .favorite-button {

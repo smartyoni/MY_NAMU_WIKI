@@ -2,6 +2,8 @@ import React, { useState } from 'react';
 import { Folder } from '../types';
 import { useDocuments } from '../context/DocumentContextFirebase';
 import ConfirmModal from './ConfirmModal';
+import ContextMenu, { ContextMenuItem } from './ContextMenu';
+import { useContextMenu } from '../hooks/useContextMenu';
 import './FolderPanel.css';
 
 interface FolderPanelProps {
@@ -18,17 +20,23 @@ const FolderPanel: React.FC<FolderPanelProps> = ({ className = '' }) => {
     selectDocument,
     updateFolder,
     deleteFolder,
+    deleteDocument,
     reorderFolder,
     toggleFolder,
     createDocument,
     createFolder,
     getFoldersByCategory,
-    getDocumentsByFolder
+    getDocumentsByFolder,
+    toggleFavorite
   } = useDocuments();
 
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editingName, setEditingName] = useState('');
   const [deleteModalState, setDeleteModalState] = useState<{isOpen: boolean, folderId: string | null}>({isOpen: false, folderId: null});
+  const { contextMenu, handleRightClick, closeContextMenu } = useContextMenu();
+  
+  // 드래그 앤 드롭 상태
+  const [draggedFolder, setDraggedFolder] = useState<Folder | null>(null);
 
   const selectedFolders = uiState.selectedCategoryId 
     ? getFoldersByCategory(uiState.selectedCategoryId)
@@ -40,11 +48,6 @@ const FolderPanel: React.FC<FolderPanelProps> = ({ className = '' }) => {
   const boardDocument = uiState.selectedCategoryId 
     ? documents.find(doc => doc.isBoardDocument && doc.categoryId === uiState.selectedCategoryId)
     : null;
-    
-  console.log('FolderPanel - selectedCategoryId:', uiState.selectedCategoryId);
-  console.log('FolderPanel - all documents:', documents.length);
-  console.log('FolderPanel - board documents:', documents.filter(doc => doc.isBoardDocument));
-  console.log('FolderPanel - boardDocument found:', boardDocument);
 
   const handleEditStart = (folder: Folder) => {
     setEditingId(folder.id);
@@ -120,6 +123,139 @@ const FolderPanel: React.FC<FolderPanelProps> = ({ className = '' }) => {
   const handleDocumentClick = (e: React.MouseEvent, documentId: string) => {
     e.stopPropagation();
     selectDocument(documentId);
+  };
+
+  // 폴더 드래그 앤 드롭 핸들러들
+  const handleFolderDragStart = (e: React.DragEvent, folder: Folder) => {
+    setDraggedFolder(folder);
+    e.dataTransfer.effectAllowed = 'move';
+    e.dataTransfer.setData('text/html', folder.id);
+    
+    // 드래그 시작할 때 반투명 효과
+    const target = e.currentTarget as HTMLElement;
+    target.style.opacity = '0.5';
+  };
+
+  const handleFolderDragEnd = (e: React.DragEvent) => {
+    setDraggedFolder(null);
+    const target = e.currentTarget as HTMLElement;
+    target.style.opacity = '1';
+  };
+
+  const handleFolderDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+  };
+
+  const handleFolderDrop = async (e: React.DragEvent, targetFolder: Folder) => {
+    e.preventDefault();
+    
+    if (!draggedFolder || draggedFolder.id === targetFolder.id) {
+      return;
+    }
+
+    try {
+      await reorderFoldersToPosition(draggedFolder, targetFolder);
+    } catch (error) {
+      console.error('폴더 재정렬 실패:', error);
+    }
+    
+    setDraggedFolder(null);
+  };
+
+  const reorderFoldersToPosition = async (draggedFolder: Folder, targetFolder: Folder) => {
+    const sortedFolders = [...selectedFolders].sort((a, b) => a.order - b.order);
+    const draggedIndex = sortedFolders.findIndex(folder => folder.id === draggedFolder.id);
+    const targetIndex = sortedFolders.findIndex(folder => folder.id === targetFolder.id);
+    
+    if (draggedIndex === -1 || targetIndex === -1) return;
+    
+    // 새로운 순서 배열 생성
+    const newOrder = [...sortedFolders];
+    const [removed] = newOrder.splice(draggedIndex, 1);
+    newOrder.splice(targetIndex, 0, removed);
+    
+    // 새로운 order 값 할당 및 업데이트
+    for (let i = 0; i < newOrder.length; i++) {
+      const folder = newOrder[i];
+      await updateFolder(folder.id, { order: i });
+    }
+  };
+
+
+  // 폴더 컨텍스트 메뉴 항목 생성
+  const getFolderContextMenuItems = (folder: Folder): ContextMenuItem[] => [
+    {
+      label: "폴더 이름 변경",
+      icon: "✏️",
+      onClick: () => handleEditStart(folder)
+    },
+    {
+      label: "새 문서 추가",
+      icon: "📄",
+      onClick: () => handleAddDocument(folder.id)
+    },
+    { divider: true },
+    {
+      label: "폴더 삭제",
+      icon: "🗑️",
+      onClick: () => setDeleteModalState({isOpen: true, folderId: folder.id})
+    }
+  ];
+
+  // 문서 컨텍스트 메뉴 항목 생성
+  const getDocumentContextMenuItems = (documentId: string): ContextMenuItem[] => {
+    const document = documents.find(doc => doc.id === documentId);
+    if (!document) return [];
+
+    return [
+      {
+        label: "문서 편집",
+        icon: "✏️",
+        onClick: () => {
+          selectDocument(documentId);
+          // 편집 모드는 DocumentPanel에서 처리
+        }
+      },
+      {
+        label: "내용 복사",
+        icon: "📋",
+        onClick: async () => {
+          try {
+            await navigator.clipboard.writeText(document.content);
+            console.log('문서 내용이 클립보드에 복사되었습니다.');
+          } catch (error) {
+            console.error('복사 실패:', error);
+          }
+        }
+      },
+      {
+        label: document.isFavorite ? "즐겨찾기 해제" : "즐겨찾기 추가",
+        icon: document.isFavorite ? "⭐" : "☆",
+        onClick: async () => {
+          try {
+            await toggleFavorite(documentId);
+          } catch (error) {
+            console.error('즐겨찾기 토글 실패:', error);
+          }
+        }
+      },
+      { divider: true },
+      {
+        label: "문서 삭제",
+        icon: "🗑️",
+        onClick: async () => {
+          if (window.confirm('이 문서를 삭제하시겠습니까?')) {
+            try {
+              await deleteDocument(documentId);
+              console.log('문서가 삭제되었습니다.');
+            } catch (error) {
+              console.error('문서 삭제 실패:', error);
+            }
+          }
+        }
+      }
+    ];
   };
 
 
@@ -207,6 +343,12 @@ const FolderPanel: React.FC<FolderPanelProps> = ({ className = '' }) => {
                     <div 
                       className="folder-header"
                       onClick={() => handleFolderClick(folder)}
+                      onContextMenu={(e) => handleRightClick(e, `folder-${folder.id}`)}
+                      draggable
+                      onDragStart={(e) => handleFolderDragStart(e, folder)}
+                      onDragEnd={handleFolderDragEnd}
+                      onDragOver={handleFolderDragOver}
+                      onDrop={(e) => handleFolderDrop(e, folder)}
                     >
                       <div className="folder-content">
                         <div className="folder-title-line">
@@ -214,58 +356,6 @@ const FolderPanel: React.FC<FolderPanelProps> = ({ className = '' }) => {
                             {isExpanded ? '📂' : '📁'}
                           </span>
                           <span className="folder-name">{folder.name}</span>
-                        </div>
-                        <div className="folder-actions">
-                          <button 
-                            className="folder-action-button"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleAddDocument(folder.id);
-                            }}
-                            title="문서 추가"
-                          >
-                            +
-                          </button>
-                          <button 
-                            className="folder-action-button"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              reorderFolder(folder.id, 'up');
-                            }}
-                            title="위로 이동"
-                          >
-                            ▲
-                          </button>
-                          <button 
-                            className="folder-action-button"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              reorderFolder(folder.id, 'down');
-                            }}
-                            title="아래로 이동"
-                          >
-                            ▼
-                          </button>
-                          <button 
-                            className="folder-action-button"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleEditStart(folder);
-                            }}
-                            title="폴더명 편집"
-                          >
-                            ✏️
-                          </button>
-                          <button 
-                            className="folder-action-button folder-delete-button"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleDelete(folder.id);
-                            }}
-                            title="폴더 삭제"
-                          >
-                            삭제
-                          </button>
                         </div>
                       </div>
                     </div>
@@ -282,6 +372,7 @@ const FolderPanel: React.FC<FolderPanelProps> = ({ className = '' }) => {
                               key={document.id}
                               className={`document-item ${uiState.selectedDocumentId === document.id ? 'selected' : ''}`}
                               onClick={(e) => handleDocumentClick(e, document.id)}
+                              onContextMenu={(e) => handleRightClick(e, `document-${document.id}`)}
                             >
                               <div className="document-main">
                                 <span className="document-icon">📄</span>
@@ -308,6 +399,29 @@ const FolderPanel: React.FC<FolderPanelProps> = ({ className = '' }) => {
         message="정말로 이 폴더를 삭제하시겠습니까? 하위 문서도 모두 삭제됩니다."
         onConfirm={handleConfirmDelete}
         onCancel={handleCancelDelete}
+      />
+
+      <ContextMenu
+        x={contextMenu.x}
+        y={contextMenu.y}
+        isVisible={contextMenu.isVisible}
+        onClose={closeContextMenu}
+        items={(() => {
+          if (!contextMenu.targetId) return [];
+          
+          if (contextMenu.targetId.startsWith('folder-')) {
+            const folderId = contextMenu.targetId.replace('folder-', '');
+            const folder = selectedFolders.find(f => f.id === folderId);
+            return folder ? getFolderContextMenuItems(folder) : [];
+          }
+          
+          if (contextMenu.targetId.startsWith('document-')) {
+            const documentId = contextMenu.targetId.replace('document-', '');
+            return getDocumentContextMenuItems(documentId);
+          }
+          
+          return [];
+        })()}
       />
     </div>
   );

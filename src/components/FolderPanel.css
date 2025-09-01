@@ -44,6 +44,33 @@
   transform: scale(1.05);
 }
 
+/* 드래그 앤 드롭 스타일 */
+.folder-header[draggable="true"] {
+  cursor: grab;
+  transition: opacity 0.2s ease;
+}
+
+.folder-header[draggable="true"]:hover {
+  background-color: rgba(0, 123, 255, 0.05);
+}
+
+.folder-header:active {
+  cursor: grabbing;
+}
+
+/* 드래그 중 스타일 */
+.folder-header[style*="opacity: 0.5"] {
+  transform: rotate(2deg);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+}
+
+/* 드롭 존 하이라이트 */
+.folder-header:dragover {
+  background-color: rgba(0, 123, 255, 0.1);
+  border: 2px dashed #007bff;
+  border-radius: 4px;
+}
+
 .folder-content {
   flex: 1;
   display: flex;

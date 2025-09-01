@@ -62,7 +62,25 @@ export interface TextClip {
   updatedAt: Date;
 }
 
+export interface SidebarBookmark {
+  id: string;
+  title: string;
+  url: string;
+  order: number;
+  color?: string;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
 export interface DocumentMoveRequest {
   documentId: string;
   direction: 'up' | 'down';
+}
+
+export interface DocumentHistory {
+  documentId: string;
+  title: string;
+  folderId: string;
+  categoryId: string;
+  accessedAt: Date;
 }

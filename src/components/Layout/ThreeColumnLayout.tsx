@@ -1,6 +1,7 @@
 import React from 'react';
 import MobileTabLayout from './MobileTabLayout';
 import MobileSlideView from '../MobileSlideView/MobileSlideView';
+import SidebarBookmarks from '../SidebarBookmarks';
 import './ThreeColumnLayout.css';
 
 interface ThreeColumnLayoutProps {
@@ -22,6 +23,7 @@ const ThreeColumnLayout: React.FC<ThreeColumnLayoutProps> = ({
 
   return (
     <div className="three-column-layout desktop">
+      <SidebarBookmarks />
       <div className="category-panel">
         {categoryPanel}
       </div>
