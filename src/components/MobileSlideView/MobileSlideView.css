@@ -139,8 +139,19 @@
   background: #f8f9fa;
 }
 
+.document-view .mobile-slide-header.minimal {
+  padding: 8px 16px;
+  min-height: auto;
+}
+
 .document-container {
   flex: 1;
+  overflow: hidden;
+}
+
+.document-container.expanded {
+  flex: 1;
+  height: calc(100vh - 60px);
   overflow: hidden;
 }
 
