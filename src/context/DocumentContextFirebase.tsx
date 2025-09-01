@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, type ReactNode } from 'react';
 import { collection, doc, setDoc, deleteDoc, onSnapshot, query, orderBy, where, deleteField } from 'firebase/firestore';
 import { db } from '../firebase';
-import { Category, Folder, WikiDocument, UIState, Bookmark, TextClip, SidebarBookmark } from '../types';
+import { Category, Folder, WikiDocument, UIState, Bookmark, TextClip, SidebarBookmark, DocumentHistory } from '../types';
 
 
 interface DocumentComment {
@@ -23,6 +23,7 @@ interface DocumentContextType {
   textClips: TextClip[];
   sidebarBookmarks: SidebarBookmark[];
   comments: DocumentComment[];
+  documentHistory: DocumentHistory[];
   uiState: UIState;
   loading: boolean;
   error: string | null;
@@ -90,6 +91,10 @@ interface DocumentContextType {
   // 즐겨찾기 관리
   toggleFavorite: (documentId: string) => Promise<void>;
   getFavoriteDocuments: () => WikiDocument[];
+  
+  // 문서 히스토리 관리
+  getRecentDocuments: () => DocumentHistory[];
+  clearDocumentHistory: () => void;
 }
 
 const DocumentContext = createContext<DocumentContextType | undefined>(undefined);
@@ -118,6 +123,34 @@ export const DocumentProvider: React.FC<DocumentProviderProps> = ({
   const [textClips, setTextClips] = useState<TextClip[]>([]);
   const [sidebarBookmarks, setSidebarBookmarks] = useState<SidebarBookmark[]>([]);
   const [comments, setComments] = useState<DocumentComment[]>([]);
+  const [documentHistory, setDocumentHistory] = useState<DocumentHistory[]>([]);
+  
+  // localStorage에서 문서 히스토리 복원
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem('wiki-document-history');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        const history = parsed.map((item: any) => ({
+          ...item,
+          accessedAt: new Date(item.accessedAt)
+        }));
+        setDocumentHistory(history);
+      }
+    } catch (error) {
+      console.warn('문서 히스토리 복원 실패:', error);
+    }
+  }, []);
+
+  // 문서 히스토리 변경 시 localStorage에 저장
+  useEffect(() => {
+    try {
+      localStorage.setItem('wiki-document-history', JSON.stringify(documentHistory));
+    } catch (error) {
+      console.warn('문서 히스토리 저장 실패:', error);
+    }
+  }, [documentHistory]);
+
   // localStorage에서 이전 상태 복원
   const getInitialUIState = (): UIState => {
     try {
@@ -812,6 +845,32 @@ export const DocumentProvider: React.FC<DocumentProviderProps> = ({
       ...prev,
       selectedDocumentId: documentId
     }));
+
+    // 문서 히스토리에 추가 (실제 문서가 선택된 경우만)
+    if (documentId) {
+      const document = documents.find(doc => doc.id === documentId);
+      const folder = folders.find(f => f.id === document?.folderId);
+      const category = categories.find(c => c.id === folder?.categoryId);
+      
+      if (document && folder && category) {
+        setDocumentHistory(prev => {
+          // 기존 히스토리에서 같은 문서 제거
+          const filtered = prev.filter(item => item.documentId !== documentId);
+          
+          // 새 히스토리 항목을 맨 앞에 추가
+          const newHistory: DocumentHistory = {
+            documentId,
+            title: document.title,
+            folderId: folder.id,
+            categoryId: category.id,
+            accessedAt: new Date()
+          };
+          
+          // 최대 10개까지만 유지
+          return [newHistory, ...filtered].slice(0, 10);
+        });
+      }
+    }
   };
 
   // 유틸리티 함수들
@@ -1219,6 +1278,15 @@ export const DocumentProvider: React.FC<DocumentProviderProps> = ({
       });
   };
 
+  // 문서 히스토리 관리 함수들
+  const getRecentDocuments = (): DocumentHistory[] => {
+    return documentHistory.slice(0, 5); // 최근 5개만 반환
+  };
+
+  const clearDocumentHistory = () => {
+    setDocumentHistory([]);
+  };
+
   // 댓글 관리 함수들
   const createComment = async (documentId: string, content: string): Promise<string> => {
     try {
@@ -1325,7 +1393,12 @@ export const DocumentProvider: React.FC<DocumentProviderProps> = ({
     createQuickMemo,
     navigateToQuickMemoFolder,
     toggleFavorite,
-    getFavoriteDocuments
+    getFavoriteDocuments,
+
+    // 문서 히스토리 관리
+    documentHistory,
+    getRecentDocuments,
+    clearDocumentHistory
   };
 
   return (

@@ -15,7 +15,11 @@ const DocumentPanel: React.FC<DocumentPanelProps> = ({ className = '' }) => {
     deleteDocument,
     reorderDocument,
     getSelectedDocument,
-    toggleFavorite
+    toggleFavorite,
+    getRecentDocuments,
+    selectDocument,
+    selectCategory,
+    selectFolder
   } = useDocuments();
 
   const [isEditMode, setIsEditMode] = useState(false);
@@ -23,6 +27,7 @@ const DocumentPanel: React.FC<DocumentPanelProps> = ({ className = '' }) => {
   const [title, setTitle] = useState('');
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [collapsedSections, setCollapsedSections] = useState<Set<string>>(new Set());
+  const [showRecentDropdown, setShowRecentDropdown] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   const selectedDocument = getSelectedDocument();
@@ -162,6 +167,17 @@ const DocumentPanel: React.FC<DocumentPanelProps> = ({ className = '' }) => {
       await toggleFavorite(selectedDocument.id);
     } catch (error) {
       console.error('즐겨찾기 토글 실패:', error);
+    }
+  };
+
+  const handleRecentDocumentClick = async (documentHistory: any) => {
+    try {
+      await selectCategory(documentHistory.categoryId);
+      selectFolder(documentHistory.folderId);
+      selectDocument(documentHistory.documentId);
+      setShowRecentDropdown(false);
+    } catch (error) {
+      console.error('최근 문서 선택 실패:', error);
     }
   };
 
@@ -440,7 +456,52 @@ const DocumentPanel: React.FC<DocumentPanelProps> = ({ className = '' }) => {
               placeholder="문서 제목"
             />
           ) : (
-            <h1 className="document-title">📄 {selectedDocument.title}</h1>
+            <div className="title-with-recent">
+              <h1 className="document-title">📄 {selectedDocument.title}</h1>
+              
+              {/* 최근 문서 드롭다운 */}
+              <div className="recent-documents-dropdown">
+                <button 
+                  className="recent-documents-btn"
+                  onClick={() => setShowRecentDropdown(!showRecentDropdown)}
+                  title="최근 열어본 문서"
+                >
+                  📚 최근
+                </button>
+                
+                {showRecentDropdown && (
+                  <>
+                    <div 
+                      className="recent-dropdown-overlay" 
+                      onClick={() => setShowRecentDropdown(false)}
+                    />
+                    <div className="recent-dropdown-menu">
+                      <div className="recent-dropdown-header">최근 열어본 문서</div>
+                      {getRecentDocuments().length > 0 ? (
+                        getRecentDocuments().map((docHistory) => (
+                          <button
+                            key={docHistory.documentId}
+                            className={`recent-dropdown-item ${docHistory.documentId === selectedDocument.id ? 'current' : ''}`}
+                            onClick={() => handleRecentDocumentClick(docHistory)}
+                            disabled={docHistory.documentId === selectedDocument.id}
+                          >
+                            <div className="recent-doc-title">📄 {docHistory.title}</div>
+                            <div className="recent-doc-time">
+                              {docHistory.accessedAt.toLocaleTimeString('ko-KR', { 
+                                hour: '2-digit', 
+                                minute: '2-digit' 
+                              })}
+                            </div>
+                          </button>
+                        ))
+                      ) : (
+                        <div className="recent-dropdown-empty">최근 문서가 없습니다</div>
+                      )}
+                    </div>
+                  </>
+                )}
+              </div>
+            </div>
           )}
         </div>
         

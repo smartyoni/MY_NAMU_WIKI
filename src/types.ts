@@ -76,3 +76,11 @@ export interface DocumentMoveRequest {
   documentId: string;
   direction: 'up' | 'down';
 }
+
+export interface DocumentHistory {
+  documentId: string;
+  title: string;
+  folderId: string;
+  categoryId: string;
+  accessedAt: Date;
+}
