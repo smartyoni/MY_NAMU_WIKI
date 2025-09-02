@@ -82,8 +82,14 @@ const PracticeModal: React.FC<PracticeModalProps> = ({ isOpen, onClose }) => {
 
   if (!isOpen) return null;
 
+  const handleOverlayClick = (e: React.MouseEvent) => {
+    if (e.target === e.currentTarget) {
+      onClose();
+    }
+  };
+
   return (
-    <div className="practice-modal-overlay">
+    <div className="practice-modal-overlay" onClick={handleOverlayClick}>
       <div className="practice-modal">
         <div className="practice-modal-header">
           <div className="practice-modal-title">
