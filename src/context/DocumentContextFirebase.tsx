@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, type ReactNode } from 'react';
 import { collection, doc, setDoc, deleteDoc, onSnapshot, query, orderBy, where, deleteField } from 'firebase/firestore';
 import { db } from '../firebase';
-import { Category, Folder, WikiDocument, UIState, Bookmark, TextClip, SidebarBookmark, DocumentHistory } from '../types';
+import { Category, Folder, WikiDocument, UIState, Bookmark, TextClip, SidebarBookmark, DocumentHistory, DocumentTemplate, TemplateVariable } from '../types';
 
 
 interface DocumentComment {
@@ -23,6 +23,7 @@ interface DocumentContextType {
   textClips: TextClip[];
   sidebarBookmarks: SidebarBookmark[];
   rightSidebarBookmarks: SidebarBookmark[];
+  documentTemplates: DocumentTemplate[];
   comments: DocumentComment[];
   documentHistory: DocumentHistory[];
   uiState: UIState;
@@ -91,6 +92,12 @@ interface DocumentContextType {
   deleteRightSidebarBookmark: (id: string) => Promise<void>;
   reorderRightSidebarBookmarks: (reorderedBookmarks: SidebarBookmark[]) => Promise<void>;
   
+  // 문서 템플릿 관리
+  createDocumentTemplate: (title: string, content: string, variables: TemplateVariable[], color?: string) => Promise<string>;
+  updateDocumentTemplate: (id: string, updates: Partial<DocumentTemplate>) => Promise<void>;
+  deleteDocumentTemplate: (id: string) => Promise<void>;
+  reorderDocumentTemplates: (reorderedTemplates: DocumentTemplate[]) => Promise<void>;
+  
   // 빠른메모
   createQuickMemo: (content: string) => Promise<string>;
   navigateToQuickMemoFolder: () => Promise<void>;
@@ -130,6 +137,7 @@ export const DocumentProvider: React.FC<DocumentProviderProps> = ({
   const [textClips, setTextClips] = useState<TextClip[]>([]);
   const [sidebarBookmarks, setSidebarBookmarks] = useState<SidebarBookmark[]>([]);
   const [rightSidebarBookmarks, setRightSidebarBookmarks] = useState<SidebarBookmark[]>([]);
+  const [documentTemplates, setDocumentTemplates] = useState<DocumentTemplate[]>([]);
   const [comments, setComments] = useState<DocumentComment[]>([]);
   const [documentHistory, setDocumentHistory] = useState<DocumentHistory[]>([]);
   
@@ -478,6 +486,83 @@ export const DocumentProvider: React.FC<DocumentProviderProps> = ({
 
     return () => unsubscribe();
   }, [userId]);
+
+  // Firebase에서 문서 템플릿 목록 실시간 구독
+  useEffect(() => {
+    const templatesRef = collection(db, 'users', userId, 'documentTemplates');
+    const q = query(templatesRef, orderBy('order', 'asc'));
+    
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const templates: DocumentTemplate[] = [];
+      snapshot.forEach((doc) => {
+        const data = doc.data();
+        templates.push({
+          id: doc.id,
+          title: data.title,
+          content: data.content,
+          variables: data.variables || [],
+          order: data.order,
+          color: data.color,
+          createdAt: data.createdAt?.toDate() || new Date(),
+          updatedAt: data.updatedAt?.toDate() || new Date()
+        });
+      });
+      setDocumentTemplates(templates);
+    }, (err) => {
+      console.error('Error fetching document templates:', err);
+    });
+
+    return () => unsubscribe();
+  }, [userId]);
+
+  // 초기 샘플 템플릿 생성
+  useEffect(() => {
+    const createInitialTemplate = async () => {
+      if (documentTemplates.length === 0) {
+        try {
+          await createDocumentTemplate(
+            "회의록 템플릿",
+            `# {{회의명}} 회의록
+
+**일시**: {{회의일시}}
+**참석자**: {{참석자}}
+**장소**: {{회의장소}}
+
+## 안건
+1. 
+
+## 논의 내용
+- 
+
+## 결정 사항
+- 
+
+## 액션 아이템
+| 담당자 | 업무 | 기한 |
+|--------|------|------|
+|        |      |      |
+
+## 다음 회의
+- 일시: 
+- 안건: `,
+            [
+              { name: "회의명", type: "text", placeholder: "예: 주간 팀 회의" },
+              { name: "회의일시", type: "date", placeholder: "회의 날짜" },
+              { name: "참석자", type: "text", placeholder: "예: 김철수, 이영희, 박민수" },
+              { name: "회의장소", type: "text", placeholder: "예: 회의실 A" }
+            ],
+            "#28a745"
+          );
+        } catch (error) {
+          console.error('초기 템플릿 생성 실패:', error);
+        }
+      }
+    };
+
+    if (documentTemplates.length === 0) {
+      createInitialTemplate();
+    }
+  }, [documentTemplates, createDocumentTemplate]);
 
   // 카테고리 관리 함수들
   const createCategory = async (name: string, color: string): Promise<string> => {
@@ -1220,6 +1305,67 @@ export const DocumentProvider: React.FC<DocumentProviderProps> = ({
     }
   };
 
+  // 문서 템플릿 관리 함수들
+  const createDocumentTemplate = async (title: string, content: string, variables: TemplateVariable[], color: string = '#4A90E2'): Promise<string> => {
+    try {
+      const id = `template-${Date.now()}`;
+      const now = new Date();
+      const order = documentTemplates.length;
+      
+      await setDoc(doc(db, 'users', userId, 'documentTemplates', id), {
+        title,
+        content,
+        variables,
+        color,
+        order,
+        createdAt: now,
+        updatedAt: now
+      });
+      
+      return id;
+    } catch (error) {
+      console.error('문서 템플릿 생성 실패:', error);
+      throw error;
+    }
+  };
+
+  const updateDocumentTemplate = async (id: string, updates: Partial<DocumentTemplate>): Promise<void> => {
+    try {
+      const updateData = {
+        ...updates,
+        updatedAt: new Date()
+      };
+      
+      await setDoc(doc(db, 'users', userId, 'documentTemplates', id), updateData, { merge: true });
+    } catch (error) {
+      console.error('문서 템플릿 수정 실패:', error);
+      throw error;
+    }
+  };
+
+  const deleteDocumentTemplate = async (id: string): Promise<void> => {
+    try {
+      await deleteDoc(doc(db, 'users', userId, 'documentTemplates', id));
+    } catch (error) {
+      console.error('문서 템플릿 삭제 실패:', error);
+      throw error;
+    }
+  };
+
+  const reorderDocumentTemplates = async (reorderedTemplates: DocumentTemplate[]): Promise<void> => {
+    try {
+      const updatePromises = reorderedTemplates.map((template, index) => 
+        setDoc(doc(db, 'users', userId, 'documentTemplates', template.id), 
+          { order: index }, { merge: true })
+      );
+      
+      await Promise.all(updatePromises);
+    } catch (error) {
+      console.error('문서 템플릿 순서 일괄 변경 실패:', error);
+      throw error;
+    }
+  };
+
   // 빠른메모 함수
   const createQuickMemo = async (content: string): Promise<string> => {
     try {
@@ -1444,6 +1590,7 @@ export const DocumentProvider: React.FC<DocumentProviderProps> = ({
     textClips,
     sidebarBookmarks,
     rightSidebarBookmarks,
+    documentTemplates,
     comments,
     uiState,
     loading,
@@ -1490,6 +1637,10 @@ export const DocumentProvider: React.FC<DocumentProviderProps> = ({
     updateRightSidebarBookmark,
     deleteRightSidebarBookmark,
     reorderRightSidebarBookmarks,
+    createDocumentTemplate,
+    updateDocumentTemplate,
+    deleteDocumentTemplate,
+    reorderDocumentTemplates,
     createQuickMemo,
     navigateToQuickMemoFolder,
     toggleFavorite,

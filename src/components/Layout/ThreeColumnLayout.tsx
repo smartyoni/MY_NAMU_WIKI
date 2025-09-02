@@ -2,7 +2,7 @@ import React from 'react';
 import MobileTabLayout from './MobileTabLayout';
 import MobileSlideView from '../MobileSlideView/MobileSlideView';
 import SidebarBookmarks from '../SidebarBookmarks';
-import RightSidebarBookmarks from '../RightSidebarBookmarks';
+import RightSidebarTemplates from '../RightSidebarTemplates';
 import './FiveColumnLayout.css';
 
 interface FiveColumnLayoutProps {
@@ -34,7 +34,7 @@ const FiveColumnLayout: React.FC<FiveColumnLayoutProps> = ({
       <div className="document-panel">
         {documentPanel}
       </div>
-      <RightSidebarBookmarks />
+      <RightSidebarTemplates />
     </div>
   );
 };

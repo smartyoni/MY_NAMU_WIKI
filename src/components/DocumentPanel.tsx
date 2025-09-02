@@ -73,6 +73,39 @@ const DocumentPanel: React.FC<DocumentPanelProps> = ({ className = '' }) => {
     }
   }, [selectedDocument]);
 
+  // 템플릿 삽입 이벤트 리스너
+  useEffect(() => {
+    const handleTemplateInsert = (event: CustomEvent<string>) => {
+      const templateContent = event.detail;
+      if (contentTextareaRef.current) {
+        const textarea = contentTextareaRef.current;
+        const start = textarea.selectionStart;
+        const end = textarea.selectionEnd;
+        const before = content.substring(0, start);
+        const after = content.substring(end);
+        
+        const newContent = before + templateContent + after;
+        setContent(newContent);
+        
+        // 편집 모드로 전환
+        setIsEditMode(true);
+        
+        // 커서 위치 조정
+        setTimeout(() => {
+          const newCursorPos = start + templateContent.length;
+          textarea.focus();
+          textarea.setSelectionRange(newCursorPos, newCursorPos);
+        }, 50);
+      }
+    };
+
+    window.addEventListener('insertTemplate', handleTemplateInsert as EventListener);
+    
+    return () => {
+      window.removeEventListener('insertTemplate', handleTemplateInsert as EventListener);
+    };
+  }, [content]);
+
 
 
   const handleSave = async () => {

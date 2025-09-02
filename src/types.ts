@@ -72,6 +72,23 @@ export interface SidebarBookmark {
   updatedAt: Date;
 }
 
+export interface TemplateVariable {
+  name: string;
+  type: 'text' | 'date' | 'number';
+  placeholder?: string;
+}
+
+export interface DocumentTemplate {
+  id: string;
+  title: string;
+  content: string;
+  variables: TemplateVariable[];
+  order: number;
+  color?: string;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
 export interface DocumentMoveRequest {
   documentId: string;
   direction: 'up' | 'down';
