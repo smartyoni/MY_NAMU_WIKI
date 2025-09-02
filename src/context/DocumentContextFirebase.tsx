@@ -515,55 +515,6 @@ export const DocumentProvider: React.FC<DocumentProviderProps> = ({
     return () => unsubscribe();
   }, [userId]);
 
-  // 초기 샘플 템플릿 생성
-  useEffect(() => {
-    const createInitialTemplate = async () => {
-      if (documentTemplates.length === 0) {
-        try {
-          await createDocumentTemplate(
-            "회의록 템플릿",
-            `# {{회의명}} 회의록
-
-**일시**: {{회의일시}}
-**참석자**: {{참석자}}
-**장소**: {{회의장소}}
-
-## 안건
-1. 
-
-## 논의 내용
-- 
-
-## 결정 사항
-- 
-
-## 액션 아이템
-| 담당자 | 업무 | 기한 |
-|--------|------|------|
-|        |      |      |
-
-## 다음 회의
-- 일시: 
-- 안건: `,
-            [
-              { name: "회의명", type: "text", placeholder: "예: 주간 팀 회의" },
-              { name: "회의일시", type: "date", placeholder: "회의 날짜" },
-              { name: "참석자", type: "text", placeholder: "예: 김철수, 이영희, 박민수" },
-              { name: "회의장소", type: "text", placeholder: "예: 회의실 A" }
-            ],
-            "#28a745"
-          );
-        } catch (error) {
-          console.error('초기 템플릿 생성 실패:', error);
-        }
-      }
-    };
-
-    if (documentTemplates.length === 0) {
-      createInitialTemplate();
-    }
-  }, [documentTemplates, createDocumentTemplate]);
-
   // 카테고리 관리 함수들
   const createCategory = async (name: string, color: string): Promise<string> => {
     try {
@@ -580,10 +531,6 @@ export const DocumentProvider: React.FC<DocumentProviderProps> = ({
         updatedAt: now
       });
 
-      // 게시판 문서 자동 생성
-      console.log('Creating board document for category:', id, name.trim());
-      await createBoardDocument(id, name.trim());
-      console.log('Board document created successfully for category:', id);
       
       return id;
     } catch (err) {
@@ -932,24 +879,6 @@ export const DocumentProvider: React.FC<DocumentProviderProps> = ({
       selectedDocumentId: null
     }));
 
-    // 카테고리가 선택된 경우 게시판 문서가 있는지 확인하고 없으면 생성
-    if (categoryId) {
-      const boardDocumentId = `board-${categoryId}`;
-      const existingBoardDocument = documents.find(doc => doc.id === boardDocumentId);
-      
-      if (!existingBoardDocument) {
-        const category = categories.find(cat => cat.id === categoryId);
-        if (category) {
-          console.log('Board document not found for category:', categoryId, 'Creating new one...');
-          try {
-            await createBoardDocument(categoryId, category.name);
-            console.log('Board document created successfully for existing category:', categoryId);
-          } catch (error) {
-            console.error('Failed to create board document for existing category:', error);
-          }
-        }
-      }
-    }
   };
 
   const selectFolder = (folderId: string | null) => {
@@ -1366,6 +1295,7 @@ export const DocumentProvider: React.FC<DocumentProviderProps> = ({
     }
   };
 
+
   // 빠른메모 함수
   const createQuickMemo = async (content: string): Promise<string> => {
     try {
@@ -1651,6 +1581,7 @@ export const DocumentProvider: React.FC<DocumentProviderProps> = ({
     getRecentDocuments,
     clearDocumentHistory
   };
+
 
   return (
     <DocumentContext.Provider value={value}>

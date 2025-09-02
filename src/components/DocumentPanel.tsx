@@ -77,8 +77,8 @@ const DocumentPanel: React.FC<DocumentPanelProps> = ({ className = '' }) => {
   useEffect(() => {
     const handleTemplateInsert = (event: CustomEvent<string>) => {
       const templateContent = event.detail;
-      if (contentTextareaRef.current) {
-        const textarea = contentTextareaRef.current;
+      if (textareaRef.current) {
+        const textarea = textareaRef.current;
         const start = textarea.selectionStart;
         const end = textarea.selectionEnd;
         const before = content.substring(0, start);
@@ -90,11 +90,16 @@ const DocumentPanel: React.FC<DocumentPanelProps> = ({ className = '' }) => {
         // 편집 모드로 전환
         setIsEditMode(true);
         
-        // 커서 위치 조정
+        // textarea 값 직접 업데이트하고 커서 위치 조정
         setTimeout(() => {
+          textarea.value = newContent;
           const newCursorPos = start + templateContent.length;
           textarea.focus();
           textarea.setSelectionRange(newCursorPos, newCursorPos);
+          
+          // 변경 이벤트 트리거
+          const changeEvent = new Event('input', { bubbles: true });
+          textarea.dispatchEvent(changeEvent);
         }, 50);
       }
     };

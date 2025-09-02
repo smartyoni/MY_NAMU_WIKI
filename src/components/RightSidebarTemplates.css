@@ -102,20 +102,6 @@
   white-space: nowrap;
 }
 
-.template-delete-btn {
-  width: 40px;
-  height: 100%;
-  border: none;
-  background: #dc3545;
-  color: white;
-  font-size: 18px;
-  cursor: pointer;
-  transition: background-color 0.2s ease;
-}
-
-.template-delete-btn:hover {
-  background: #c82333;
-}
 
 /* 모달 스타일 */
 .modal-overlay {
@@ -238,6 +224,67 @@
   cursor: pointer;
 }
 
+/* 색상과 변수 삽입 그룹 */
+.form-group.color-and-variables {
+  display: flex;
+  gap: 20px;
+  align-items: flex-start;
+}
+
+.color-input-group,
+.variable-buttons-group {
+  display: flex;
+  flex-direction: column;
+}
+
+.color-input-group {
+  flex-shrink: 0;
+}
+
+.variable-buttons-group {
+  flex: 1;
+}
+
+.variable-buttons {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-top: 8px;
+}
+
+.variable-insert-btn {
+  padding: 6px 12px;
+  border: 1px solid #007bff;
+  background: white;
+  color: #007bff;
+  border-radius: 4px;
+  font-size: 12px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-family: 'Courier New', monospace;
+  white-space: nowrap;
+}
+
+.variable-insert-btn:hover {
+  background: #007bff;
+  color: white;
+}
+
+.variable-insert-btn.custom {
+  border-color: #28a745;
+  color: #28a745;
+  font-weight: bold;
+}
+
+.variable-insert-btn.custom:hover {
+  background: #28a745;
+  color: white;
+}
+
+.variable-buttons-group label {
+  margin-bottom: 4px !important;
+}
+
 .variable-config {
   display: flex;
   gap: 8px;
@@ -336,4 +383,60 @@
   font-size: 14px;
   line-height: 1.5;
   white-space: pre-line;
+}
+
+/* 컨텍스트 메뉴 */
+.template-context-menu {
+  background: white;
+  border: 1px solid #e9ecef;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  padding: 4px 0;
+  min-width: 160px;
+  animation: contextMenuAppear 0.15s ease-out;
+}
+
+@keyframes contextMenuAppear {
+  from {
+    opacity: 0;
+    transform: scale(0.95) translateY(-5px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+.context-menu-item {
+  width: 100%;
+  padding: 8px 16px;
+  border: none;
+  background: none;
+  text-align: left;
+  font-size: 14px;
+  color: #495057;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.context-menu-item:hover {
+  background: #f8f9fa;
+}
+
+.context-menu-item.danger {
+  color: #dc3545;
+}
+
+.context-menu-item.danger:hover {
+  background: #fff5f5;
+  color: #c82333;
+}
+
+.context-menu-divider {
+  margin: 4px 0;
+  border: none;
+  border-top: 1px solid #e9ecef;
 }
