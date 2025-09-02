@@ -654,7 +654,7 @@ const TextClipBar: React.FC<TextClipBarProps> = ({ className = '' }) => {
         ">
           <textarea readonly style="
             width: 100%;
-            min-height: 450px;
+            min-height: 675px;
             border: 1px solid #dee2e6;
             border-radius: 8px;
             padding: 12px;
@@ -876,7 +876,7 @@ const TextClipModal: React.FC<TextClipModalProps> = ({ textClip, onSave, onCance
               value={content}
               onChange={(e) => setContent(e.target.value)}
               placeholder="안녕하세요.&#10;저는 홍길동입니다.&#10;&#10;감사합니다."
-              rows={18}
+              rows={27}
               required
               style={{
                 width: '100%',
