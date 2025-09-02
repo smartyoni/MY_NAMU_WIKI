@@ -475,7 +475,9 @@ const BookmarkBar: React.FC<BookmarkBarProps> = ({ className = '' }) => {
     setModalPosition({ x, y });
     setSelectedBookmark(bookmark);
     
+    console.log('Right click on bookmark:', bookmark.title, 'Position:', { x, y });
     setTimeout(() => {
+      console.log('Setting showActionModal to true');
       setShowActionModal(true);
     }, 0);
   };

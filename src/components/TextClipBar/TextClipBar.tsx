@@ -155,7 +155,9 @@ const TextClipBar: React.FC<TextClipBarProps> = ({ className = '' }) => {
     setModalPosition({ x, y });
     setSelectedTextClip(textClip);
     
+    console.log('Right click on text clip:', textClip.title, 'Position:', { x, y });
     setTimeout(() => {
+      console.log('Setting showActionModal to true for text clip');
       setShowActionModal(true);
     }, 0);
   };

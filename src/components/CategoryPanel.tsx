@@ -3,6 +3,8 @@ import { Category } from '../types';
 import { useDocuments } from '../context/DocumentContextFirebase';
 import ThreeDotsMenu from './ThreeDotsMenu';
 import ConfirmModal from './ConfirmModal';
+import ContextMenu from './ContextMenu';
+import { useContextMenu } from '../hooks/useContextMenu';
 import './CategoryPanel.css';
 
 interface CategoryPanelProps {
@@ -29,6 +31,7 @@ const CategoryPanel: React.FC<CategoryPanelProps> = ({ className = '' }) => {
   const [deleteModalState, setDeleteModalState] = useState<{isOpen: boolean, categoryId: string | null}>({isOpen: false, categoryId: null});
   const [draggedCategory, setDraggedCategory] = useState<Category | null>(null);
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
+  const { contextMenu, handleRightClick, closeContextMenu } = useContextMenu();
 
   const handleCreateCategory = async () => {
     if (!newCategoryName.trim()) return;
@@ -232,6 +235,7 @@ const CategoryPanel: React.FC<CategoryPanelProps> = ({ className = '' }) => {
             key={category.id}
             className={`category-item ${uiState.selectedCategoryId === category.id ? 'selected' : ''} ${draggedCategory?.id === category.id ? 'dragging' : ''} ${openMenuId === category.id ? 'menu-open' : ''}`}
             onClick={async () => await selectCategory(category.id)}
+            onContextMenu={(e) => handleRightClick(e, `category-${category.id}`)}
             draggable={editingId !== category.id}
             onDragStart={(e) => handleDragStart(e, category)}
             onDragEnd={handleDragEnd}
@@ -340,6 +344,46 @@ const CategoryPanel: React.FC<CategoryPanelProps> = ({ className = '' }) => {
         message="정말로 이 카테고리를 삭제하시겠습니까? 하위 폴더와 문서도 모두 삭제됩니다."
         onConfirm={handleConfirmDelete}
         onCancel={handleCancelDelete}
+      />
+      
+      <ContextMenu
+        x={contextMenu.x}
+        y={contextMenu.y}
+        items={contextMenu.targetId?.startsWith('category-') ? (() => {
+          const categoryId = contextMenu.targetId.replace('category-', '');
+          const category = categories.find(c => c.id === categoryId);
+          if (!category) return [];
+          
+          return [
+            {
+              label: '폴더 추가',
+              icon: '📁',
+              onClick: () => {
+                handleAddFolder(category.id);
+                closeContextMenu();
+              }
+            },
+            {
+              label: '이름 변경',
+              icon: '✏️',
+              onClick: () => {
+                handleEditStart(category);
+                closeContextMenu();
+              }
+            },
+            {
+              label: '삭제',
+              icon: '🗑️',
+              onClick: () => {
+                handleDelete(category.id);
+                closeContextMenu();
+              },
+              className: 'danger'
+            }
+          ];
+        })() : []}
+        onClose={closeContextMenu}
+        isVisible={contextMenu.isVisible}
       />
     </div>
   );
