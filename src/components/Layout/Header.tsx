@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useDocuments } from '../../context/DocumentContextFirebase';
+import PracticeModal from '../PracticeModal/PracticeModal';
 import './Header.css';
 
 interface HeaderProps {}
@@ -11,6 +12,7 @@ const Header: React.FC<HeaderProps> = () => {
   const [showResults, setShowResults] = useState(false);
   const [showFavorites, setShowFavorites] = useState(false);
   const [favoriteDocuments, setFavoriteDocuments] = useState<any[]>([]);
+  const [showPracticeModal, setShowPracticeModal] = useState(false);
   const { searchDocuments, selectDocument, selectFolder, selectCategory, folders, categories, createQuickMemo, documents } = useDocuments();
 
   useEffect(() => {
@@ -123,8 +125,9 @@ const Header: React.FC<HeaderProps> = () => {
   };
 
   return (
-    <header className="header">
-      <div className="header-left">
+    <>
+      <header className="header">
+        <div className="header-left">
         <h1 className="logo">📚 Personal Wiki</h1>
         <span className="datetime">{formatDateTime(currentTime)}</span>
         <div className="search-container">
@@ -217,7 +220,23 @@ const Header: React.FC<HeaderProps> = () => {
           ))}
         </div>
       </div>
+      
+      <div className="header-right">
+        <button 
+          className="practice-button"
+          onClick={() => setShowPracticeModal(true)}
+          title="연습장 - 임시 메모 공간"
+        >
+          📝 연습장
+        </button>
+      </div>
     </header>
+    
+    <PracticeModal
+      isOpen={showPracticeModal}
+      onClose={() => setShowPracticeModal(false)}
+    />
+  </>
   );
 };
 
