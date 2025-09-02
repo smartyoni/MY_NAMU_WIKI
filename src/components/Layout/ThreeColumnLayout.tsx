@@ -2,16 +2,17 @@ import React from 'react';
 import MobileTabLayout from './MobileTabLayout';
 import MobileSlideView from '../MobileSlideView/MobileSlideView';
 import SidebarBookmarks from '../SidebarBookmarks';
-import './ThreeColumnLayout.css';
+import RightSidebarBookmarks from '../RightSidebarBookmarks';
+import './FiveColumnLayout.css';
 
-interface ThreeColumnLayoutProps {
+interface FiveColumnLayoutProps {
   categoryPanel: React.ReactNode;
   folderPanel: React.ReactNode;
   documentPanel: React.ReactNode;
   isMobile?: boolean;
 }
 
-const ThreeColumnLayout: React.FC<ThreeColumnLayoutProps> = ({
+const FiveColumnLayout: React.FC<FiveColumnLayoutProps> = ({
   categoryPanel,
   folderPanel,
   documentPanel,
@@ -22,7 +23,7 @@ const ThreeColumnLayout: React.FC<ThreeColumnLayoutProps> = ({
   }
 
   return (
-    <div className="three-column-layout desktop">
+    <div className="five-column-layout desktop">
       <SidebarBookmarks />
       <div className="category-panel">
         {categoryPanel}
@@ -33,8 +34,9 @@ const ThreeColumnLayout: React.FC<ThreeColumnLayoutProps> = ({
       <div className="document-panel">
         {documentPanel}
       </div>
+      <RightSidebarBookmarks />
     </div>
   );
 };
 
-export default ThreeColumnLayout;
+export default FiveColumnLayout;

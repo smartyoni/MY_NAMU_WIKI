@@ -3,7 +3,7 @@ import Header from './components/Layout/Header';
 import BookmarkBar from './components/BookmarkBar/BookmarkBar';
 import TextClipBar from './components/TextClipBar/TextClipBar';
 import MobileFavoritesBar from './components/MobileFavoritesBar/MobileFavoritesBar';
-import ThreeColumnLayout from './components/Layout/ThreeColumnLayout';
+import FiveColumnLayout from './components/Layout/ThreeColumnLayout';
 import CategoryPanel from './components/CategoryPanel';
 import FolderPanel from './components/FolderPanel';
 import DocumentPanel from './components/DocumentPanel';
@@ -51,7 +51,7 @@ function AppContent() {
       <BookmarkBar />
       <TextClipBar />
       <Header />
-      <ThreeColumnLayout
+      <FiveColumnLayout
         categoryPanel={<CategoryPanel />}
         folderPanel={<FolderPanel />}
         documentPanel={<DocumentPanel />}
