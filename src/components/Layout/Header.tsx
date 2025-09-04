@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useDocuments } from '../../context/DocumentContextFirebase';
 import PracticeModal from '../PracticeModal/PracticeModal';
+import TodayScheduleModal from '../TodayScheduleModal/TodayScheduleModal';
 import './Header.css';
 
 interface HeaderProps {}
@@ -13,6 +14,7 @@ const Header: React.FC<HeaderProps> = () => {
   const [showFavorites, setShowFavorites] = useState(false);
   const [favoriteDocuments, setFavoriteDocuments] = useState<any[]>([]);
   const [showPracticeModal, setShowPracticeModal] = useState(false);
+  const [showTodayScheduleModal, setShowTodayScheduleModal] = useState(false);
   const { searchDocuments, selectDocument, selectFolder, selectCategory, folders, categories, createQuickMemo, documents } = useDocuments();
 
   useEffect(() => {
@@ -229,12 +231,24 @@ const Header: React.FC<HeaderProps> = () => {
         >
           📝 연습장
         </button>
+        <button 
+          className="schedule-button"
+          onClick={() => setShowTodayScheduleModal(true)}
+          title="오늘일정 - Google 캘린더 일정 보기"
+        >
+          📅 오늘일정
+        </button>
       </div>
     </header>
     
     <PracticeModal
       isOpen={showPracticeModal}
       onClose={() => setShowPracticeModal(false)}
+    />
+    
+    <TodayScheduleModal
+      isOpen={showTodayScheduleModal}
+      onClose={() => setShowTodayScheduleModal(false)}
     />
   </>
   );

@@ -7,6 +7,9 @@ export default defineConfig({
     jsxRuntime: 'automatic',
   })],
   base: '/MY_NAMU_WIKI/',
+  server: {
+    port: 5173
+  },
   build: {
     sourcemap: false,
     target: 'es2015',

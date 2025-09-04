@@ -290,13 +290,41 @@
   box-shadow: 0 2px 6px rgba(102, 126, 234, 0.3);
 }
 
-/* 모바일에서의 연습장 버튼 */
+/* 오늘일정 버튼 스타일 */
+.schedule-button {
+  background: linear-gradient(135deg, #4285f4 0%, #34a853 100%);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  padding: 8px 16px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 8px rgba(66, 133, 244, 0.3);
+  min-width: 90px;
+  white-space: nowrap;
+}
+
+.schedule-button:hover {
+  background: linear-gradient(135deg, #3367d6 0%, #2e7d32 100%);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(66, 133, 244, 0.4);
+}
+
+.schedule-button:active {
+  transform: translateY(0);
+  box-shadow: 0 2px 6px rgba(66, 133, 244, 0.3);
+}
+
+/* 모바일에서의 버튼들 */
 @media (max-width: 768px) {
   .header-right {
     gap: 8px;
   }
   
-  .practice-button {
+  .practice-button,
+  .schedule-button {
     padding: 6px 12px;
     font-size: 12px;
     min-width: 70px;
