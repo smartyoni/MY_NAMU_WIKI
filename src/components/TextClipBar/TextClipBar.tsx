@@ -55,6 +55,16 @@ const TextClipBar: React.FC<TextClipBarProps> = ({ className = '' }) => {
     return rainbowColors[Math.floor(Math.random() * rainbowColors.length)].color;
   };
 
+  // 텍스트 내 링크를 HTML로 변환하는 함수
+  const convertLinksToHtml = (text: string) => {
+    // URL 패턴 정의
+    const urlPattern = /(https?:\/\/[^\s]+)/gi;
+    
+    return text.replace(urlPattern, (url) => {
+      return `<a href="${url}" target="_blank" rel="noopener noreferrer" style="color: #007bff; text-decoration: underline;">${url}</a>`;
+    });
+  };
+
   // 클립보드에 복사 및 시각적 피드백
   const handleTextClipClick = (textClip: TextClip) => {
     setSelectedContentClip(textClip);
@@ -628,7 +638,7 @@ const TextClipBar: React.FC<TextClipBarProps> = ({ className = '' }) => {
         font-family: inherit;
       `;
       
-      const processedContent = selectedContentClip.content;
+      const processedContent = convertLinksToHtml(selectedContentClip.content);
       
       modal.innerHTML = `
         <div style="
@@ -654,7 +664,7 @@ const TextClipBar: React.FC<TextClipBarProps> = ({ className = '' }) => {
           flex: 1;
           overflow-y: auto;
         ">
-          <textarea readonly style="
+          <div style="
             width: 100%;
             min-height: 675px;
             border: 1px solid #dee2e6;
@@ -663,10 +673,12 @@ const TextClipBar: React.FC<TextClipBarProps> = ({ className = '' }) => {
             font-size: 14px;
             font-family: inherit;
             line-height: 1.5;
-            resize: vertical;
             box-sizing: border-box;
             background: #f8f9fa;
-          ">${processedContent}</textarea>
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            overflow-y: auto;
+          ">${processedContent}</div>
         </div>
         <div style="
           padding: 16px 20px;
