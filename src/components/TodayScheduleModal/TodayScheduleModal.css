@@ -27,9 +27,12 @@
 /* 헤더 */
 .modal-header {
   background: linear-gradient(135deg, #4285f4 0%, #34a853 100%);
-  color: white;
+  color: black;
   padding: 20px;
   position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
 }
 
 .modal-header h2 {
@@ -42,15 +45,55 @@
   margin: 0;
   font-size: 14px;
   opacity: 0.9;
+  color: black;
+}
+
+.header-left {
+  flex: 1;
+}
+
+.header-right-actions {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.header-right-actions .refresh-btn,
+.header-right-actions .signout-btn {
+  background: rgba(255, 255, 255, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  color: black;
+  padding: 8px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 24px;
+  transition: all 0.2s;
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.header-right-actions .refresh-btn:hover {
+  background: rgba(255, 255, 255, 0.3);
+  border-color: rgba(255, 255, 255, 0.5);
+}
+
+.header-right-actions .signout-btn:hover {
+  background: rgba(255, 255, 255, 0.3);
+  border-color: rgba(255, 255, 255, 0.5);
+}
+
+.header-right-actions .refresh-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 
 .close-btn {
-  position: absolute;
-  top: 20px;
-  right: 20px;
   background: none;
   border: none;
-  color: white;
+  color: black;
   font-size: 20px;
   cursor: pointer;
   width: 30px;
@@ -305,6 +348,12 @@
   transition: all 0.2s;
 }
 
+.event-item.today-event {
+  border: 2px solid #000;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  background: linear-gradient(135deg, #f0fff4 0%, #e6ffe6 100%);
+}
+
 .event-item:hover {
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
@@ -320,6 +369,18 @@
 
 .event-summary:hover {
   background: #f8f9fa;
+}
+
+.event-date {
+  background: #fff3e0;
+  color: #f57c00;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 600;
+  white-space: nowrap;
+  min-width: 50px;
+  text-align: center;
 }
 
 .event-time {
@@ -419,25 +480,23 @@
 
   .modal-header {
     padding: 16px;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 16px;
   }
 
   .modal-header h2 {
     font-size: 20px;
   }
 
+  .header-right-actions {
+    gap: 1px;
+  }
+
+
   .schedule-section,
   .auth-section {
     padding: 16px;
-  }
-
-  .user-info {
-    flex-direction: column;
-    gap: 12px;
-    align-items: stretch;
-  }
-
-  .user-actions {
-    justify-content: center;
   }
 
   .event-summary {
@@ -446,6 +505,7 @@
     gap: 12px;
   }
 
+  .event-date,
   .event-time {
     min-width: auto;
     align-self: flex-start;

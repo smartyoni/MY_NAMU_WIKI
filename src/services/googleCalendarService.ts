@@ -220,7 +220,56 @@ class GoogleCalendarService {
     return this.isSignedIn;
   }
 
-  // 오늘 일정 가져오기 (개발용 목업 포함)
+  // 일주일 일정 가져오기 (어제부터 오늘 포함 7일간)
+  async getWeeklyEvents(): Promise<CalendarEvent[]> {
+    try {
+      if (!this.isSignedIn) {
+        throw new Error('구글 계정에 로그인이 필요합니다.');
+      }
+
+      // API 키가 없으면 목업 데이터 반환
+      if (!import.meta.env.VITE_GOOGLE_API_KEY || !import.meta.env.VITE_GOOGLE_CLIENT_ID) {
+        console.log('🔧 개발 모드: 목업 일주일 일정 데이터 반환');
+        return this.getMockWeeklyEvents();
+      }
+
+      // 어제부터 7일간의 날짜 범위 설정
+      const today = new Date();
+      const yesterday = new Date(today);
+      yesterday.setDate(today.getDate() - 1);
+      
+      const startOfWeek = new Date(yesterday.getFullYear(), yesterday.getMonth(), yesterday.getDate());
+      const endOfWeek = new Date(today.getFullYear(), today.getMonth(), today.getDate() + 6);
+
+      const response = await this.gapi.client.calendar.events.list({
+        calendarId: 'primary',
+        timeMin: startOfWeek.toISOString(),
+        timeMax: endOfWeek.toISOString(),
+        singleEvents: true,
+        orderBy: 'startTime',
+        maxResults: 100
+      });
+
+      const events = response.result.items || [];
+      
+      return events.map((event: any): CalendarEvent => ({
+        id: event.id,
+        summary: event.summary || '제목 없음',
+        description: event.description,
+        start: event.start,
+        end: event.end,
+        location: event.location,
+        attendees: event.attendees,
+        htmlLink: event.htmlLink
+      }));
+
+    } catch (error) {
+      console.error('일주일 일정 가져오기 실패:', error);
+      throw error;
+    }
+  }
+
+  // 오늘 일정 가져오기 (개발용 목업 포함) - 기존 호환성 유지
   async getTodayEvents(): Promise<CalendarEvent[]> {
     try {
       if (!this.isSignedIn) {
@@ -266,7 +315,108 @@ class GoogleCalendarService {
     }
   }
 
-  // 목업 일정 데이터 생성
+  // 목업 일주일 일정 데이터 생성
+  private getMockWeeklyEvents(): CalendarEvent[] {
+    const events: CalendarEvent[] = [];
+    const today = new Date();
+    
+    // 어제부터 7일간의 일정 생성
+    for (let i = -1; i < 6; i++) {
+      const date = new Date(today);
+      date.setDate(today.getDate() + i);
+      const dateStr = date.toISOString().split('T')[0];
+      
+      const dayName = date.toLocaleDateString('ko-KR', { weekday: 'short' });
+      const dayEvents = this.generateMockEventsForDay(dateStr, dayName, i);
+      events.push(...dayEvents);
+    }
+    
+    return events.sort((a, b) => {
+      const timeA = a.start.dateTime || a.start.date || '';
+      const timeB = b.start.dateTime || b.start.date || '';
+      return timeA.localeCompare(timeB);
+    });
+  }
+
+  // 특정 날짜의 목업 일정 생성
+  private generateMockEventsForDay(dateStr: string, dayName: string, dayOffset: number): CalendarEvent[] {
+    const events: CalendarEvent[] = [];
+    
+    if (dayOffset === -1) { // 어제
+      events.push({
+        id: `mock_yesterday_1`,
+        summary: '📚 독서 시간',
+        description: '새로운 기술서적 읽기',
+        start: { dateTime: `${dateStr}T20:00:00+09:00` },
+        end: { dateTime: `${dateStr}T21:30:00+09:00` },
+        htmlLink: 'https://calendar.google.com'
+      });
+    } else if (dayOffset === 0) { // 오늘
+      events.push(
+        {
+          id: 'mock_today_1',
+          summary: '🌅 오전 회의',
+          description: '팀 스탠드업 미팅입니다.\n\n주요 안건:\n- 프로젝트 진행상황 점검\n- 오늘 할 일 공유',
+          start: { dateTime: `${dateStr}T09:00:00+09:00` },
+          end: { dateTime: `${dateStr}T10:00:00+09:00` },
+          location: '회의실 A',
+          attendees: [{ email: 'team@example.com', displayName: '팀원들', responseStatus: 'accepted' }],
+          htmlLink: 'https://calendar.google.com'
+        },
+        {
+          id: 'mock_today_2',
+          summary: '☕ 점심약속',
+          description: '친구와 점심 식사',
+          start: { dateTime: `${dateStr}T12:30:00+09:00` },
+          end: { dateTime: `${dateStr}T14:00:00+09:00` },
+          location: '강남역 맛집',
+          htmlLink: 'https://calendar.google.com'
+        },
+        {
+          id: 'mock_today_3',
+          summary: '💻 개발 작업',
+          description: 'Google Calendar API 통합 작업',
+          start: { dateTime: `${dateStr}T15:00:00+09:00` },
+          end: { dateTime: `${dateStr}T18:00:00+09:00` },
+          htmlLink: 'https://calendar.google.com'
+        }
+      );
+    } else if (dayOffset === 1) { // 내일
+      events.push({
+        id: 'mock_tomorrow_1',
+        summary: '🏥 병원 진료',
+        description: '정기 검진',
+        start: { dateTime: `${dateStr}T10:30:00+09:00` },
+        end: { dateTime: `${dateStr}T11:30:00+09:00` },
+        location: '서울대병원',
+        htmlLink: 'https://calendar.google.com'
+      });
+    } else if (dayOffset === 2) { // 모레
+      events.push({
+        id: `mock_day${dayOffset}_1`,
+        summary: '🎬 영화 관람',
+        description: '새로 개봉한 영화 관람',
+        start: { dateTime: `${dateStr}T19:00:00+09:00` },
+        end: { dateTime: `${dateStr}T21:30:00+09:00` },
+        location: 'CGV 강남점',
+        htmlLink: 'https://calendar.google.com'
+      });
+    } else if (dayOffset === 5) { // 주말
+      events.push({
+        id: `mock_day${dayOffset}_1`,
+        summary: '🏃‍♂️ 운동',
+        description: '주말 조깅',
+        start: { dateTime: `${dateStr}T07:00:00+09:00` },
+        end: { dateTime: `${dateStr}T08:30:00+09:00` },
+        location: '한강공원',
+        htmlLink: 'https://calendar.google.com'
+      });
+    }
+    
+    return events;
+  }
+
+  // 목업 일정 데이터 생성 (기존 오늘 일정용)
   private getMockEvents(): CalendarEvent[] {
     const today = new Date();
     const todayStr = today.toISOString().split('T')[0];

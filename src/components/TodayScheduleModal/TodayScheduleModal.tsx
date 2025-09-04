@@ -31,7 +31,7 @@ const TodayScheduleModal: React.FC<TodayScheduleModalProps> = ({ isOpen, onClose
         if (signedIn) {
           console.log('🔄 기존 로그인 세션 복원됨');
           setUserInfo(googleCalendarService.getUserInfo());
-          await loadTodayEvents();
+          await loadWeeklyEvents();
         } else {
           console.log('🚪 저장된 로그인 세션 없음');
         }
@@ -57,7 +57,7 @@ const TodayScheduleModal: React.FC<TodayScheduleModalProps> = ({ isOpen, onClose
         const userInfo = googleCalendarService.getUserInfo();
         console.log('👤 사용자 정보:', userInfo);
         setUserInfo(userInfo);
-        await loadTodayEvents();
+        await loadWeeklyEvents();
       } else {
         console.error('❌ 로그인 실패');
         setError('Google 계정 로그인에 실패했습니다.');
@@ -82,16 +82,16 @@ const TodayScheduleModal: React.FC<TodayScheduleModalProps> = ({ isOpen, onClose
     }
   };
 
-  const loadTodayEvents = async () => {
+  const loadWeeklyEvents = async () => {
     setLoading(true);
     setError(null);
     
     try {
-      const todayEvents = await googleCalendarService.getTodayEvents();
-      setEvents(todayEvents);
+      const weeklyEvents = await googleCalendarService.getWeeklyEvents();
+      setEvents(weeklyEvents);
     } catch (error) {
-      console.error('일정 로드 실패:', error);
-      setError('오늘 일정을 불러오는데 실패했습니다.');
+      console.error('일주일 일정 로드 실패:', error);
+      setError('일주일 일정을 불러오는데 실패했습니다.');
     } finally {
       setLoading(false);
     }
@@ -99,7 +99,7 @@ const TodayScheduleModal: React.FC<TodayScheduleModalProps> = ({ isOpen, onClose
 
   const refreshEvents = async () => {
     if (isSignedIn) {
-      await loadTodayEvents();
+      await loadWeeklyEvents();
     }
   };
 
@@ -111,14 +111,54 @@ const TodayScheduleModal: React.FC<TodayScheduleModalProps> = ({ isOpen, onClose
     window.open(htmlLink, '_blank', 'noopener,noreferrer');
   };
 
-  const formatDate = () => {
+  const formatDateRange = () => {
     const today = new Date();
-    return today.toLocaleDateString('ko-KR', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric',
-      weekday: 'long'
+    const yesterday = new Date(today);
+    yesterday.setDate(today.getDate() - 1);
+    const endDate = new Date(today);
+    endDate.setDate(today.getDate() + 5);
+    
+    const startStr = yesterday.toLocaleDateString('ko-KR', {
+      month: 'short',
+      day: 'numeric'
     });
+    const endStr = endDate.toLocaleDateString('ko-KR', {
+      month: 'short',
+      day: 'numeric'
+    });
+    
+    return `${startStr} ~ ${endStr}`;
+  };
+
+  const formatEventDate = (event: CalendarEvent) => {
+    const startDate = event.start.dateTime || event.start.date;
+    if (!startDate) return '';
+    
+    const date = new Date(startDate);
+    const today = new Date();
+    const yesterday = new Date(today);
+    yesterday.setDate(today.getDate() - 1);
+    const tomorrow = new Date(today);
+    tomorrow.setDate(today.getDate() + 1);
+    
+    const eventDateStr = date.toDateString();
+    const todayStr = today.toDateString();
+    const yesterdayStr = yesterday.toDateString();
+    const tomorrowStr = tomorrow.toDateString();
+    
+    if (eventDateStr === todayStr) {
+      return '오늘';
+    } else if (eventDateStr === yesterdayStr) {
+      return '어제';
+    } else if (eventDateStr === tomorrowStr) {
+      return '내일';
+    } else {
+      return date.toLocaleDateString('ko-KR', {
+        month: 'short',
+        day: 'numeric',
+        weekday: 'short'
+      });
+    }
   };
 
   if (!isOpen) return null;
@@ -127,11 +167,34 @@ const TodayScheduleModal: React.FC<TodayScheduleModalProps> = ({ isOpen, onClose
     <div className="today-schedule-overlay">
       <div className="today-schedule-modal">
         <div className="modal-header">
-          <h2>📅 오늘 일정</h2>
-          <p className="date-info">{formatDate()}</p>
-          <button className="close-btn" onClick={onClose}>
-            ✕
-          </button>
+          <div className="header-left">
+            <h2>📅 일주일 일정</h2>
+            <p className="date-info">{formatDateRange()}</p>
+          </div>
+          <div className="header-right-actions">
+            {isSignedIn && (
+              <>
+                <button 
+                  className="refresh-btn"
+                  onClick={refreshEvents}
+                  disabled={loading}
+                  title="일정 새로고침"
+                >
+                  🔄
+                </button>
+                <button 
+                  className="signout-btn"
+                  onClick={handleSignOut}
+                  title="로그아웃"
+                >
+                  ↪️
+                </button>
+              </>
+            )}
+            <button className="close-btn" onClick={onClose}>
+              ✕
+            </button>
+          </div>
         </div>
 
         <div className="modal-content">
@@ -139,10 +202,10 @@ const TodayScheduleModal: React.FC<TodayScheduleModalProps> = ({ isOpen, onClose
             <div className="auth-section">
               <div className="auth-message">
                 <h3>구글 계정 연결이 필요합니다</h3>
-                <p>Google 캘린더의 오늘 일정을 확인하려면<br />구글 계정으로 로그인해주세요.</p>
+                <p>Google 캘린더의 일주일 일정을 확인하려면<br />구글 계정으로 로그인해주세요.</p>
                 <div className="auth-features">
                   <p>✅ 캘린더 읽기 전용 권한</p>
-                  <p>✅ 오늘 일정만 조회</p>
+                  <p>✅ 일주일 일정 조회</p>
                   <p>✅ 개인정보 안전 보장</p>
                 </div>
               </div>
@@ -156,39 +219,6 @@ const TodayScheduleModal: React.FC<TodayScheduleModalProps> = ({ isOpen, onClose
             </div>
           ) : (
             <div className="schedule-section">
-              <div className="user-info">
-                <div className="user-profile">
-                  {userInfo?.imageUrl && (
-                    <img 
-                      src={userInfo.imageUrl} 
-                      alt="프로필" 
-                      className="profile-image"
-                    />
-                  )}
-                  <div className="user-details">
-                    <span className="user-name">{userInfo?.name}</span>
-                    <span className="user-email">{userInfo?.email}</span>
-                  </div>
-                </div>
-                <div className="user-actions">
-                  <button 
-                    className="refresh-btn"
-                    onClick={refreshEvents}
-                    disabled={loading}
-                    title="일정 새로고침"
-                  >
-                    🔄
-                  </button>
-                  <button 
-                    className="signout-btn"
-                    onClick={handleSignOut}
-                    title="로그아웃"
-                  >
-                    ↪️
-                  </button>
-                </div>
-              </div>
-
               {loading ? (
                 <div className="loading-section">
                   <div className="loading-spinner">⏳</div>
@@ -204,20 +234,25 @@ const TodayScheduleModal: React.FC<TodayScheduleModalProps> = ({ isOpen, onClose
               ) : events.length === 0 ? (
                 <div className="no-events-section">
                   <div className="no-events-icon">📅</div>
-                  <h3>오늘은 일정이 없습니다</h3>
-                  <p>편안한 하루 보내세요! 🌟</p>
+                  <h3>이번 주는 일정이 없습니다</h3>
+                  <p>편안한 한 주 보내세요! 🌟</p>
                 </div>
               ) : (
                 <div className="events-list">
                   <div className="events-header">
-                    <h3>오늘의 일정 ({events.length}개)</h3>
+                    <h3>이번 주 일정 ({events.length}개)</h3>
                   </div>
-                  {events.map((event) => (
-                    <div key={event.id} className="event-item">
-                      <div 
-                        className="event-summary"
-                        onClick={() => toggleEventDetails(event.id)}
-                      >
+                  {events.map((event) => {
+                    const isToday = formatEventDate(event) === '오늘';
+                    return (
+                      <div key={event.id} className={`event-item ${isToday ? 'today-event' : ''}`}>
+                        <div 
+                          className="event-summary"
+                          onClick={() => toggleEventDetails(event.id)}
+                        >
+                        <div className="event-date">
+                          {formatEventDate(event)}
+                        </div>
                         <div className="event-time">
                           {googleCalendarService.formatEventTime(event)}
                         </div>
@@ -272,7 +307,8 @@ const TodayScheduleModal: React.FC<TodayScheduleModalProps> = ({ isOpen, onClose
                         </div>
                       )}
                     </div>
-                  ))}
+                    );
+                  })}
                 </div>
               )}
             </div>
