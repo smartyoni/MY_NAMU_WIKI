@@ -29,8 +29,11 @@ const TodayScheduleModal: React.FC<TodayScheduleModalProps> = ({ isOpen, onClose
         setIsSignedIn(signedIn);
         
         if (signedIn) {
+          console.log('🔄 기존 로그인 세션 복원됨');
           setUserInfo(googleCalendarService.getUserInfo());
           await loadTodayEvents();
+        } else {
+          console.log('🚪 저장된 로그인 세션 없음');
         }
       }
     } catch (error) {

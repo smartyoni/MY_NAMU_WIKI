@@ -24,6 +24,7 @@ class GoogleCalendarService {
   private gapi: any = null;
   private isInitialized = false;
   private isSignedIn = false;
+  private accessToken: string | null = null;
 
   // Google API 초기화 (Google Identity Services 사용)
   async initializeGAPI(): Promise<boolean> {
@@ -57,10 +58,72 @@ class GoogleCalendarService {
         });
       });
 
+      // 저장된 토큰 확인
+      this.checkStoredToken();
+      
       return true;
     } catch (error) {
       console.error('Google API 초기화 실패:', error);
       return false;
+    }
+  }
+
+  // 저장된 토큰 확인 및 로드
+  private checkStoredToken(): void {
+    try {
+      const storedToken = localStorage.getItem('google_access_token');
+      const tokenExpiry = localStorage.getItem('google_token_expiry');
+      
+      if (storedToken && tokenExpiry) {
+        const expiryTime = parseInt(tokenExpiry, 10);
+        const now = Date.now();
+        
+        // 토큰이 만료되지 않았으면 로그인 상태로 설정
+        if (expiryTime > now) {
+          this.accessToken = storedToken;
+          this.isSignedIn = true;
+          
+          // gapi 클라이언트에 토큰 설정
+          if (this.gapi && this.gapi.client) {
+            this.gapi.client.setToken({ access_token: storedToken });
+          }
+          
+          console.log('🔄 저장된 토큰으로 로그인 복원됨');
+        } else {
+          // 만료된 토큰 삭제
+          this.clearStoredToken();
+          console.log('⏰ 저장된 토큰이 만료되어 삭제됨');
+        }
+      }
+    } catch (error) {
+      console.error('저장된 토큰 확인 실패:', error);
+      this.clearStoredToken();
+    }
+  }
+
+  // 토큰을 로컬 스토리지에 저장
+  private saveToken(accessToken: string, expiresIn: number = 3600): void {
+    try {
+      const expiryTime = Date.now() + (expiresIn * 1000); // 초를 밀리초로 변환
+      
+      localStorage.setItem('google_access_token', accessToken);
+      localStorage.setItem('google_token_expiry', expiryTime.toString());
+      
+      console.log('💾 토큰 저장 완료, 만료시간:', new Date(expiryTime));
+    } catch (error) {
+      console.error('토큰 저장 실패:', error);
+    }
+  }
+
+  // 저장된 토큰 삭제
+  private clearStoredToken(): void {
+    try {
+      localStorage.removeItem('google_access_token');
+      localStorage.removeItem('google_token_expiry');
+      this.accessToken = null;
+      this.isSignedIn = false;
+    } catch (error) {
+      console.error('토큰 삭제 실패:', error);
     }
   }
 
@@ -110,10 +173,17 @@ class GoogleCalendarService {
             if (response.error) {
               console.error('OAuth 오류:', response.error);
               this.isSignedIn = false;
+              this.clearStoredToken();
               resolve(false);
             } else {
               console.log('OAuth 성공:', response);
               this.isSignedIn = true;
+              this.accessToken = response.access_token;
+              
+              // 토큰 저장 (기본 1시간, 응답에 expires_in이 있으면 그 값 사용)
+              const expiresIn = response.expires_in || 3600;
+              this.saveToken(response.access_token, expiresIn);
+              
               // 액세스 토큰을 gapi 클라이언트에 설정
               window.gapi.client.setToken({ access_token: response.access_token });
               resolve(true);
@@ -134,8 +204,12 @@ class GoogleCalendarService {
       if (this.isSignedIn && window.gapi && window.gapi.client) {
         // 토큰 제거
         window.gapi.client.setToken(null);
-        this.isSignedIn = false;
       }
+      
+      // 저장된 토큰 삭제
+      this.clearStoredToken();
+      
+      console.log('🚪 로그아웃 완료');
     } catch (error) {
       console.error('구글 로그아웃 실패:', error);
     }
