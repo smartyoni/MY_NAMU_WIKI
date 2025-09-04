@@ -27,7 +27,11 @@ jobs:
       env:
         VITE_GOOGLE_API_KEY: ${{ secrets.GOOGLE_API_KEY }}
         VITE_GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
-      run: npm run build
+      run: |
+        echo "Environment variables check:"
+        echo "VITE_GOOGLE_API_KEY is set: $([[ -n "$VITE_GOOGLE_API_KEY" ]] && echo "YES" || echo "NO")"
+        echo "VITE_GOOGLE_CLIENT_ID is set: $([[ -n "$VITE_GOOGLE_CLIENT_ID" ]] && echo "YES" || echo "NO")"
+        npm run build
       
     - name: Setup Pages
       uses: actions/configure-pages@v4
