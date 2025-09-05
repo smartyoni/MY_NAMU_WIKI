@@ -4,19 +4,20 @@ import './PracticeModal.css';
 interface PracticeModalProps {
   isOpen: boolean;
   onClose: () => void;
+  practiceNumber: number;
 }
 
-const PracticeModal: React.FC<PracticeModalProps> = ({ isOpen, onClose }) => {
+const PracticeModal: React.FC<PracticeModalProps> = ({ isOpen, onClose, practiceNumber }) => {
   const [content, setContent] = useState('');
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   // 컴포넌트 마운트 시 localStorage에서 내용 불러오기
   useEffect(() => {
-    const savedContent = localStorage.getItem('practiceContent');
+    const savedContent = localStorage.getItem(`practiceContent${practiceNumber}`);
     if (savedContent) {
       setContent(savedContent);
     }
-  }, []);
+  }, [practiceNumber]);
 
   // 모달이 열릴 때마다 textarea에 포커스
   useEffect(() => {
@@ -47,14 +48,14 @@ const PracticeModal: React.FC<PracticeModalProps> = ({ isOpen, onClose }) => {
   // 내용 변경 시 실시간으로 localStorage에 저장
   const handleContentChange = (newContent: string) => {
     setContent(newContent);
-    localStorage.setItem('practiceContent', newContent);
+    localStorage.setItem(`practiceContent${practiceNumber}`, newContent);
   };
 
   // 초기화 버튼 클릭
   const handleReset = () => {
     if (window.confirm('연습장 내용을 모두 삭제하시겠습니까?')) {
       setContent('');
-      localStorage.removeItem('practiceContent');
+      localStorage.removeItem(`practiceContent${practiceNumber}`);
       textareaRef.current?.focus();
     }
   };
@@ -93,7 +94,7 @@ const PracticeModal: React.FC<PracticeModalProps> = ({ isOpen, onClose }) => {
       <div className="practice-modal">
         <div className="practice-modal-header">
           <div className="practice-modal-title">
-            <h2>📝 연습장</h2>
+            <h2>📝 연습장{practiceNumber}</h2>
             <span className="practice-modal-subtitle">임시 메모 공간</span>
           </div>
           <div className="practice-modal-actions">

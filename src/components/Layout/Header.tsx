@@ -13,7 +13,9 @@ const Header: React.FC<HeaderProps> = () => {
   const [showResults, setShowResults] = useState(false);
   const [showFavorites, setShowFavorites] = useState(false);
   const [favoriteDocuments, setFavoriteDocuments] = useState<any[]>([]);
-  const [showPracticeModal, setShowPracticeModal] = useState(false);
+  const [showPracticeModal1, setShowPracticeModal1] = useState(false);
+  const [showPracticeModal2, setShowPracticeModal2] = useState(false);
+  const [showPracticeModal3, setShowPracticeModal3] = useState(false);
   const [showTodayScheduleModal, setShowTodayScheduleModal] = useState(false);
   const { searchDocuments, selectDocument, selectFolder, selectCategory, folders, categories, createQuickMemo, documents } = useDocuments();
 
@@ -226,10 +228,24 @@ const Header: React.FC<HeaderProps> = () => {
       <div className="header-right">
         <button 
           className="practice-button"
-          onClick={() => setShowPracticeModal(true)}
-          title="연습장 - 임시 메모 공간"
+          onClick={() => setShowPracticeModal1(true)}
+          title="연습장1 - 임시 메모 공간"
         >
-          📝 연습장
+          📝 연습장1
+        </button>
+        <button 
+          className="practice-button"
+          onClick={() => setShowPracticeModal2(true)}
+          title="연습장2 - 임시 메모 공간"
+        >
+          📝 연습장2
+        </button>
+        <button 
+          className="practice-button"
+          onClick={() => setShowPracticeModal3(true)}
+          title="연습장3 - 임시 메모 공간"
+        >
+          📝 연습장3
         </button>
         <button 
           className="schedule-button"
@@ -242,8 +258,21 @@ const Header: React.FC<HeaderProps> = () => {
     </header>
     
     <PracticeModal
-      isOpen={showPracticeModal}
-      onClose={() => setShowPracticeModal(false)}
+      isOpen={showPracticeModal1}
+      onClose={() => setShowPracticeModal1(false)}
+      practiceNumber={1}
+    />
+    
+    <PracticeModal
+      isOpen={showPracticeModal2}
+      onClose={() => setShowPracticeModal2(false)}
+      practiceNumber={2}
+    />
+    
+    <PracticeModal
+      isOpen={showPracticeModal3}
+      onClose={() => setShowPracticeModal3(false)}
+      practiceNumber={3}
     />
     
     <TodayScheduleModal
