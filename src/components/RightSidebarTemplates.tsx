@@ -533,7 +533,7 @@ const RightSidebarTemplates: React.FC = () => {
       {/* 템플릿 결과 모달 */}
       {isResultModalOpen && (
         <div className="modal-overlay">
-          <div className="template-modal">
+          <div className="template-modal result-modal">
             <div className="modal-header">
               <h4>완성된 템플릿</h4>
               <button
